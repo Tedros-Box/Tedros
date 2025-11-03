@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.tedros.ai.function.TFunction;
@@ -23,10 +24,13 @@ import com.openai.models.responses.EasyInputMessage;
 import com.openai.models.responses.FunctionTool;
 import com.openai.models.responses.Response;
 import com.openai.models.responses.ResponseCreateParams;
+import com.openai.models.responses.ResponseCreateParams.ToolChoice;
 import com.openai.models.responses.ResponseFunctionToolCall;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
+import com.openai.models.responses.ResponseUsage;
 import com.openai.models.responses.Tool;
+import com.openai.models.responses.ToolChoiceOptions;
 
 /**
  * Adaptador genérico para criar requisições de chat.
@@ -76,8 +80,12 @@ public class OpenAIServiceAdapter {
                     schemaMap.forEach((key, value) -> paramsBuilder.putAdditionalProperty(key, toJsonValue(value)));
 
                     builder.parameters(paramsBuilder.build());
+                    
+                    FunctionTool functionTool = builder.build();
+                    
+                    //System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(functionTool));
 					
-					return Tool.ofFunction(builder.build());
+					return Tool.ofFunction(functionTool);
 
                 } catch (Exception e) {
                     throw new RuntimeException("Erro ao gerar schema para função: " + f.getName(), e);
@@ -204,7 +212,7 @@ public class OpenAIServiceAdapter {
         return false;
     }
 
-    public ResponseOutputItem sendToolCallResult(String model, List<ResponseInputItem> messages, ResponseFunctionToolCall responseFunctionToolCall, ToolCallResult toolCallResult) {
+    public List<ResponseOutputItem> sendToolCallResult(String model, List<ResponseInputItem> messages, ResponseFunctionToolCall responseFunctionToolCall, ToolCallResult toolCallResult) {
         try {
             builder = (builder == null)
                 ? ResponseCreateParams.builder()
@@ -212,11 +220,13 @@ public class OpenAIServiceAdapter {
                     .input(ResponseCreateParams.Input.ofResponse(messages))
                     .temperature(1.0)
                     .tools(chatCompletionTools)
+                    .toolChoice(ToolChoiceOptions.AUTO)
+                    .parallelToolCalls(false)
                 : builder.input(ResponseCreateParams.Input.ofResponse(messages));
 
             Response response = client.responses().create(builder.build());
 
-            return response.output().get(0);
+            return response.output();
 
         } catch (Exception e) {
             LOGGER.error("Erro ao chamar OpenAI: {}", e.getMessage());
@@ -224,22 +234,40 @@ public class OpenAIServiceAdapter {
         }
     }
 
-    public ResponseOutputItem sendChatRequest(String model, List<ResponseInputItem> messages) {
+    public List<ResponseOutputItem> sendChatRequest(String model, List<ResponseInputItem> messages) {
         try {
-            if (builder == null)
+            if (builder == null) {
                 builder = chatCompletionTools != null
                     ? ResponseCreateParams.builder()
                         .model(model)
                         .input(ResponseCreateParams.Input.ofResponse(messages))  // Corrigido: inputOfResponse -> Input.ofResponse
                         .temperature(1.0)
                         .tools(chatCompletionTools)
+                        .toolChoice(ToolChoiceOptions.AUTO)
+                        .parallelToolCalls(false)
                     : ResponseCreateParams.builder()
                         .model(model)
                         .input(ResponseCreateParams.Input.ofResponse(messages))
                         .temperature(1.0);
-
+            } else {
+            
+            	builder.input(ResponseCreateParams.Input.ofResponse(messages));
+            }
+            
             Response response = client.responses().create(builder.build());
-            return response.output().get(0);
+            
+            Optional<ResponseUsage> optRespUsage = response.usage();
+            if(optRespUsage.isPresent()) {
+            	ResponseUsage usage = optRespUsage.get();
+            	// Log token usage
+                LOGGER.info("Total messages: {}, Usage Tokens: inputTokens={}, outputTokens={}, totalTokens={}", 
+    					messages.size(),
+    					usage.inputTokens(),
+    					usage.outputTokens(),
+    					usage.totalTokens());
+            }
+            
+            return response.output();
 
         } catch (Exception e) {
             LOGGER.error("Erro ao chamar OpenAI: {}", e.getMessage());

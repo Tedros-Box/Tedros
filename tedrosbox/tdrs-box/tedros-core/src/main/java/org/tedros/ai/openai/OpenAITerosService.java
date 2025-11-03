@@ -22,6 +22,7 @@ import com.openai.models.ChatModel;
 import com.openai.models.responses.ResponseFunctionToolCall;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
+import com.openai.models.responses.ResponseOutputMessage;
 import com.openai.models.responses.ResponseOutputMessage.Content;
 import com.openai.models.responses.ResponseOutputText;
 
@@ -82,69 +83,80 @@ public class OpenAITerosService {
 
         messages.add(adapter.buildUserMessage(userPrompt));
 
-        ResponseOutputItem response = adapter.sendChatRequest(GPT_MODEL, messages);
+        List<ResponseOutputItem> response = adapter.sendChatRequest(GPT_MODEL, messages);
 
         return processChatCompletion(response);
     }
 
-	private String processChatCompletion(ResponseOutputItem response) {
+	private String processChatCompletion(List<ResponseOutputItem> responseItems) {
 		// Obtem a primeira mensagem do modelo
         String content = null;
-        try {
-        	
-            if (response.isValid()) {
-            	
-            	if(response.isMessage()) {
-            		 if(response.message().isEmpty()) {
-						 LOGGER.warn("Resposta do OpenAI sem mensagem.");
-						 return "[no response]";
-					 }
-            	
-	                Content responseContent = response.message().get().content().get(0);
-	                if(responseContent.isValid()) {
-	                	
-	                	Optional<ResponseOutputText> messageOpt = responseContent.outputText();
-	                	if(messageOpt.isPresent()) {
-							content = messageOpt.get().text();
-						}
-					}else {
-						if(responseContent.isRefusal() && responseContent.refusal().isPresent()) {
-							String refusal = responseContent.refusal().get().refusal();
-							LOGGER.warn("OpenAI refusal: {}", refusal);
-							content = "Recusa do OpenAI: " + refusal;
-						}
-					}
-            	}
-            	
-            	if(response.isFunctionCall()) {
-            		
-            		ResponseFunctionToolCall functionCall = response.asFunctionCall();
-            		
-            		Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
-            		
-            		if(resultOpt.isPresent()) {
-            			
-            			ToolCallResult result = resultOpt.get();
-            			
-            			messages.add(ResponseInputItem.ofFunctionCall(functionCall));
-	            		messages.add(ResponseInputItem.ofFunctionCallOutput(ResponseInputItem.FunctionCallOutput.builder()
-	                            .callId(functionCall.callId())
-	                            .output(mapper.writeValueAsString(result))
-	                            .build()));
-            			
-						ResponseOutputItem responseOutputItem = adapter.sendToolCallResult(GPT_MODEL, messages, functionCall, result);
-						
-						content = processChatCompletion(responseOutputItem);
-					}else {
-						LOGGER.warn("Função {} não encontrada!", functionCall.name());
-					}            		
-            	}
-            	
-            }else {
-				content = "Resposta inválida do OpenAI.";
-			}
-        } catch (Exception e) {
-            LOGGER.error("Erro ao processar resposta do OpenAI: {}", e.getMessage());
+        for(ResponseOutputItem response : responseItems) {
+	        try {
+	        	
+	            if (response.isValid()) {
+	            	
+	            	if(response.isMessage()) {
+	            		
+	            		if(response.message().isEmpty()) {
+	            			LOGGER.warn("Resposta do OpenAI sem mensagem.");
+	            			return "[no response]";
+						}	 
+	            		
+	            		Optional<ResponseOutputMessage> opt =  response.message();
+	            		
+	            		if(opt.isPresent()) {
+	            			
+		            		ResponseOutputMessage responseOutputMessage = opt.get();		            		
+			                Content responseContent = responseOutputMessage.content().get(0);
+			                
+			                if(responseContent.isValid()) {
+			                	
+			                	Optional<ResponseOutputText> messageOpt = responseContent.outputText();
+			                	if(messageOpt.isPresent()) {
+									content = messageOpt.get().text();
+								}
+							}else {
+								if(responseContent.isRefusal() && responseContent.refusal().isPresent()) {
+									String refusal = responseContent.refusal().get().refusal();
+									LOGGER.warn("OpenAI refusal: {}", refusal);
+									content = "Recusa do OpenAI: " + refusal;
+								}
+							}
+	            		}
+	            	}
+	            	
+	            	if(response.isFunctionCall()) {
+	            		
+	            		ResponseFunctionToolCall functionCall = response.asFunctionCall();
+	            		
+	            		Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
+	            		
+	            		if(resultOpt.isPresent()) {
+	            			
+	            			ToolCallResult result = resultOpt.get();
+	            			
+	            			messages.add(ResponseInputItem.ofFunctionCall(functionCall));
+		            		messages.add(ResponseInputItem.ofFunctionCallOutput(ResponseInputItem.FunctionCallOutput.builder()
+		                            .callId(functionCall.callId())
+		                            .output(mapper.writeValueAsString(result))
+		                            .build()));
+	            			
+		            		List<ResponseOutputItem> responseOutputItem = adapter.sendToolCallResult(GPT_MODEL, messages, functionCall, result);
+							
+							content = processChatCompletion(responseOutputItem);
+						}else {
+							LOGGER.warn("Função {} não encontrada!", functionCall.name());
+						}            		
+	            	}
+	            	
+	            }else {
+					content = "Resposta inválida do OpenAI.";
+				}
+	        } catch (Exception e) {
+	            LOGGER.error("Erro ao processar resposta do OpenAI: {}", e.getMessage());
+	        }
+        
         }
 
         // adiciona resposta ao histórico se possível (constrói como message param)
@@ -158,10 +170,12 @@ public class OpenAITerosService {
 
     public static void setGptModel(String model) {
         GPT_MODEL = model;
+        LOGGER.info("Chat model em uso: {}", model);
     }
 
     public static void setPromptAssistant(String prompt) {
         PROMPT_ASSISTANT = prompt;
+        LOGGER.info("Assistant prompt em uso: {}", prompt);
     }
         
         
