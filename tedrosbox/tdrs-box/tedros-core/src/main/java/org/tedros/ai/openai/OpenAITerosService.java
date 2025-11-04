@@ -8,15 +8,12 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.tedros.ai.TFunctionHelper;
-import org.tedros.ai.function.TFunction;
 import org.tedros.ai.openai.model.ToolCallResult;
 import org.tedros.core.TLanguage;
-import org.tedros.core.context.TedrosContext;
 import org.tedros.util.TDateUtil;
 import org.tedros.util.TLoggerUtil;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.models.ChatModel;
 import com.openai.models.responses.ResponseFunctionToolCall;
@@ -24,7 +21,7 @@ import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
 import com.openai.models.responses.ResponseOutputMessage;
 import com.openai.models.responses.ResponseOutputMessage.Content;
-import com.openai.models.responses.ResponseOutputText;
+import com.openai.models.responses.ResponseReasoningItem;
 
 /**
  * Versão adaptada do TerosService usando o SDK oficial.
@@ -88,85 +85,89 @@ public class OpenAITerosService {
         return processChatCompletion(response);
     }
 
-	private String processChatCompletion(List<ResponseOutputItem> responseItems) {
-		// Obtem a primeira mensagem do modelo
-        String content = null;
-        for(ResponseOutputItem response : responseItems) {
-	        try {
-	        	
-	            if (response.isValid()) {
-	            	
-	            	if(response.isMessage()) {
-	            		
-	            		if(response.message().isEmpty()) {
-	            			LOGGER.warn("Resposta do OpenAI sem mensagem.");
-	            			return "[no response]";
-						}	 
-	            		
-	            		Optional<ResponseOutputMessage> opt =  response.message();
-	            		
-	            		if(opt.isPresent()) {
-	            			
-		            		ResponseOutputMessage responseOutputMessage = opt.get();		            		
-			                Content responseContent = responseOutputMessage.content().get(0);
-			                
-			                if(responseContent.isValid()) {
-			                	
-			                	Optional<ResponseOutputText> messageOpt = responseContent.outputText();
-			                	if(messageOpt.isPresent()) {
-									content = messageOpt.get().text();
-								}
-							}else {
-								if(responseContent.isRefusal() && responseContent.refusal().isPresent()) {
-									String refusal = responseContent.refusal().get().refusal();
-									LOGGER.warn("OpenAI refusal: {}", refusal);
-									content = "Recusa do OpenAI: " + refusal;
-								}
-							}
-	            		}
-	            	}
-	            	
-	            	if(response.isFunctionCall()) {
-	            		
-	            		ResponseFunctionToolCall functionCall = response.asFunctionCall();
-	            		
-	            		Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
-	            		
-	            		if(resultOpt.isPresent()) {
-	            			
-	            			ToolCallResult result = resultOpt.get();
-	            			
-	            			messages.add(ResponseInputItem.ofFunctionCall(functionCall));
-		            		messages.add(ResponseInputItem.ofFunctionCallOutput(ResponseInputItem.FunctionCallOutput.builder()
-		                            .callId(functionCall.callId())
-		                            .output(mapper.writeValueAsString(result))
-		                            .build()));
-	            			
-		            		List<ResponseOutputItem> responseOutputItem = adapter.sendToolCallResult(GPT_MODEL, messages, functionCall, result);
-							
-							content = processChatCompletion(responseOutputItem);
-						}else {
-							LOGGER.warn("Função {} não encontrada!", functionCall.name());
-						}            		
-	            	}
-	            	
-	            }else {
-					content = "Resposta inválida do OpenAI.";
-				}
-	        } catch (Exception e) {
-	            LOGGER.error("Erro ao processar resposta do OpenAI: {}", e.getMessage());
-	        }
+    private String processChatCompletion(List<ResponseOutputItem> responseItems) {
+        StringBuilder finalContent = new StringBuilder();
         
+        ResponseReasoningItem lastResponseReasoningItem = null;
+        
+        for (ResponseOutputItem item : responseItems) {
+            if (!item.isValid()) {
+                LOGGER.warn("Item inválido na resposta.");
+                continue;
+            }
+
+            if (item.isMessage()) {
+                // Processa mensagem normal
+                Optional<ResponseOutputMessage> msgOpt = item.message();
+                if (msgOpt.isPresent()) {
+                    ResponseOutputMessage msg = msgOpt.get();
+                    for (Content content : msg.content()) {
+                        if (content.isOutputText() && content.outputText().isPresent()) {
+                            String text = content.outputText().get().text();
+                            finalContent.append(text).append("\n");
+                            messages.add(adapter.buildAssistantMessage(text));
+                        } else if (content.isRefusal() && content.refusal().isPresent()) {
+                            String refusal = content.refusal().get().refusal();
+                            LOGGER.warn("Recusa: {}", refusal);
+                            finalContent.append("Recusa: ").append(refusal);
+                        }
+                    }
+                }
+            }
+            
+            else if (item.isReasoning()) {
+            	lastResponseReasoningItem = item.asReasoning();
+                LOGGER.info("Reasoning {} ", lastResponseReasoningItem);
+                //messages.add(adapter.buildReasoningMessage(responseReasoningItem));
+            }
+
+            else if (item.isFunctionCall()) {
+            	
+            	
+            	// Se havia um reasoning imediatamente antes, inclua junto
+                if (lastResponseReasoningItem != null) {
+                    messages.add(ResponseInputItem.ofReasoning(lastResponseReasoningItem));
+                    lastResponseReasoningItem = null;
+                }
+            	
+                ResponseFunctionToolCall functionCall = item.asFunctionCall();                
+
+                Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
+                if (resultOpt.isPresent()) {
+                    ToolCallResult result = resultOpt.get();
+
+                    // Adiciona a chamada de função
+                    messages.add(ResponseInputItem.ofFunctionCall(functionCall));
+                    
+                    try {
+						// Adiciona o resultado
+						messages.add(ResponseInputItem.ofFunctionCallOutput(
+						    ResponseInputItem.FunctionCallOutput.builder()
+						        .callId(functionCall.callId())
+						        .output(mapper.writeValueAsString(result))
+						        .build()
+						));
+					} catch (JsonProcessingException e) {
+		                LOGGER.error("Erro inesperado.", e);
+					}
+
+                    // Chama novamente com os resultados
+                    List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(
+                        GPT_MODEL, messages, functionCall, result
+                    );
+                    String recursiveContent = processChatCompletion(nextResponse);
+                    if (recursiveContent != null && !recursiveContent.equals("[no response]")) {
+                        finalContent.append(recursiveContent);
+                    }
+                } else {
+                    LOGGER.warn("Função {} não encontrada!", functionCall.name());
+                }
+            }
         }
 
-        // adiciona resposta ao histórico se possível (constrói como message param)
-        if (content != null) {
-            messages.add(adapter.buildAssistantMessage(content));
-        }
-
-        // TODO: implementar detecção de tool calls, caso haja suporte no SDK.
-        return content != null ? content : "[no response]";
-	}
+        String result = finalContent.toString().trim();
+        return result.isEmpty() ? "[no response]" : result;
+    }
 
     public static void setGptModel(String model) {
         GPT_MODEL = model;

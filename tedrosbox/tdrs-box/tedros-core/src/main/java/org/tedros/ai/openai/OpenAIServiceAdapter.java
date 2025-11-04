@@ -20,14 +20,17 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
 import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 import com.openai.client.OpenAIClient;
 import com.openai.core.JsonValue;
+import com.openai.models.Reasoning;
+import com.openai.models.Reasoning.Summary;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.responses.EasyInputMessage;
 import com.openai.models.responses.FunctionTool;
 import com.openai.models.responses.Response;
 import com.openai.models.responses.ResponseCreateParams;
-import com.openai.models.responses.ResponseCreateParams.ToolChoice;
 import com.openai.models.responses.ResponseFunctionToolCall;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
+import com.openai.models.responses.ResponseReasoningItem;
 import com.openai.models.responses.ResponseUsage;
 import com.openai.models.responses.Tool;
 import com.openai.models.responses.ToolChoiceOptions;
@@ -221,7 +224,11 @@ public class OpenAIServiceAdapter {
                     .temperature(1.0)
                     .tools(chatCompletionTools)
                     .toolChoice(ToolChoiceOptions.AUTO)
-                    .parallelToolCalls(false)
+                    .parallelToolCalls(true)
+                    .reasoning(Reasoning.builder()
+                    		.effort(ReasoningEffort.MEDIUM)
+                    		.summary(Summary.AUTO)
+                    		.build())
                 : builder.input(ResponseCreateParams.Input.ofResponse(messages));
 
             Response response = client.responses().create(builder.build());
@@ -244,11 +251,19 @@ public class OpenAIServiceAdapter {
                         .temperature(1.0)
                         .tools(chatCompletionTools)
                         .toolChoice(ToolChoiceOptions.AUTO)
-                        .parallelToolCalls(false)
+                        .parallelToolCalls(true)  // ← ATIVADO
+                        .reasoning(Reasoning.builder()
+                        		.effort(ReasoningEffort.MEDIUM)
+                        		.summary(Summary.AUTO)
+                        		.build())
                     : ResponseCreateParams.builder()
                         .model(model)
                         .input(ResponseCreateParams.Input.ofResponse(messages))
-                        .temperature(1.0);
+                        .temperature(1.0)
+                        .reasoning(Reasoning.builder()
+                        		.effort(ReasoningEffort.MEDIUM)
+                        		.summary(Summary.AUTO)
+                        		.build());
             } else {
             
             	builder.input(ResponseCreateParams.Input.ofResponse(messages));
@@ -273,6 +288,10 @@ public class OpenAIServiceAdapter {
             LOGGER.error("Erro ao chamar OpenAI: {}", e.getMessage());
             throw new RuntimeException("Erro ao chamar OpenAI", e);
         }
+    }
+    
+    public ResponseInputItem buildReasoningMessage(ResponseReasoningItem reasoning) {
+        return ResponseInputItem.ofReasoning(reasoning);
     }
 
     public ResponseInputItem buildAssistantMessage(String content) {
