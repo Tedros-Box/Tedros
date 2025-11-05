@@ -28,9 +28,22 @@ public class TPropertieBO extends TGenericBO<TPropertie> {
 		return eao.getFile(key);
 	}
 	
+	public boolean exists(String key) {
+		return eao.exist(key);
+	}
+	
+	public boolean create(TPropertie propertie) throws Exception {
+		if(exists(propertie.getKey())) 
+			return false;
+		
+		eao.persist(propertie);
+		
+		return true;
+	}
+	
 	public void buildProperties() throws Exception {
 		for(TSystemPropertie p : TSystemPropertie.values()) {
-			if(!eao.exist(p.getValue())) {
+			if(!exists(p.getValue())) {
 				TPropertie e = new TPropertie();
 				e.setName(p.name());
 				e.setKey(p.getValue());

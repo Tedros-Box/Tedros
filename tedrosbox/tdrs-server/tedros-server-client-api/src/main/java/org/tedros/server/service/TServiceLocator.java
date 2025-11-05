@@ -21,8 +21,8 @@ public class TServiceLocator {
 	
 	private InitialContext ctx;
 	
-	private String URL = "http://{0}:8081/tomee/ejb";
-	private String IP = "localhost";
+	public static String URL = "http://{0}:8081/tomee/ejb";
+	public static String IP = "localhost";
 	
 	private Properties getProp(){
 		
@@ -38,13 +38,17 @@ public class TServiceLocator {
 		
 	}
 	
+	public static TServiceLocator getInstance(){
+		return new TServiceLocator();
+	}
+	
 	public static TServiceLocator getInstance(String url, String ip){
 		if(locator ==null)
 			locator = new TServiceLocator();
 		if(StringUtils.isNotBlank(url))
-			locator.URL = url;
+			URL = url;
 		if(StringUtils.isNotBlank(ip))
-			locator.IP = ip;
+			IP = ip;
 		return locator;
 	}
 	
