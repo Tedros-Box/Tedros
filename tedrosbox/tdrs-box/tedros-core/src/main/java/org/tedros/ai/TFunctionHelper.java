@@ -36,7 +36,7 @@ import org.tedros.core.context.TedrosAppManager;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.domain.TSystemPropertie;
-import org.tedros.core.service.remote.ServiceLocator;
+import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.core.setting.model.TPropertie;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
@@ -99,7 +99,7 @@ public class TFunctionHelper {
 				+ "view history page, openai, teros status, reports, notify, currency/date format and others", 
 				Empty.class, 
 				v->{
-					ServiceLocator loc = ServiceLocator.getInstance();
+					TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
 					try {
 						TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
 						TResult<List<TPropertie>> res = serv

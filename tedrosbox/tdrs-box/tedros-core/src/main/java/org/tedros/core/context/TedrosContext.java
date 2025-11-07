@@ -33,7 +33,7 @@ import org.tedros.core.message.TMessageType;
 import org.tedros.core.resource.TedrosCoreResource;
 import org.tedros.core.security.model.TAuthorization;
 import org.tedros.core.security.model.TUser;
-import org.tedros.core.service.remote.ServiceLocator;
+import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.core.style.TStyleResourceValue;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
@@ -192,7 +192,7 @@ public final class TedrosContext {
 		
 		LOGGER.info("Starting load custom system properties.");
 		
-		ServiceLocator loc = ServiceLocator.getInstance();
+		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
 		try {
 			TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
 			TResult<String> res = serv.getValue(TedrosContext.loggedUser.getAccessToken(), 
@@ -775,7 +775,7 @@ public final class TedrosContext {
 		TedrosAppManager.getInstance().stopAll();
 		infoListProperty.clear();
 		if(loggedUser!=null && loggedUser.getAccessToken()!=null) {
-			ServiceLocator loc = ServiceLocator.getInstance();
+			TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
 			try {
 				ITLoginController serv = loc.lookup("ITLoginControllerRemote");
 				serv.logout(loggedUser.getAccessToken());
