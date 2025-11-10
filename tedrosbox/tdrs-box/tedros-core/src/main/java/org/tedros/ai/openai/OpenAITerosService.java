@@ -7,15 +7,14 @@ import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
-import org.tedros.ai.TFunctionHelper;
 import org.tedros.ai.openai.model.ToolCallResult;
 import org.tedros.core.TLanguage;
+import org.tedros.core.context.TedrosContext;
 import org.tedros.util.TDateUtil;
 import org.tedros.util.TLoggerUtil;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openai.models.ChatModel;
 import com.openai.models.responses.ResponseFunctionToolCall;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
@@ -24,6 +23,8 @@ import com.openai.models.responses.ResponseOutputMessage.Content;
 import com.openai.models.responses.ResponseReasoningItem;
 
 import javafx.beans.property.SimpleListProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 /**
  * Versão adaptada do TerosService usando o SDK oficial.
@@ -41,7 +42,8 @@ public class OpenAITerosService {
     private final List<ResponseInputItem> messages = new ArrayList<>();
     
     private OpenAIFunctionExecutor functionExecutor;
-    private SimpleListProperty<String> reasoningsMessageProperty = new SimpleListProperty<>();
+    
+    private ObservableList<String> reasoningsMessageProperty = FXCollections.observableArrayList();
     
     private OpenAITerosService(String token) {
         this.adapter = new OpenAIServiceAdapter(token);
@@ -63,8 +65,8 @@ public class OpenAITerosService {
 
     private void createSystemMessage() {
         String date = TDateUtil.formatFullgDate(new Date(), TLanguage.getLocale());
-        //String user = TedrosContext.getLoggedUser().getName();
-        String user = "Davis";
+        String user = TedrosContext.getLoggedUser().getName();
+        //String user = "Davis";
         String header = "Today is %s. You are Teros, a smart and helpful assistant for the Tedros desktop system. Engage intelligently with user %s."
                 .formatted(date, user);
         
@@ -125,6 +127,8 @@ public class OpenAITerosService {
             	lastResponseReasoningItem.summary().stream().forEach(s -> {
 					reasoningsMessageProperty.add(s.text());
 				});
+            	
+            	reasoningsMessageProperty.add("Se gerar HTML: 1) chame call_view para abrir a tela; 2) chame show_html_content para inserir o HTML; 3) não embale o HTML em markdown ao usar as funções.");
             	
                 LOGGER.info("Reasoning {} ", lastResponseReasoningItem);
                 //messages.add(adapter.buildReasoningMessage(responseReasoningItem));
@@ -187,7 +191,7 @@ public class OpenAITerosService {
         LOGGER.info("Assistant prompt em uso: {}", prompt);
     }
             
-    public SimpleListProperty<String> reasoningsMessageProperty() {
+    public ObservableList<String> reasoningsMessageProperty() {
 		return reasoningsMessageProperty;
 	}
 }

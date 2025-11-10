@@ -13,6 +13,7 @@ import org.tedros.ai.openai.OpenAITerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
+import org.tedros.core.control.TMessageProgressIndicator;
 import org.tedros.core.message.TMessageType;
 import org.tedros.core.repository.TRepository;
 import org.tedros.fx.TUsualKey;
@@ -23,8 +24,8 @@ import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
-import javafx.beans.value.ChangeListener;
 import javafx.collections.ListChangeListener;
+import javafx.collections.WeakListChangeListener;
 import javafx.concurrent.Worker.State;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -51,6 +52,7 @@ public class TerosSetting extends TSetting {
     private TRepository repo;
     private boolean scrollFlag = false;
     private OpenAITerosService teros;
+    private TMessageProgressIndicator progressIndicator;
 
 	/**
 	 * @param descriptor
@@ -65,6 +67,12 @@ public class TerosSetting extends TSetting {
 	@Override
 	public void run() {
 		if(TedrosContext.getArtificialIntelligenceEnabled()) {
+			
+			this.progressIndicator = new TMessageProgressIndicator();
+			
+			super.getForm().gettPresenter().getView().settProgressIndicator(progressIndicator);
+			
+			
 			String key = util.getOpenAiKey();
 			if(!"".equals(key)) {
 				OpenAITerosService.setGptModel(TedrosContext.getAiModel());
@@ -84,6 +92,7 @@ public class TerosSetting extends TSetting {
 						TFunctionHelper.getViewModelFunction(),
 						TFunctionHelper.getPreferencesFunction(),
 						TFunctionHelper.getCreateFileFunction()};
+				
 				arr = ArrayUtils.addAll(arr, TFunctionHelper.getAppsFunction());
 				
 				teros.createFunctionExecutor(arr);
@@ -93,10 +102,13 @@ public class TerosSetting extends TSetting {
 						if(c.wasAdded()) {
 							for(String msg : c.getAddedSubList()) {
 								//show reasoning messages
+								this.progressIndicator.addMessage(util.buildMsgPane(TEROS_NAME, msg, new Date(), 420, true));
 							}
 						}
 					}
 				};
+				repo.add("reasoningMsgListener", reasoningMsgListener);
+				teros.reasoningsMessageProperty().addListener(new WeakListChangeListener<>(reasoningMsgListener));
 				
 			}else {
 				super.getForm().gettPresenter().getView()

@@ -7,6 +7,7 @@
 package org.tedros.core.control;
 
 import org.tedros.core.context.TedrosContext;
+import org.tedros.util.TLoggerUtil;
 
 import javafx.animation.Animation.Status;
 import javafx.animation.FadeTransition;
@@ -14,12 +15,16 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
 /**
@@ -27,23 +32,28 @@ import javafx.util.Duration;
  *
  * @author Davis Gordon
  */
-public class TProgressIndicator implements ITProgressIndicator {
+public class TMessageProgressIndicator implements ITProgressIndicator {
 
 	private Region veil;
 	private ImageView progressIndicator;
 	private FadeTransition ft;
 	private Pane pane;
+	private BorderPane borderPane;
+	private VBox messageBox;
+	private ScrollPane scrollPane;
+	private boolean scrollFlag = false;
 	
-	public TProgressIndicator() {
+	public TMessageProgressIndicator() {
 		
 	}
 	
-	public TProgressIndicator(final Pane pane) {
+	public TMessageProgressIndicator(final Pane pane) {
 		initialize(pane);
 	}
 	
 	public void initialize(Pane pane) {
 		this.pane = pane;
+		
 		this.veil = new Region();
 		this.veil.setVisible(false);
 		
@@ -71,35 +81,85 @@ public class TProgressIndicator implements ITProgressIndicator {
 				ft.stop();
         });
         
+        
+        
+        this.messageBox = new VBox();
+        this.messageBox.setFillWidth(true);
+        this.messageBox.setSpacing(10);
+        this.messageBox.setVisible(false);
+        this.messageBox.setStyle(name);
+        
+        this.scrollPane = new ScrollPane();
+        this.scrollPane.setStyle("-fx-padding: 20 0 0 0;");
+        this.scrollPane.setMaxHeight(280);
+        this.scrollPane.setMinHeight(280);
+        this.scrollPane.setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+        this.scrollPane.setVisible(false);
+        //this.scrollPane.setContent(this.messageBox);
+        this.scrollPane.sceneProperty().addListener((obs, o, n)->{
+			if(n!=null) {
+				this.scrollPane.autosize();
+				this.scrollPane.setContent(this.messageBox);
+				this.scrollPane.getStyleClass().add("tab-content-area");
+				
+			}
+		});
+        
+        this.scrollPane.setVvalue(1.0);
+        this.scrollPane.vvalueProperty().addListener((a,o,n)->{
+			if(scrollFlag) {
+				scrollPane.setVvalue(scrollPane.getVmax());
+				if(n.doubleValue()==scrollPane.getVmax())
+					scrollFlag = false;
+			}
+		});
+        
+		this.borderPane = new BorderPane();
+		this.borderPane.setTop(this.progressIndicator);
+		this.borderPane.setCenter(this.scrollPane);
+        this.borderPane.setVisible(false);
+        
         setMargin(50);
-        this.pane.getChildren().addAll(veil, progressIndicator);
+        this.pane.getChildren().addAll(veil, borderPane);
+	}
+	
+	public void addMessage(StackPane messagePane){
+		scrollFlag = true;
+		messageBox.getChildren().add(messagePane);
 	}
 
 	/**
 	 * @param pane
 	 */
 	public void setMargin(double val) {
-		if(pane instanceof StackPane){
-			StackPane.setMargin(progressIndicator, new Insets(val));
-			StackPane.setAlignment(progressIndicator, Pos.CENTER);
-		}else if(pane instanceof BorderPane){
-			BorderPane.setMargin(progressIndicator, new Insets(val));
-			BorderPane.setAlignment(progressIndicator, Pos.CENTER);
-		}
+		BorderPane.setMargin(progressIndicator, new Insets(val));
+		BorderPane.setAlignment(progressIndicator, Pos.CENTER);
 	}
 	
 	public void bind(final BooleanBinding bb){
 		removeBind();
+		
 		veil.visibleProperty().bind(bb);
 		progressIndicator.visibleProperty().bind(bb);
+		
+		messageBox.visibleProperty().bind(bb);
+		scrollPane.visibleProperty().bind(bb);
+		borderPane.visibleProperty().bind(bb);
+		
 		if(bb.get() && !ft.getStatus().equals(Status.RUNNING))
 			ft.play();
 	}
 	
 	public void bind(ReadOnlyBooleanProperty bb) {
 		removeBind();
+		
 		veil.visibleProperty().bind(bb);
 		progressIndicator.visibleProperty().bind(bb);
+		
+		messageBox.visibleProperty().bind(bb);
+		scrollPane.visibleProperty().bind(bb);
+		borderPane.visibleProperty().bind(bb);
+		
 		if(bb.get() && !ft.getStatus().equals(Status.RUNNING))
 			ft.play();
 		
@@ -108,6 +168,9 @@ public class TProgressIndicator implements ITProgressIndicator {
 	public void removeBind(){
 		veil.visibleProperty().unbind();
 		progressIndicator.visibleProperty().unbind();
+		messageBox.visibleProperty().unbind();
+		scrollPane.visibleProperty().unbind();
+		borderPane.visibleProperty().unbind();
 	}
 	
 	public void setSmallLogo() {
