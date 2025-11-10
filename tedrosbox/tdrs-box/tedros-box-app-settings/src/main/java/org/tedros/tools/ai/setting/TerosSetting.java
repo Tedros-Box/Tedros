@@ -23,6 +23,8 @@ import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
+import javafx.beans.value.ChangeListener;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Worker.State;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -85,6 +87,16 @@ public class TerosSetting extends TSetting {
 				arr = ArrayUtils.addAll(arr, TFunctionHelper.getAppsFunction());
 				
 				teros.createFunctionExecutor(arr);
+				
+				ListChangeListener<String> reasoningMsgListener =  c->{
+					while(c.next()) {
+						if(c.wasAdded()) {
+							for(String msg : c.getAddedSubList()) {
+								//show reasoning messages
+							}
+						}
+					}
+				};
 				
 			}else {
 				super.getForm().gettPresenter().getView()

@@ -23,6 +23,8 @@ import com.openai.models.responses.ResponseOutputMessage;
 import com.openai.models.responses.ResponseOutputMessage.Content;
 import com.openai.models.responses.ResponseReasoningItem;
 
+import javafx.beans.property.SimpleListProperty;
+
 /**
  * Versão adaptada do TerosService usando o SDK oficial.
  */
@@ -30,14 +32,17 @@ public class OpenAITerosService {
 
     private static final Logger LOGGER = TLoggerUtil.getLogger(OpenAITerosService.class);
     
-    private final OpenAIServiceAdapter adapter;
-    private final ObjectMapper mapper = new ObjectMapper();
-    private final List<ResponseInputItem> messages = new ArrayList<>();
-    private OpenAIFunctionExecutor functionExecutor;
     private static String GPT_MODEL;
     private static String PROMPT_ASSISTANT;
     private static OpenAITerosService instance;
-
+    
+    private final OpenAIServiceAdapter adapter;    
+    private final ObjectMapper mapper = new ObjectMapper();    
+    private final List<ResponseInputItem> messages = new ArrayList<>();
+    
+    private OpenAIFunctionExecutor functionExecutor;
+    private SimpleListProperty<String> reasoningsMessageProperty = new SimpleListProperty<>();
+    
     private OpenAITerosService(String token) {
         this.adapter = new OpenAIServiceAdapter(token);
         createSystemMessage();
@@ -117,12 +122,15 @@ public class OpenAITerosService {
             
             else if (item.isReasoning()) {
             	lastResponseReasoningItem = item.asReasoning();
+            	lastResponseReasoningItem.summary().stream().forEach(s -> {
+					reasoningsMessageProperty.add(s.text());
+				});
+            	
                 LOGGER.info("Reasoning {} ", lastResponseReasoningItem);
                 //messages.add(adapter.buildReasoningMessage(responseReasoningItem));
             }
 
             else if (item.isFunctionCall()) {
-            	
             	
             	// Se havia um reasoning imediatamente antes, inclua junto
                 if (lastResponseReasoningItem != null) {
@@ -178,24 +186,8 @@ public class OpenAITerosService {
         PROMPT_ASSISTANT = prompt;
         LOGGER.info("Assistant prompt em uso: {}", prompt);
     }
-        
-        
-	public static void main(String[] args) {
-    	OpenAITerosService service = OpenAITerosService.create("KEY");
-    	service.createFunctionExecutor(TFunctionHelper.listAllViewPathFunction());
-    	
-		service.setGptModel(ChatModel.GPT_4_TURBO.toString());
-		String response = service.call("Crie um arquivo texto com um poema sobre a vida.", "Never reply with another question, use the system functions to find out how to do!");
-		System.out.println(response);
-		/*
-		for (int i = 0; i < 4; i++) {            
-			
-            System.out.println("\n-----------------------------------\n");
-
-            response = service.call("But why?" + "?".repeat(i), "Be as snarky as possible when replying!" + "!".repeat(i));
-            System.out.println(response);
-        }*/
-		
-		
+            
+    public SimpleListProperty<String> reasoningsMessageProperty() {
+		return reasoningsMessageProperty;
 	}
 }
