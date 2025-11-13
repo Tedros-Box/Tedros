@@ -148,10 +148,8 @@ public class OpenAIServiceAdapter {
             }
         }
 
-        // Add 'required' only if there are required fields
-        //if (!required.isEmpty()) {
-            schemaMap.put("required", required);
-        //}
+        schemaMap.put("required", required);
+        
     }
 
     /**

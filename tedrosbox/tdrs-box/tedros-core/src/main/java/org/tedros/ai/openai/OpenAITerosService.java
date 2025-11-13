@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.tedros.ai.openai.model.ToolCallResult;
+import org.tedros.core.TCoreKeys;
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.util.TDateUtil;
@@ -20,25 +21,29 @@ import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
 import com.openai.models.responses.ResponseOutputMessage;
 import com.openai.models.responses.ResponseOutputMessage.Content;
+import com.openai.models.responses.ResponseOutputRefusal;
+import com.openai.models.responses.ResponseOutputText;
 import com.openai.models.responses.ResponseReasoningItem;
+import com.openai.models.responses.ResponseReasoningItem.Summary;
 
-import javafx.beans.property.SimpleListProperty;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 /**
- * Versão adaptada do TerosService usando o SDK oficial.
+ * Versão adaptada do TerosService usando o SDK oficial da openai
  */
 public class OpenAITerosService {
 
     private static final Logger LOGGER = TLoggerUtil.getLogger(OpenAITerosService.class);
+    private static final String NO_RESPONSE = TLanguage.getInstance().getString(TCoreKeys.AI_NO_RESPONSE);
     
     private static String GPT_MODEL;
     private static String PROMPT_ASSISTANT;
     private static OpenAITerosService instance;
     
-    private final OpenAIServiceAdapter adapter;    
-    private final ObjectMapper mapper = new ObjectMapper();    
+    private final OpenAIServiceAdapter adapter;
+    private final ObjectMapper mapper = new ObjectMapper();
     private final List<ResponseInputItem> messages = new ArrayList<>();
     
     private OpenAIFunctionExecutor functionExecutor;
@@ -63,124 +68,11 @@ public class OpenAITerosService {
         return instance;
     }
 
-    private void createSystemMessage() {
-        String date = TDateUtil.formatFullgDate(new Date(), TLanguage.getLocale());
-        String user = TedrosContext.getLoggedUser().getName();
-        //String user = "Davis";
-        String header = "Today is %s. You are Teros, a smart and helpful assistant for the Tedros desktop system. Engage intelligently with user %s."
-                .formatted(date, user);
-        
-        if (PROMPT_ASSISTANT != null)
-            header += " " + PROMPT_ASSISTANT;
-
-        messages.add(adapter.buildSysMessage(header));
-    }
-
     public void createFunctionExecutor(org.tedros.ai.function.TFunction<?>... functions) {
     	this.adapter.functions(Arrays.asList(functions));
     	this.functionExecutor = new OpenAIFunctionExecutor(functions);
     }
-
-    public String call(String userPrompt, String sysPrompt) {
-        if (sysPrompt != null)
-            messages.add(adapter.buildSysMessage(sysPrompt));
-
-        messages.add(adapter.buildUserMessage(userPrompt));
-
-        List<ResponseOutputItem> response = adapter.sendChatRequest(GPT_MODEL, messages);
-
-        return processChatCompletion(response);
-    }
-
-    private String processChatCompletion(List<ResponseOutputItem> responseItems) {
-        StringBuilder finalContent = new StringBuilder();
-        
-        ResponseReasoningItem lastResponseReasoningItem = null;
-        
-        for (ResponseOutputItem item : responseItems) {
-            if (!item.isValid()) {
-                LOGGER.warn("Item inválido na resposta.");
-                continue;
-            }
-
-            if (item.isMessage()) {
-                // Processa mensagem normal
-                Optional<ResponseOutputMessage> msgOpt = item.message();
-                if (msgOpt.isPresent()) {
-                    ResponseOutputMessage msg = msgOpt.get();
-                    for (Content content : msg.content()) {
-                        if (content.isOutputText() && content.outputText().isPresent()) {
-                            String text = content.outputText().get().text();
-                            finalContent.append(text).append("\n");
-                            messages.add(adapter.buildAssistantMessage(text));
-                        } else if (content.isRefusal() && content.refusal().isPresent()) {
-                            String refusal = content.refusal().get().refusal();
-                            LOGGER.warn("Recusa: {}", refusal);
-                            finalContent.append("Recusa: ").append(refusal);
-                        }
-                    }
-                }
-            }
-            
-            else if (item.isReasoning()) {
-            	lastResponseReasoningItem = item.asReasoning();
-            	lastResponseReasoningItem.summary().stream().forEach(s -> {
-					reasoningsMessageProperty.add(s.text());
-				});
-            	
-            	reasoningsMessageProperty.add("Se gerar HTML: 1) chame call_view para abrir a tela; 2) chame show_html_content para inserir o HTML; 3) não embale o HTML em markdown ao usar as funções.");
-            	
-                LOGGER.info("Reasoning {} ", lastResponseReasoningItem);
-                //messages.add(adapter.buildReasoningMessage(responseReasoningItem));
-            }
-
-            else if (item.isFunctionCall()) {
-            	
-            	// Se havia um reasoning imediatamente antes, inclua junto
-                if (lastResponseReasoningItem != null) {
-                    messages.add(ResponseInputItem.ofReasoning(lastResponseReasoningItem));
-                    lastResponseReasoningItem = null;
-                }
-            	
-                ResponseFunctionToolCall functionCall = item.asFunctionCall();                
-
-                Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
-                if (resultOpt.isPresent()) {
-                    ToolCallResult result = resultOpt.get();
-
-                    // Adiciona a chamada de função
-                    messages.add(ResponseInputItem.ofFunctionCall(functionCall));
-                    
-                    try {
-						// Adiciona o resultado
-						messages.add(ResponseInputItem.ofFunctionCallOutput(
-						    ResponseInputItem.FunctionCallOutput.builder()
-						        .callId(functionCall.callId())
-						        .output(mapper.writeValueAsString(result))
-						        .build()
-						));
-					} catch (JsonProcessingException e) {
-		                LOGGER.error("Erro inesperado.", e);
-					}
-
-                    // Chama novamente com os resultados
-                    List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(
-                        GPT_MODEL, messages, functionCall, result
-                    );
-                    String recursiveContent = processChatCompletion(nextResponse);
-                    if (recursiveContent != null && !recursiveContent.equals("[no response]")) {
-                        finalContent.append(recursiveContent);
-                    }
-                } else {
-                    LOGGER.warn("Função {} não encontrada!", functionCall.name());
-                }
-            }
-        }
-
-        String result = finalContent.toString().trim();
-        return result.isEmpty() ? "[no response]" : result;
-    }
-
+    
     public static void setGptModel(String model) {
         GPT_MODEL = model;
         LOGGER.info("Chat model em uso: {}", model);
@@ -194,4 +86,147 @@ public class OpenAITerosService {
     public ObservableList<String> reasoningsMessageProperty() {
 		return reasoningsMessageProperty;
 	}
+
+    public String call(String userPrompt, String sysPrompt) {
+        if (sysPrompt != null)
+            messages.add(adapter.buildSysMessage(sysPrompt));
+
+        messages.add(adapter.buildUserMessage(userPrompt));
+
+        List<ResponseOutputItem> response = adapter.sendChatRequest(GPT_MODEL, messages);
+
+        return processAiResponseMessage(response);
+    }
+
+    private String processAiResponseMessage(List<ResponseOutputItem> responseItems) {
+        StringBuilder finalContent = new StringBuilder();
+        
+        ResponseReasoningItem lastResponseReasoningItem = null;
+        
+        for (ResponseOutputItem item : responseItems) {
+            if (!item.isValid()) {
+                LOGGER.warn("Item inválido na resposta.");
+                continue;
+            }
+
+            if (item.isMessage()) {
+                // Process text message
+                processTextMessageResponse(finalContent, item);
+            }
+            
+            else if (item.isReasoning()) {
+            	// Process reasoning message 
+            	lastResponseReasoningItem = processReasoningResponse(item);
+            }
+
+            else if (item.isFunctionCall()) {
+            	// Process function call message
+            	lastResponseReasoningItem = processFunctionCallResponse(finalContent, lastResponseReasoningItem, item);
+            }
+        }
+
+        String result = finalContent.toString().trim();
+        return result.isEmpty() ? NO_RESPONSE : result;
+    }
+
+	private ResponseReasoningItem processFunctionCallResponse(StringBuilder finalContent,
+			ResponseReasoningItem lastResponseReasoningItem, ResponseOutputItem item) {
+		// Se havia um reasoning imediatamente antes, inclua junto
+		if (lastResponseReasoningItem != null) {
+		    messages.add(ResponseInputItem.ofReasoning(lastResponseReasoningItem));
+		    lastResponseReasoningItem = null;
+		}
+		
+		ResponseFunctionToolCall functionCall = item.asFunctionCall();                
+
+		Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
+		if (resultOpt.isPresent()) {
+		    ToolCallResult result = resultOpt.get();
+
+		    // Adiciona a chamada de função
+		    messages.add(ResponseInputItem.ofFunctionCall(functionCall));
+		    
+		    try {
+				// Adiciona o resultado
+				messages.add(ResponseInputItem.ofFunctionCallOutput(
+				    ResponseInputItem.FunctionCallOutput.builder()
+				        .callId(functionCall.callId())
+				        .output(mapper.writeValueAsString(result))
+				        .build()
+				));
+			} catch (JsonProcessingException e) {
+		        LOGGER.error("Erro inesperado.", e);
+			}
+
+		    // Chama novamente com os resultados
+		    List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(
+		        GPT_MODEL, messages, functionCall, result
+		    );
+		    String recursiveContent = processAiResponseMessage(nextResponse);
+		    if (recursiveContent != null && !recursiveContent.equals(NO_RESPONSE)) {
+		        finalContent.append(recursiveContent);
+		    }
+		} else {
+		    LOGGER.warn("Função {} não encontrada!", functionCall.name());
+		}
+		return lastResponseReasoningItem;
+	}
+
+	private ResponseReasoningItem processReasoningResponse(ResponseOutputItem item) {
+		ResponseReasoningItem lastResponseReasoningItem;
+		Platform.runLater(()-> {
+			ResponseReasoningItem reasoning = item.asReasoning();
+			
+			List<String> summaryList = reasoning.summary().stream()
+					.map(Summary::text)
+					.toList();
+			
+			if(!summaryList.isEmpty()) {
+				reasoningsMessageProperty.addAll(summaryList);
+			}else {
+				reasoningsMessageProperty.add(TLanguage.getInstance().getString(TCoreKeys.AI_THINKING));
+			}	
+		});
+		
+		lastResponseReasoningItem = item.asReasoning();
+		LOGGER.info("Reasoning {} ", lastResponseReasoningItem);
+		return lastResponseReasoningItem;
+	}
+
+	private void processTextMessageResponse(StringBuilder finalContent, ResponseOutputItem item) {
+		Optional<ResponseOutputMessage> msgOpt = item.message();
+		if (msgOpt.isPresent()) {
+		    ResponseOutputMessage msg = msgOpt.get();
+		    for (Content content : msg.content()) {
+		        if (content.isOutputText() && content.outputText().isPresent()) {		            
+		        	Optional<ResponseOutputText> opt = content.outputText();
+		        	if(opt.isPresent()) {
+		        		String text = opt.get().text();
+			            finalContent.append(text).append("\n");
+			            messages.add(adapter.buildAssistantMessage(text));
+		        	}		            
+		        } else if (content.isRefusal() && content.refusal().isPresent()) {
+		        	Optional<ResponseOutputRefusal> opt = content.refusal();
+		        	if(opt.isPresent()) {
+		        		String refusal = opt.get().refusal();
+			            LOGGER.warn("Recusa: {}", refusal);
+			            finalContent.append("Recusa: ").append(refusal);
+		        	}
+		        }
+		    }
+		}
+	}
+
+	private void createSystemMessage() {    	
+        String date = TDateUtil.formatFullgDate(new Date(), TLanguage.getLocale());
+        String user = TedrosContext.getLoggedUser().getName();        
+        String header = "Today is %s. You are Teros, a smart and helpful assistant for the "
+        		+ "Tedros desktop system. Engage intelligently with user %s."
+                .formatted(date, user);
+        
+        if (PROMPT_ASSISTANT != null)
+            header += " " + PROMPT_ASSISTANT;
+
+        messages.add(adapter.buildSysMessage(header));
+    }
 }

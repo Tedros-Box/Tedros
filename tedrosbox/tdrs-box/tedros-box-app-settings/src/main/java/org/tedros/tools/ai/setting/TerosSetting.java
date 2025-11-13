@@ -11,6 +11,8 @@ import org.tedros.ai.TFunctionHelper;
 import org.tedros.ai.function.TFunction;
 import org.tedros.ai.openai.OpenAITerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
+import org.tedros.api.form.ITModelForm;
+import org.tedros.api.presenter.view.TViewMode;
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.TMessageProgressIndicator;
@@ -18,12 +20,16 @@ import org.tedros.core.message.TMessageType;
 import org.tedros.core.repository.TRepository;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.control.TButton;
+import org.tedros.fx.form.TFormBuilder;
+import org.tedros.fx.form.TReaderFormBuilder;
 import org.tedros.fx.form.TSetting;
 import org.tedros.fx.modal.TMessageBox;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
+import javafx.application.Platform;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.WeakListChangeListener;
 import javafx.concurrent.Worker.State;
@@ -53,6 +59,8 @@ public class TerosSetting extends TSetting {
     private boolean scrollFlag = false;
     private OpenAITerosService teros;
     private TMessageProgressIndicator progressIndicator;
+    
+   // private SimpleBooleanProperty p = new SimpleBooleanProperty(true);
 
 	/**
 	 * @param descriptor
@@ -147,6 +155,19 @@ public class TerosSetting extends TSetting {
 					scrollFlag = false;
 			}
 		});
+		
+		/*super.getForm().gettPresenter().getView()
+		.gettProgressIndicator().bind(p);
+		
+		Platform.runLater(()-> {
+			for(int i=0; i<50; i++) {
+				teros.reasoningsMessageProperty().add("Message teste "+i);
+			}
+      });
+		*/
+		
+		
+		
 	}
 
 	/**

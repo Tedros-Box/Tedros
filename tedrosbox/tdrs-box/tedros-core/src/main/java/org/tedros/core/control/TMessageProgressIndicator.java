@@ -14,6 +14,7 @@ import javafx.animation.FadeTransition;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
@@ -59,9 +60,9 @@ public class TMessageProgressIndicator implements ITProgressIndicator {
 		
 		String name = pane.getClass().getSimpleName();
 		if(name.contains("Form") || name.contains("GroupView"))
-			veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); -fx-background-radius: 0 0 20 20;");
+			veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.7); -fx-background-radius: 0 0 20 20;");
 		else
-			veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.4); -fx-background-radius: 20 20 20 20;");
+			veil.setStyle("-fx-background-color: rgba(0, 0, 0, 0.7); -fx-background-radius: 20 20 20 20;");
 		
 		this.progressIndicator = new ImageView();
 		this.progressIndicator.setVisible(false);
@@ -81,16 +82,16 @@ public class TMessageProgressIndicator implements ITProgressIndicator {
 				ft.stop();
         });
         
-        
-        
         this.messageBox = new VBox();
+        this.messageBox.setAlignment(Pos.CENTER);
         this.messageBox.setFillWidth(true);
         this.messageBox.setSpacing(10);
         this.messageBox.setVisible(false);
         this.messageBox.setStyle(name);
         
         this.scrollPane = new ScrollPane();
-        this.scrollPane.setStyle("-fx-padding: 20 0 0 0;");
+        this.scrollPane.setStyle("-fx-padding: 10 30 10 30;");
+        this.scrollPane.setFitToWidth(true);
         this.scrollPane.setMaxHeight(280);
         this.scrollPane.setMinHeight(280);
         this.scrollPane.setVbarPolicy(ScrollBarPolicy.AS_NEEDED);

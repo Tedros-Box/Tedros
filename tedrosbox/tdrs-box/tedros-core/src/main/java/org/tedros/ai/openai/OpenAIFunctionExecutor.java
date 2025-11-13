@@ -12,11 +12,7 @@ import org.tedros.ai.openai.model.ToolCallResult;
 import org.tedros.ai.openai.model.ToolError;
 import org.tedros.util.TLoggerUtil;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openai.core.JsonObject;
-import com.openai.core.JsonValue;
-import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.responses.ResponseFunctionToolCall;
 
 /**
@@ -39,14 +35,15 @@ public class OpenAIFunctionExecutor {
         return functions.keySet();
     }
 
-    public Optional<ToolCallResult> execute(String name, String argumentsJson) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public Optional<ToolCallResult> execute(String name, String argumentsJson) {
         TFunction<?> fn = functions.get(name);
         if (fn == null)
             return Optional.empty();
 
         try {
-            Object arg = mapper.readValue(argumentsJson, fn.getModel()); //mapper.readValue(argumentsJson, fn.getModel());
-            Function cb = (Function) fn.getCallback();
+            Object arg = mapper.readValue(argumentsJson, fn.getModel());
+            Function cb = fn.getCallback();
             Object result = cb.apply(arg);
             return Optional.of(new ToolCallResult(name, result));
         } catch (Exception e) {
@@ -59,10 +56,7 @@ public class OpenAIFunctionExecutor {
     	
     	TFunction<?> fn = functions.get(function.name());
         if (fn == null)
-            return Optional.empty();
-    	  	
-
-        //Object arguments = mapper.readValue(function.arguments(), fn.getModel()); //JsonValue.from(mapper.readTree(function.arguments()));
+            return Optional.empty();        
         
         return execute(function.name(), function.arguments());
     }
