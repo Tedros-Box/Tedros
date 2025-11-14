@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
+import org.tedros.ai.model.MessageWithFile;
 import org.tedros.ai.openai.model.ToolCallResult;
 import org.tedros.core.TCoreKeys;
 import org.tedros.core.TLanguage;
@@ -17,6 +18,7 @@ import org.tedros.util.TLoggerUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.models.responses.ResponseFunctionToolCall;
+import com.openai.models.responses.ResponseInputFile;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
 import com.openai.models.responses.ResponseOutputMessage;
@@ -147,21 +149,45 @@ public class OpenAITerosService {
 		    messages.add(ResponseInputItem.ofFunctionCall(functionCall));
 		    
 		    try {
+		    	
 				// Adiciona o resultado
 				messages.add(ResponseInputItem.ofFunctionCallOutput(
 				    ResponseInputItem.FunctionCallOutput.builder()
 				        .callId(functionCall.callId())
-				        .output(mapper.writeValueAsString(result))
+				        .output(mapper.writeValueAsString(result.getResult()))
 				        .build()
 				));
+								
+				if(result.getFilesContentInfo()!=null) {
+	            	
+					result.getFilesContentInfo().stream()
+	            	.forEach(mwf->{
+	            		
+	            		String fileBase64Url = "data:"+mwf.contentType()+";base64," + mwf.base64();
+
+	    		        ResponseInputFile inputFile = ResponseInputFile.builder()
+	    		                .filename(mwf.fileName())
+	    		                .fileData(fileBase64Url)
+	    		                .build();
+	    		        
+	    		        ResponseInputItem messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
+	    		                .role(ResponseInputItem.Message.Role.SYSTEM)
+	    		                .addInputTextContent("The function call with id "+functionCall.callId()+" returned this file for your analysis.")
+	    		                .addContent(inputFile)
+	    		                .build());
+	    		        
+	    		        messages.add(messageInputItem);
+	            		
+	            	});
+				}
+				
 			} catch (JsonProcessingException e) {
 		        LOGGER.error("Erro inesperado.", e);
 			}
 
 		    // Chama novamente com os resultados
-		    List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(
-		        GPT_MODEL, messages, functionCall, result
-		    );
+		    List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(GPT_MODEL, messages);
+		    
 		    String recursiveContent = processAiResponseMessage(nextResponse);
 		    if (recursiveContent != null && !recursiveContent.equals(NO_RESPONSE)) {
 		        finalContent.append(recursiveContent);

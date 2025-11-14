@@ -11,6 +11,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.tedros.ai.function.TFunction;
 import org.tedros.ai.function.TRequiredProperty;
+import org.tedros.ai.model.MessageWithFile;
 import org.tedros.ai.openai.model.ToolCallResult;
 import org.tedros.util.TLoggerUtil;
 
@@ -28,6 +29,7 @@ import com.openai.models.responses.FunctionTool;
 import com.openai.models.responses.Response;
 import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.ResponseFunctionToolCall;
+import com.openai.models.responses.ResponseInputFile;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
 import com.openai.models.responses.ResponseReasoningItem;
@@ -211,10 +213,11 @@ public class OpenAIServiceAdapter {
             
         }
         return false;
-    }
+    }     
 
-    public List<ResponseOutputItem> sendToolCallResult(String model, List<ResponseInputItem> messages, ResponseFunctionToolCall responseFunctionToolCall, ToolCallResult toolCallResult) {
+    public List<ResponseOutputItem> sendToolCallResult(String model, List<ResponseInputItem> messages) {
         try {
+        	
             builder = (builder == null)
                 ? ResponseCreateParams.builder()
                     .model(model)
@@ -227,7 +230,8 @@ public class OpenAIServiceAdapter {
                     		.effort(ReasoningEffort.MEDIUM)
                     		.summary(Summary.AUTO)
                     		.build())
-                : builder.input(ResponseCreateParams.Input.ofResponse(messages));
+                    
+                : builder.input(ResponseCreateParams.Input.ofResponse(messages)); 
 
             Response response = client.responses().create(builder.build());
 

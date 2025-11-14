@@ -7,16 +7,13 @@
 package org.tedros.core.control;
 
 import org.tedros.core.context.TedrosContext;
-import org.tedros.util.TLoggerUtil;
 
 import javafx.animation.Animation.Status;
 import javafx.animation.FadeTransition;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.geometry.Insets;
-import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.image.Image;
