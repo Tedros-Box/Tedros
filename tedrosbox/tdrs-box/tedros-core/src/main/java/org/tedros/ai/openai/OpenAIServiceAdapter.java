@@ -58,6 +58,10 @@ public class OpenAIServiceAdapter {
         this.client = OpenAIClientFactory.getClient(apiKey);
     }
 
+    public OpenAIClient getClient() {
+		return client;
+	}
+    
     @SuppressWarnings("rawtypes")
     public void functions(List<TFunction> functions) {
         this.chatCompletionTools = functions.stream()

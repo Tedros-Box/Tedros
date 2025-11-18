@@ -1,5 +1,5 @@
 package org.tedros.common.model;
 
-public record TFileContentInfo(String fileName, String contentType, String base64) {
+public record TFileContentInfo(String fileName, String contentType, byte[] bytes) {
 
 }

@@ -1,5 +1,6 @@
 package org.tedros.ai.openai;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -11,6 +12,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.tedros.ai.openai.model.ToolCallResult;
+import org.tedros.common.model.TFileContentInfo;
 import org.tedros.core.TCoreKeys;
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
@@ -18,8 +20,12 @@ import org.tedros.util.TDateUtil;
 import org.tedros.util.TLoggerUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openai.models.files.FileCreateParams;
+import com.openai.models.files.FileObject;
+import com.openai.models.files.FilePurpose;
 import com.openai.models.responses.EasyInputMessage;
 import com.openai.models.responses.ResponseFunctionToolCall;
+import com.openai.models.responses.ResponseInputContent;
 import com.openai.models.responses.ResponseInputFile;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputItem;
@@ -39,11 +45,13 @@ import javafx.collections.ObservableList;
  */
 public class OpenAITerosService {
 
-    private static final Logger LOGGER = TLoggerUtil.getLogger(OpenAITerosService.class);
+    private static final int MAX_INPUT_TOKENS = 85_000;
+	private static final Logger LOGGER = TLoggerUtil.getLogger(OpenAITerosService.class);
     private static final String NO_RESPONSE = TLanguage.getInstance().getString(TCoreKeys.AI_NO_RESPONSE);
+    
     private static final Predicate<ResponseInputItem> IS_USER_MESSAGE = item ->
-    (item.isMessage() && item.asMessage().role() == ResponseInputItem.Message.Role.USER) ||
-    (item.isEasyInputMessage() && item.asEasyInputMessage().role() == EasyInputMessage.Role.USER);
+    	(item.isMessage() && item.asMessage().role() == ResponseInputItem.Message.Role.USER) ||
+    	(item.isEasyInputMessage() && item.asEasyInputMessage().role() == EasyInputMessage.Role.USER);
     
     private static String GPT_MODEL;
     private static String PROMPT_ASSISTANT;
@@ -104,7 +112,7 @@ public class OpenAITerosService {
 
         String output = processAiResponseMessage(response);
         
-        if(adapter.totalInputTokenProperty().longValue()>5000) {
+        if(adapter.totalInputTokenProperty().longValue()>MAX_INPUT_TOKENS) {
     		summarizeMessages();
     	}
         
@@ -134,7 +142,6 @@ public class OpenAITerosService {
 
             else if (item.isFunctionCall()) {
             	// Process function call message
-            	//lastResponseReasoningItem = processFunctionCallResponse(finalContent, lastResponseReasoningItem, item);
             	processFunctionCallResponse(finalContent, lastResponseReasoningItem, item);
             }
         }
@@ -170,27 +177,6 @@ public class OpenAITerosService {
             	    .flatMap(Optional::stream)               // novamente para lidar com o Optional
             	    .map(ResponseOutputText::text)           // pega o texto
             	    .collect(Collectors.joining("\n"));      // junta tudo com quebra de linha
-            
-            /*List<ResponseOutputItem> summaryResponse =
-                adapter.sendChatRequest(GPT_MODEL, tempMessages);
-
-            StringBuilder summary = new StringBuilder();
-
-            for (ResponseOutputItem item : summaryResponse) {
-                if (item.isMessage()) {
-                    Optional<ResponseOutputMessage> msg = item.message();
-                    if (msg.isPresent()) {
-                        for (Content c : msg.get().content()) {
-                            if (c.isOutputText() && c.outputText().isPresent()) {
-                                Optional<ResponseOutputText> resOptional = c.outputText();
-                                if(resOptional.isPresent()) {
-                                	summary.append(resOptional.get().text()).append("\n");
-                                }
-                            }
-                        }
-                    }
-                }
-            }*/
 
             if (summary.isEmpty()) {
                 LOGGER.warn("Summarization returned empty. Aborting summarize.");
@@ -210,18 +196,6 @@ public class OpenAITerosService {
                 .filter(IS_USER_MESSAGE)
                 .findFirst()
                 .orElse(null);
-            /*ResponseInputItem originalSystemMessage = messages.get(0);
-            ResponseInputItem lastUserMessage = null;
-
-            for (int i = messages.size() - 1; i >= 0; i--) {
-            	ResponseInputItem item = messages.get(i); 
-                if ((item.isMessage() && item.asMessage().role() == ResponseInputItem.Message.Role.USER) 
-                	|| (item.isEasyInputMessage() && item.asEasyInputMessage().role() == EasyInputMessage.Role.USER)) 
-                {
-                    lastUserMessage = item;
-                    break;
-                }	
-            }*/
 
             List<ResponseInputItem> newMessages = new ArrayList<>();
             newMessages.add(originalSystemMessage);
@@ -244,152 +218,121 @@ public class OpenAITerosService {
             LOGGER.error("Error during conversation summarization", e);
         }
     }
-
-    /*
-	private ResponseReasoningItem processFunctionCallResponse(StringBuilder finalContent,
-			ResponseReasoningItem lastResponseReasoningItem, ResponseOutputItem item) {
-		// Se havia um reasoning imediatamente antes, inclua junto
-		if (lastResponseReasoningItem != null) {
-		    //messages.add(ResponseInputItem.ofReasoning(lastResponseReasoningItem));
-		    lastResponseReasoningItem = null;
-		}
-		
-		ResponseFunctionToolCall functionCall = item.asFunctionCall();                
-
-		Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
-		if (resultOpt.isPresent()) {
-		    ToolCallResult result = resultOpt.get();
-
-		    // Adiciona a chamada de função
-		    messages.add(ResponseInputItem.ofFunctionCall(functionCall));
-		    
-		    try {
-		    	
-				// Adiciona o resultado
-				messages.add(ResponseInputItem.ofFunctionCallOutput(
-				    ResponseInputItem.FunctionCallOutput.builder()
-				        .callId(functionCall.callId())
-				        .output(mapper.writeValueAsString(result.getResult()))
-				        .build()
-				));
-								
-				if(result.getFilesContentInfo()!=null) {
-	            	
-					result.getFilesContentInfo().stream()
-	            	.forEach(mwf->{
-	            		
-	            		String fileBase64Url = "data:"+mwf.contentType()+";base64," + mwf.base64();
-
-	    		        ResponseInputFile inputFile = ResponseInputFile.builder()
-	    		                .filename(mwf.fileName())
-	    		                .fileData(fileBase64Url)
-	    		                .build();
-	    		        
-	    		        ResponseInputItem messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
-	    		                .role(ResponseInputItem.Message.Role.SYSTEM)
-	    		                .addInputTextContent("The function call with id "+functionCall.callId()+" returned this file for your analysis.")
-	    		                .addContent(inputFile)
-	    		                .build());
-	    		        
-	    		        messages.add(messageInputItem);
-	            		
-	            	});
-				}
-				
-			} catch (JsonProcessingException e) {
-		        LOGGER.error("Erro inesperado.", e);
-			}
-
-		    // Chama novamente com os resultados
-		    List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(GPT_MODEL, messages);
-		    
-		    String recursiveContent = processAiResponseMessage(nextResponse);
-		    if (recursiveContent != null && !recursiveContent.equals(NO_RESPONSE)) {
-		        finalContent.append(recursiveContent);
-		    }
-		} else {
-		    LOGGER.warn("Função {} não encontrada!", functionCall.name());
-		}
-		return lastResponseReasoningItem;
-	}*/
 	
-	private void processFunctionCallResponse(
-	        StringBuilder finalContent,
-	        ResponseReasoningItem lastResponseReasoningItem,
-	        ResponseOutputItem item) {
+    private void processFunctionCallResponse(
+            StringBuilder finalContent,
+            ResponseReasoningItem lastResponseReasoningItem,
+            ResponseOutputItem item) {
 
-	    ResponseFunctionToolCall functionCall = item.asFunctionCall();
+        ResponseFunctionToolCall functionCall = item.asFunctionCall();
+        Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
+        if (resultOpt.isEmpty()) {
+            LOGGER.warn("Função {} não encontrada!", functionCall.name());
+            return;
+        }
 
-	    Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
-	    if (resultOpt.isEmpty()) {
-	        LOGGER.warn("Função {} não encontrada!", functionCall.name());
-	        return;
-	    }
+        ToolCallResult result = resultOpt.get();
+        List<String> uploadedFileIds = new ArrayList<>(); // Para deletar depois
 
-	    ToolCallResult result = resultOpt.get();
+        try {
+            // 1. Adiciona chamada da função e resultado (texto)
+            ResponseInputItem functionCallInput = ResponseInputItem.ofFunctionCall(functionCall);
+            ResponseInputItem functionCallOutput = ResponseInputItem.ofFunctionCallOutput(
+                ResponseInputItem.FunctionCallOutput.builder()
+                    .callId(functionCall.callId())
+                    .output(mapper.writeValueAsString(result.getResult()))
+                    .build()
+            );
 
-	    try {
-	        // construir a mensagem de chamada de ferramenta
-	        ResponseInputItem functionCallInput =
-	            ResponseInputItem.ofFunctionCall(functionCall);
+            // Payload temporário para enviar ao modelo
+            List<ResponseInputItem> toolRequest = new ArrayList<>();
 
-	        ResponseInputItem functionCallOutput =
-	            ResponseInputItem.ofFunctionCallOutput(
-	                ResponseInputItem.FunctionCallOutput.builder()
-	                    .callId(functionCall.callId())
-	                    .output(mapper.writeValueAsString(result.getResult()))
-	                    .build()
-	            );
+            if (lastResponseReasoningItem != null) {
+                toolRequest.add(ResponseInputItem.ofReasoning(lastResponseReasoningItem));
+            }
 
-	        // montar payload temporário para o modelo
-	        List<ResponseInputItem> toolRequest = new ArrayList<>();
+            toolRequest.add(functionCallInput);
+            toolRequest.add(functionCallOutput);
 
-	        // REENVIAR O REASONING — mas não guardar no histórico
-	        if (lastResponseReasoningItem != null) {
-	            toolRequest.add(ResponseInputItem.ofReasoning(lastResponseReasoningItem));
-	        }
+            // 2. Processa arquivos retornados pela função (upload + file_id)
+            if (result.getFilesContentInfo() != null && !result.getFilesContentInfo().isEmpty()) {
+                StringBuilder fileInfoText = new StringBuilder();
+                fileInfoText.append("The function call (id: ").append(functionCall.callId())
+                            .append(") returned the following file(s) for analysis:\n");
 
-	        toolRequest.add(functionCallInput);
-	        toolRequest.add(functionCallOutput);
-	        
-	        if(result.getFilesContentInfo()!=null) {
-            	
-				result.getFilesContentInfo().stream()
-            	.forEach(mwf->{
-            		
-            		String fileBase64Url = "data:"+mwf.contentType()+";base64," + mwf.base64();
+                for (TFileContentInfo fileContentInfo : result.getFilesContentInfo()) {
+                    uploadFile(uploadedFileIds, toolRequest, fileInfoText, fileContentInfo);
+                }
 
-    		        ResponseInputFile inputFile = ResponseInputFile.builder()
-    		                .filename(mwf.fileName())
-    		                .fileData(fileBase64Url)
-    		                .build();
-    		        
-    		        ResponseInputItem messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
-    		                .role(ResponseInputItem.Message.Role.SYSTEM)
-    		                .addInputTextContent("The function call with id "+functionCall.callId()+" returned this file for your analysis.")
-    		                .addContent(inputFile)
-    		                .build());
-    		        
-    		        toolRequest.add(messageInputItem);
-            		
-            	});
+                // Adiciona uma mensagem de resumo dos arquivos anexados
+                toolRequest.add(ResponseInputItem.ofMessage(
+                    ResponseInputItem.Message.builder()
+                        .role(ResponseInputItem.Message.Role.SYSTEM)
+                        .addInputTextContent(fileInfoText.toString().trim())
+                        .build()
+                ));
+            }
+
+            // 3. Envia tudo de volta ao modelo
+            List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(GPT_MODEL, toolRequest);
+
+            // Processa resposta recursivamente
+            String recursiveContent = processAiResponseMessage(nextResponse);
+            if (recursiveContent != null && !recursiveContent.equals(NO_RESPONSE)) {
+                finalContent.append(recursiveContent);
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("Erro inesperado durante processamento de tool-call.", e);
+            finalContent.append("\n[Erro interno ao processar função. Tente novamente.]");
+        } finally {
+            // SEMPRE deleta os arquivos temporários, mesmo em caso de erro
+            uploadedFileIds.forEach(fileId -> {
+                try {
+                    adapter.getClient().files().delete(fileId);
+                    LOGGER.info("Arquivo temporário deletado com sucesso: {}", fileId);
+                } catch (Exception e) {
+                    LOGGER.warn("Falha ao deletar arquivo temporário: {}", fileId, e);
+                }
+            });
+        }
+    }
+
+	private void uploadFile(List<String> uploadedFileIds, List<ResponseInputItem> toolRequest,
+			StringBuilder fileInfoText, TFileContentInfo fileContentInfo) {
+		try {
+		    // Upload do arquivo		    
+			try(ByteArrayInputStream bais = new ByteArrayInputStream(fileContentInfo.bytes())){
+				FileCreateParams uploadParams = FileCreateParams.builder()
+				        .file(bais)
+				        .purpose(FilePurpose.ASSISTANTS) // ou VISION se for imagem
+				        .build();
+
+				    FileObject uploadedFile = adapter.getClient().files().create(uploadParams);
+				    String fileId = uploadedFile.id();
+				    uploadedFileIds.add(fileId); // Marca para deleção
+
+				    fileInfoText.append("- ").append(fileContentInfo.fileName())
+				                .append(" (file_id: ").append(fileId).append(")\n");
+
+				    // Adiciona referência ao arquivo como content (suportado no Responses API)
+				    ResponseInputItem fileRefItem = ResponseInputItem.ofMessage(
+				        ResponseInputItem.Message.builder()
+				            .role(ResponseInputItem.Message.Role.SYSTEM)
+				            .addInputTextContent("Attached file: " + fileContentInfo.fileName() + " (file_id: " + fileId + ")")
+				            .addContent(ResponseInputContent.ofInputFile(
+				            				ResponseInputFile.builder()
+				            				.fileId(fileId)
+				            				.build()))
+				            .build()
+				    );
+				    toolRequest.add(fileRefItem);
 			}
 
-	        // NÃO adicionar ao histórico 'messages'
-	        // apenas enviar ao modelo
-
-	        List<ResponseOutputItem> nextResponse =
-	            adapter.sendToolCallResult(GPT_MODEL, toolRequest);
-
-	        // processar a resposta recursivamente
-	        String recursiveContent = processAiResponseMessage(nextResponse);
-	        if (recursiveContent != null && !recursiveContent.equals(NO_RESPONSE)) {
-	            finalContent.append(recursiveContent);
-	        }
-
-	    } catch (Exception e) {
-	        LOGGER.error("Erro inesperado durante processamento de tool-call.", e);
-	    }	    
+		} catch (Exception e) {
+		    LOGGER.error("Erro ao fazer upload do arquivo retornado pela função: {}", fileContentInfo.fileName(), e);
+		    fileInfoText.append("- [ERRO] Falha ao anexar: ").append(fileContentInfo.fileName()).append("\n");
+		}
 	}
 
 	
@@ -442,8 +385,7 @@ public class OpenAITerosService {
         String date = TDateUtil.formatFullgDate(new Date(), TLanguage.getLocale());
         String user = TedrosContext.getLoggedUser().getName();        
         String header = "Today is %s. You are Teros, a smart and helpful assistant for the "
-        		+ "Tedros desktop system. Engage intelligently with user %s."
-                .formatted(date, user);
+        		+ "Tedros desktop system. Engage intelligently with user %s.".formatted(date, user);
         
         if (PROMPT_ASSISTANT != null)
             header += " " + PROMPT_ASSISTANT;
