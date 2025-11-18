@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -44,10 +45,15 @@ import javafx.collections.ObservableList;
  * Versão adaptada do TerosService usando o SDK oficial da openai
  */
 public class OpenAITerosService {
-
-    private static final int MAX_INPUT_TOKENS = 85_000;
+    
 	private static final Logger LOGGER = TLoggerUtil.getLogger(OpenAITerosService.class);
     private static final String NO_RESPONSE = TLanguage.getInstance().getString(TCoreKeys.AI_NO_RESPONSE);
+    
+    // Percentual seguro do contexto total para disparar sumarização (65% é o sweet spot)
+    private static final double SUMMARIZATION_THRESHOLD_PERCENT = 0.65;
+    
+    // Mapa de contextos máximos por modelo (atualizado 2025)
+    private static final Map<String, Integer> MODEL_CONTEXT_LENGTHS = OpenAIHelper.buildModelContextLengths();
     
     private static final Predicate<ResponseInputItem> IS_USER_MESSAGE = item ->
     	(item.isMessage() && item.asMessage().role() == ResponseInputItem.Message.Role.USER) ||
@@ -112,14 +118,26 @@ public class OpenAITerosService {
 
         String output = processAiResponseMessage(response);
         
-        if(adapter.totalInputTokenProperty().longValue()>MAX_INPUT_TOKENS) {
-    		summarizeMessages();
-    	}
-        
+     // Verifica se precisa resumir com base no modelo atual
+        long currentTokens = adapter.totalInputTokenProperty().longValue();
+        long threshold = getDynamicSummarizationThreshold();
+
+        LOGGER.info("Tokens atuais: {} | Threshold dinâmico ({}% de {}): {}", 
+            currentTokens, 
+            (int)(SUMMARIZATION_THRESHOLD_PERCENT * 100), 
+            GPT_MODEL, 
+            threshold);
+
+        if (currentTokens > threshold) {
+            LOGGER.info("Threshold excedido ({} > {}). Iniciando sumarização...", currentTokens, threshold);
+            summarizeMessages();
+        }
+
         return output;
     }
 
     private String processAiResponseMessage(List<ResponseOutputItem> responseItems) {
+    	
         StringBuilder finalContent = new StringBuilder();
         
         ResponseReasoningItem lastResponseReasoningItem = null;
@@ -148,6 +166,40 @@ public class OpenAITerosService {
 
         String result = finalContent.toString().trim();
         return result.isEmpty() ? NO_RESPONSE : result;
+    }
+    
+    /**
+     * Calcula o threshold dinâmico com base no modelo atual
+     */
+    private long getDynamicSummarizationThreshold() {
+        if (GPT_MODEL == null || GPT_MODEL.isBlank()) {
+            return 85_000;
+        }
+
+        String key = GPT_MODEL.toLowerCase();
+
+        // Match exato primeiro
+        Integer max = MODEL_CONTEXT_LENGTHS.get(key);
+        if (max != null) return (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
+
+        // Match parcial (ex: gpt-4o-2024-11-20)
+        max = MODEL_CONTEXT_LENGTHS.entrySet().stream()
+            .filter(e -> key.contains(e.getKey()))
+            .map(Map.Entry::getValue)
+            .findFirst()
+            .orElse(null);
+
+        if (max != null) return (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
+
+        // Fallbacks por família
+        if (key.contains("gpt-5") || key.contains("o3")) return (long) (200_000 * 0.65);
+        if (key.contains("gpt-4o") || key.contains("o1") || key.contains("gpt-4.1") || key.contains("o4")) return (long) (128_000 * 0.65);
+        if (key.contains("gpt-4-turbo")) return (long) (128_000 * 0.65);
+        if (key.contains("gpt-4")) return (long) (8_192 * 0.65);
+        if (key.contains("gpt-3.5")) return (long) (16_385 * 0.65);
+
+        LOGGER.warn("Modelo desconhecido para contexto: {}. Usando 85k como fallback.", GPT_MODEL);
+        return 85_000;
     }
     
     private void summarizeMessages() {
