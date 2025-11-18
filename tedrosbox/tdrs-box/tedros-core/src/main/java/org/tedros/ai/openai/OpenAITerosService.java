@@ -46,7 +46,7 @@ import javafx.collections.ObservableList;
  */
 public class OpenAITerosService {
     
-	private static final Logger LOGGER = TLoggerUtil.getLogger(OpenAITerosService.class);
+	private static final Logger log = TLoggerUtil.getLogger(OpenAITerosService.class);
     private static final String NO_RESPONSE = TLanguage.getInstance().getString(TCoreKeys.AI_NO_RESPONSE);
     
     // Percentual seguro do contexto total para disparar sumarização (65% é o sweet spot)
@@ -74,7 +74,8 @@ public class OpenAITerosService {
     private OpenAITerosService(String token) {
         this.adapter = new OpenAIServiceAdapter(token);
         createSystemMessage();
-        LOGGER.info("OpenAI Teros Service iniciado!");
+        log.info("OpenAI Teros Service iniciado com sucesso. "
+        		+ "Modelo padrão: {}", GPT_MODEL != null ? GPT_MODEL : "não definido");
     }
 
     public static OpenAITerosService create(String token) {
@@ -92,16 +93,17 @@ public class OpenAITerosService {
     public void createFunctionExecutor(org.tedros.ai.function.TFunction<?>... functions) {
     	this.adapter.functions(Arrays.asList(functions));
     	this.functionExecutor = new OpenAIFunctionExecutor(functions);
+    	log.info("Registradas {} função(ões) personalizada(s) para tool calls.", functions.length);
     }
     
     public static void setGptModel(String model) {
         GPT_MODEL = model;
-        LOGGER.info("Chat model em uso: {}", model);
+        log.info("Modelo GPT definido: {}", model);
     }
 
     public static void setPromptAssistant(String prompt) {
         PROMPT_ASSISTANT = prompt;
-        LOGGER.info("Assistant prompt em uso: {}", prompt);
+        log.info("Assistant prompt em uso: {}", prompt);
     }
             
     public ObservableList<String> reasoningsMessageProperty() {
@@ -109,34 +111,54 @@ public class OpenAITerosService {
 	}
 
     public String call(String userPrompt, String sysPrompt) {
-        if (sysPrompt != null)
+    	
+    	log.debug(">>> Iniciando nova interação com Teros");
+        log.trace("Prompt do usuário: {}", userPrompt);
+        
+        if (sysPrompt != null && !sysPrompt.isBlank()) {
+            log.trace("Prompt de sistema adicional: {}", sysPrompt);
             messages.add(adapter.buildSysMessage(sysPrompt));
+        }
 
         messages.add(adapter.buildUserMessage(userPrompt));
 
+        long startTime = System.currentTimeMillis();
         List<ResponseOutputItem> response = adapter.sendChatRequest(GPT_MODEL, messages);
+        long elapsed = System.currentTimeMillis() - startTime;
+        
+        log.info("Resposta da OpenAI recebida em {}ms | {} itens | Tokens de entrada: {} | Uso total estimado: {}",
+                elapsed,
+                response.size(),
+                adapter.totalInputTokenProperty().get(),
+                adapter.getLastUsage()!=null ? adapter.getLastUsage().totalTokens() : "?");
 
         String output = processAiResponseMessage(response);
         
-     // Verifica se precisa resumir com base no modelo atual
+        // Verifica se precisa resumir com base no modelo atual
         long currentTokens = adapter.totalInputTokenProperty().longValue();
         long threshold = getDynamicSummarizationThreshold();
 
-        LOGGER.info("Tokens atuais: {} | Threshold dinâmico ({}% de {}): {}", 
-            currentTokens, 
-            (int)(SUMMARIZATION_THRESHOLD_PERCENT * 100), 
-            GPT_MODEL, 
-            threshold);
+        log.info("Tokens atuais: {} | Threshold ({}% de contexto do modelo {}): {}",
+                currentTokens,
+                (int)(SUMMARIZATION_THRESHOLD_PERCENT * 100),
+                GPT_MODEL,
+                threshold);
 
         if (currentTokens > threshold) {
-            LOGGER.info("Threshold excedido ({} > {}). Iniciando sumarização...", currentTokens, threshold);
+        	log.warn("Threshold de tokens excedido ({} > {}). Iniciando sumarização automática...", currentTokens, threshold);
             summarizeMessages();
         }
 
-        return output;
+        log.debug("<<< Interação concluída. Resposta final tem {} caracteres.", output.length());
+        return output.isEmpty() ? NO_RESPONSE : output;
     }
 
     private String processAiResponseMessage(List<ResponseOutputItem> responseItems) {
+
+    	if (responseItems == null || responseItems.isEmpty()) {
+            log.warn("Resposta da OpenAI veio vazia ou nula.");
+            return NO_RESPONSE;
+        }
     	
         StringBuilder finalContent = new StringBuilder();
         
@@ -144,7 +166,7 @@ public class OpenAITerosService {
         
         for (ResponseOutputItem item : responseItems) {
             if (!item.isValid()) {
-                LOGGER.warn("Item inválido na resposta.");
+                log.warn("Item inválido na resposta.");
                 continue;
             }
 
@@ -160,6 +182,7 @@ public class OpenAITerosService {
 
             else if (item.isFunctionCall()) {
             	// Process function call message
+            	log.info("Detectado tool call: {} (id={})", item.asFunctionCall().name(), item.asFunctionCall().callId());
             	processFunctionCallResponse(finalContent, lastResponseReasoningItem, item);
             }
         }
@@ -173,6 +196,7 @@ public class OpenAITerosService {
      */
     private long getDynamicSummarizationThreshold() {
         if (GPT_MODEL == null || GPT_MODEL.isBlank()) {
+        	log.warn("Modelo não definido, usando fallback de 85k tokens para sumarização.");
             return 85_000;
         }
 
@@ -180,7 +204,13 @@ public class OpenAITerosService {
 
         // Match exato primeiro
         Integer max = MODEL_CONTEXT_LENGTHS.get(key);
-        if (max != null) return (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
+        if (max != null) {
+            long calc = (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
+            log.debug("Threshold calculado: {} tokens ({}% de {} para modelo {})", 
+            		calc, (SUMMARIZATION_THRESHOLD_PERCENT/100),  max, GPT_MODEL);
+            
+            return calc;
+        }
 
         // Match parcial (ex: gpt-4o-2024-11-20)
         max = MODEL_CONTEXT_LENGTHS.entrySet().stream()
@@ -188,8 +218,14 @@ public class OpenAITerosService {
             .map(Map.Entry::getValue)
             .findFirst()
             .orElse(null);
-
-        if (max != null) return (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
+        
+        if (max != null) {
+            long calc = (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
+            log.debug("Threshold calculado: {} tokens ({}% de {} para modelo {})", 
+            		calc, (SUMMARIZATION_THRESHOLD_PERCENT/100),  max, GPT_MODEL);
+            
+            return calc;
+        }
 
         // Fallbacks por família
         if (key.contains("gpt-5") || key.contains("o3")) return (long) (200_000 * 0.65);
@@ -198,13 +234,13 @@ public class OpenAITerosService {
         if (key.contains("gpt-4")) return (long) (8_192 * 0.65);
         if (key.contains("gpt-3.5")) return (long) (16_385 * 0.65);
 
-        LOGGER.warn("Modelo desconhecido para contexto: {}. Usando 85k como fallback.", GPT_MODEL);
+        log.warn("Modelo desconhecido para contexto: {}. Usando 85k como fallback.", GPT_MODEL);
         return 85_000;
     }
     
     private void summarizeMessages() {
         try {
-            LOGGER.info("Token threshold exceeded. Summarizing messages...");
+        	log.info("Iniciando processo de sumarização do histórico ({} mensagens atuais)", messages.size());
 
             // 1. Criar instrução de resumo
             ResponseInputItem sysSummaryInstruction = adapter.buildSysMessage(
@@ -230,12 +266,12 @@ public class OpenAITerosService {
             	    .map(ResponseOutputText::text)           // pega o texto
             	    .collect(Collectors.joining("\n"));      // junta tudo com quebra de linha
 
-            if (summary.isEmpty()) {
-                LOGGER.warn("Summarization returned empty. Aborting summarize.");
+            if (summary == null || summary.isBlank()) {
+                log.warn("Sumarização retornou vazio. Abortando substituição do histórico.");
                 return;
             }
 
-            LOGGER.info("Conversation summarized successfully.");
+            log.info("Sumarização gerada com {} caracteres.", summary.length());
 
             // 3. Manter apenas:
             // - Mensagem SYSTEM original
@@ -263,11 +299,10 @@ public class OpenAITerosService {
             messages.clear();
             messages.addAll(newMessages);
 
-            LOGGER.info("Message history replaced with summarized context ({} messages).",
-                    messages.size());
+            log.info("Histórico resumido com sucesso → {} mensagens restantes.", messages.size());
 
         } catch (Exception e) {
-            LOGGER.error("Error during conversation summarization", e);
+        	log.error("Falha crítica durante sumarização do contexto", e);
         }
     }
 	
@@ -276,10 +311,17 @@ public class OpenAITerosService {
             ResponseReasoningItem lastResponseReasoningItem,
             ResponseOutputItem item) {
 
-        ResponseFunctionToolCall functionCall = item.asFunctionCall();
-        Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(functionCall);
+        ResponseFunctionToolCall toolCall = item.asFunctionCall();
+        String callId = toolCall.callId();
+        String funcName = toolCall.name();
+
+        log.info("Executando tool call → {} (call_id={})", funcName, callId);
+        
+        
+        Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(toolCall);
+        
         if (resultOpt.isEmpty()) {
-            LOGGER.warn("Função {} não encontrada!", functionCall.name());
+        	log.error("Função '{}' não registrada! Ignorando tool call {}", funcName, callId);
             return;
         }
 
@@ -288,10 +330,10 @@ public class OpenAITerosService {
 
         try {
             // 1. Adiciona chamada da função e resultado (texto)
-            ResponseInputItem functionCallInput = ResponseInputItem.ofFunctionCall(functionCall);
+            ResponseInputItem functionCallInput = ResponseInputItem.ofFunctionCall(toolCall);
             ResponseInputItem functionCallOutput = ResponseInputItem.ofFunctionCallOutput(
                 ResponseInputItem.FunctionCallOutput.builder()
-                    .callId(functionCall.callId())
+                    .callId(toolCall.callId())
                     .output(mapper.writeValueAsString(result.getResult()))
                     .build()
             );
@@ -308,8 +350,9 @@ public class OpenAITerosService {
 
             // 2. Processa arquivos retornados pela função (upload + file_id)
             if (result.getFilesContentInfo() != null && !result.getFilesContentInfo().isEmpty()) {
+            	log.info("Tool call retornou {} arquivo(s). Fazendo upload temporário...", result.getFilesContentInfo().size());
                 StringBuilder fileInfoText = new StringBuilder();
-                fileInfoText.append("The function call (id: ").append(functionCall.callId())
+                fileInfoText.append("The function call (id: ").append(toolCall.callId())
                             .append(") returned the following file(s) for analysis:\n");
 
                 for (TFileContentInfo fileContentInfo : result.getFilesContentInfo()) {
@@ -333,18 +376,20 @@ public class OpenAITerosService {
             if (recursiveContent != null && !recursiveContent.equals(NO_RESPONSE)) {
                 finalContent.append(recursiveContent);
             }
+            
+            log.info("Tool call {} concluído com sucesso.", callId);
 
         } catch (Exception e) {
-            LOGGER.error("Erro inesperado durante processamento de tool-call.", e);
+        	log.error("Erro inesperado ao processar tool call {}", callId, e);
             finalContent.append("\n[Erro interno ao processar função. Tente novamente.]");
         } finally {
             // SEMPRE deleta os arquivos temporários, mesmo em caso de erro
             uploadedFileIds.forEach(fileId -> {
                 try {
                     adapter.getClient().files().delete(fileId);
-                    LOGGER.info("Arquivo temporário deletado com sucesso: {}", fileId);
+                    log.debug("Arquivo temporário deletado: {}", fileId);
                 } catch (Exception e) {
-                    LOGGER.warn("Falha ao deletar arquivo temporário: {}", fileId, e);
+                	log.warn("Falha ao deletar arquivo temporário {}: {}", fileId, e.toString());
                 }
             });
         }
@@ -380,9 +425,11 @@ public class OpenAITerosService {
 				    );
 				    toolRequest.add(fileRefItem);
 			}
+			
+			log.debug("Upload temporário concluído → {} ({} bytes)", fileContentInfo.fileName(), fileContentInfo.bytes().length);
 
 		} catch (Exception e) {
-		    LOGGER.error("Erro ao fazer upload do arquivo retornado pela função: {}", fileContentInfo.fileName(), e);
+			log.error("Falha no upload do arquivo retornado pela função: {}", fileContentInfo.fileName(), e);
 		    fileInfoText.append("- [ERRO] Falha ao anexar: ").append(fileContentInfo.fileName()).append("\n");
 		}
 	}
@@ -405,7 +452,7 @@ public class OpenAITerosService {
 		});
 		
 		lastResponseReasoningItem = item.asReasoning();
-		LOGGER.info("Reasoning {} ", lastResponseReasoningItem);
+		log.info("Reasoning recebido {} ", lastResponseReasoningItem);
 		return lastResponseReasoningItem;
 	}
 
@@ -420,12 +467,13 @@ public class OpenAITerosService {
 		        		String text = opt.get().text();
 			            finalContent.append(text).append("\n");
 			            messages.add(adapter.buildAssistantMessage(text));
+			            log.trace("Texto do assistente adicionado ({} chars)", text.length());
 		        	}		            
 		        } else if (content.isRefusal() && content.refusal().isPresent()) {
 		        	Optional<ResponseOutputRefusal> opt = content.refusal();
 		        	if(opt.isPresent()) {
 		        		String refusal = opt.get().refusal();
-			            LOGGER.warn("Recusa: {}", refusal);
+		        		log.warn("Modelo recusou gerar conteúdo: {}", refusal);
 			            finalContent.append("Recusa: ").append(refusal);
 		        	}
 		        }
@@ -443,5 +491,6 @@ public class OpenAITerosService {
             header += " " + PROMPT_ASSISTANT;
 
         messages.add(adapter.buildSysMessage(header));
+        log.info("Mensagem de sistema inicial criada para usuário '{}'", user);
     }
 }

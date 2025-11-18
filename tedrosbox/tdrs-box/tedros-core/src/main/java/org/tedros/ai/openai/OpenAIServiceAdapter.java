@@ -53,6 +53,8 @@ public class OpenAIServiceAdapter {
     private List<Tool> chatCompletionTools;
     
     private SimpleLongProperty totalInputTokenProperty = new SimpleLongProperty(0);
+    
+    private ResponseUsage lastUsage;
 
     public OpenAIServiceAdapter(String apiKey) {
         this.client = OpenAIClientFactory.getClient(apiKey);
@@ -60,6 +62,10 @@ public class OpenAIServiceAdapter {
 
     public OpenAIClient getClient() {
 		return client;
+	}
+    
+    public ResponseUsage getLastUsage() {
+		return lastUsage;
 	}
     
     @SuppressWarnings("rawtypes")
@@ -208,14 +214,15 @@ public class OpenAIServiceAdapter {
     private void verifyUsageTokens(List<ResponseInputItem> messages, Response response) {
 		Optional<ResponseUsage> optRespUsage = response.usage();
 		if(optRespUsage.isPresent()) {
-			ResponseUsage usage = optRespUsage.get();
-			totalInputTokenProperty.setValue(usage.inputTokens());
+			lastUsage = optRespUsage.get();
+			 
+			totalInputTokenProperty.setValue(lastUsage.inputTokens());
 			// Log token usage
 		    LOGGER.info("Total messages: {}, Usage Tokens: inputTokens={}, outputTokens={}, totalTokens={}", 
 					messages.size(),
-					usage.inputTokens(),
-					usage.outputTokens(),
-					usage.totalTokens());
+					lastUsage.inputTokens(),
+					lastUsage.outputTokens(),
+					lastUsage.totalTokens());
 		}
 	}
     
