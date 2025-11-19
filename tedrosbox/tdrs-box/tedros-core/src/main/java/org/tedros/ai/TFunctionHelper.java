@@ -4,6 +4,7 @@
 package org.tedros.ai;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -108,7 +110,7 @@ public class TFunctionHelper {
                     String fullName = fileName + "." + request.getExtension().toLowerCase().replaceAll("[^a-zA-Z0-9]", "");
                     File file = dir.resolve(fullName).toFile();
 
-                    byte[] data = Base64.getDecoder().decode(request.getBase64Content());
+                    byte[] data = Base64.getMimeDecoder().decode(request.getBase64Content());
                     FileUtils.writeByteArrayToFile(file, data);
 
                     String fullPath = file.getAbsolutePath();
@@ -327,6 +329,48 @@ public class TFunctionHelper {
 					
 				return new Response(sb.toString());
 		});
+	}
+	
+	public static void main(String[] args) {
+		 try {
+			 
+			//String dirPath = "C:/tmp/";
+			 
+			 //String fileName = "teste_file";
+			 //String fullName = fileName + ".docx";
+			 //File file = new File(dirPath+fullName);
+			 
+			 String encode = null;
+			 try(FileInputStream is = new FileInputStream(new File("C:\\desenv\\tmp\\hosts.txt"))){
+				 byte[] bytes = is.readAllBytes();
+				 encode = Base64.getEncoder().encodeToString(bytes);
+			 }
+			 
+			 CreateBinaryFile cbf = new CreateBinaryFile();
+			 cbf.setBase64Content(encode);
+			 cbf.setExtension("txt");
+			 cbf.setName("teste_file");
+			 cbf.setSubfolder("teste");
+			 
+			 TFunction<CreateBinaryFile> fn = TFunctionHelper.getCreateFileFunction();
+			 
+			 Function<CreateBinaryFile, Object> cb = fn.getCallback();
+	         Object result = cb.apply(cbf);
+	         
+	         System.out.println(result);
+
+			 /*
+			 byte[] data = Base64.getDecoder().decode(encode);
+			 FileUtils.writeByteArrayToFile(file, data);
+
+			 String fullPath = file.getAbsolutePath();
+			 LOGGER.info("File created successfully: {}", fullPath);
+			 */
+			 
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }
