@@ -1,18 +1,20 @@
-package org.tedros.ai.openai;
+package org.tedros.ai.service.openai;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
+import org.tedros.ai.function.TFunction;
 import org.tedros.ai.openai.model.ToolCallResult;
+import org.tedros.ai.service.AiServiceBase;
+import org.tedros.ai.service.IAiTerosService;
 import org.tedros.common.model.TFileContentInfo;
 import org.tedros.core.TCoreKeys;
 import org.tedros.core.TLanguage;
@@ -20,7 +22,6 @@ import org.tedros.core.context.TedrosContext;
 import org.tedros.util.TDateUtil;
 import org.tedros.util.TLoggerUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.models.files.FileCreateParams;
 import com.openai.models.files.FileObject;
 import com.openai.models.files.FilePurpose;
@@ -38,79 +39,48 @@ import com.openai.models.responses.ResponseReasoningItem;
 import com.openai.models.responses.ResponseReasoningItem.Summary;
 
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 
 /**
  * Versão adaptada do TerosService usando o SDK oficial da openai
  */
-public class OpenAITerosServiceCopy {
+public class OpenAITerosService extends AiServiceBase implements IAiTerosService {
     
-	private static final Logger log = TLoggerUtil.getLogger(OpenAITerosServiceCopy.class);
-    private static final String NO_RESPONSE = TLanguage.getInstance().getString(TCoreKeys.AI_NO_RESPONSE);
+	static final Logger log = TLoggerUtil.getLogger(OpenAITerosService.class);
     
-    // Percentual seguro do contexto total para disparar sumarização (65% é o sweet spot)
-    private static final double SUMMARIZATION_THRESHOLD_PERCENT = 0.65;
-    
-    // Mapa de contextos máximos por modelo (atualizado 2025)
-    private static final Map<String, Integer> MODEL_CONTEXT_LENGTHS = OpenAIHelper.buildModelContextLengths();
-    
-    private static final Predicate<ResponseInputItem> IS_USER_MESSAGE = item ->
+	private static IAiTerosService instance;
+	
+	private static final Predicate<ResponseInputItem> IS_USER_MESSAGE = item ->
     	(item.isMessage() && item.asMessage().role() == ResponseInputItem.Message.Role.USER) ||
     	(item.isEasyInputMessage() && item.asEasyInputMessage().role() == EasyInputMessage.Role.USER);
     
-    private static String GPT_MODEL;
-    private static String PROMPT_ASSISTANT;
-    private static OpenAITerosServiceCopy instance;
-    
-    private final OpenAIServiceAdapter adapter;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final OpenAiServiceAdapter adapter;
     private final List<ResponseInputItem> messages = new ArrayList<>();
     
     private OpenAIFunctionExecutor functionExecutor;
     
-    private ObservableList<String> reasoningsMessageProperty = FXCollections.observableArrayList();
-    
-    private OpenAITerosServiceCopy(String token) {
-        this.adapter = new OpenAIServiceAdapter(token);
+    private OpenAITerosService(String token, String aiModel, String assistantPrompt) {
+		this.adapter = new OpenAiServiceAdapter(token, aiModel);
+		setPromptAssistant(assistantPrompt);
         createSystemMessage();
         log.info("OpenAI Teros Service iniciado com sucesso. "
-        		+ "Modelo padrão: {}", GPT_MODEL != null ? GPT_MODEL : "não definido");
+        		+ "Modelo padrão: {}", aiModel != null ? aiModel : "não definido");
     }
 
-    public static OpenAITerosServiceCopy create(String token) {
-        if (instance == null)
-            instance = new OpenAITerosServiceCopy(token);
+    public static IAiTerosService create(String token, String aiModel, String assistantPrompt) {
+    	if (instance == null)
+            instance = new OpenAITerosService(token, aiModel, assistantPrompt);
         return instance;
     }
 
-    public static OpenAITerosServiceCopy getInstance() {
-        if (instance == null)
-            throw new IllegalStateException("Instância não criada!");
-        return instance;
-    }
-
-    public void createFunctionExecutor(org.tedros.ai.function.TFunction<?>... functions) {
+    @Override
+	public void createFunctionExecutor(TFunction<?>... functions) {
     	this.adapter.functions(Arrays.asList(functions));
     	this.functionExecutor = new OpenAIFunctionExecutor(functions);
     	log.info("Registradas {} função(ões) personalizada(s) para tool calls.", functions.length);
     }
     
-    public static void setGptModel(String model) {
-        GPT_MODEL = model;
-        log.info("Modelo GPT definido: {}", model);
-    }
-
-    public static void setPromptAssistant(String prompt) {
-        PROMPT_ASSISTANT = prompt;
-        log.info("Assistant prompt em uso: {}", prompt);
-    }
-            
-    public ObservableList<String> reasoningsMessageProperty() {
-		return reasoningsMessageProperty;
-	}
-
-    public String call(String userPrompt, String sysPrompt) {
+    @Override
+	public String call(String userPrompt, String sysPrompt) {
     	
     	log.debug(">>> Iniciando nova interação com Teros");
         log.trace("Prompt do usuário: {}", userPrompt);
@@ -123,7 +93,7 @@ public class OpenAITerosServiceCopy {
         messages.add(adapter.buildUserMessage(userPrompt));
 
         long startTime = System.currentTimeMillis();
-        List<ResponseOutputItem> response = adapter.sendChatRequest(GPT_MODEL, messages);
+        List<ResponseOutputItem> response = adapter.sendChatRequest(messages);
         long elapsed = System.currentTimeMillis() - startTime;
         
         log.info("Resposta da OpenAI recebida em {}ms | {} itens | Tokens de entrada: {} | Uso total estimado: {}",
@@ -141,7 +111,7 @@ public class OpenAITerosServiceCopy {
         log.info("Tokens atuais: {} | Threshold ({}% de contexto do modelo {}): {}",
                 currentTokens,
                 (int)(SUMMARIZATION_THRESHOLD_PERCENT * 100),
-                GPT_MODEL,
+                getAiModel(),
                 threshold);
 
         if (currentTokens > threshold) {
@@ -151,6 +121,17 @@ public class OpenAITerosServiceCopy {
 
         log.debug("<<< Interação concluída. Resposta final tem {} caracteres.", output.length());
         return output.isEmpty() ? NO_RESPONSE : output;
+    }
+    
+    @Override
+	public void setAiModel(String model) {
+	    adapter.setAiModel(model);
+	    log.info("Modelo GPT definido: {}", model);
+	}
+    
+    @Override
+    public String getAiModel() {
+    	return adapter.getAiModel();
     }
 
     private String processAiResponseMessage(List<ResponseOutputItem> responseItems) {
@@ -191,53 +172,6 @@ public class OpenAITerosServiceCopy {
         return result.isEmpty() ? NO_RESPONSE : result;
     }
     
-    /**
-     * Calcula o threshold dinâmico com base no modelo atual
-     */
-    private long getDynamicSummarizationThreshold() {
-        if (GPT_MODEL == null || GPT_MODEL.isBlank()) {
-        	log.warn("Modelo não definido, usando fallback de 85k tokens para sumarização.");
-            return 85_000;
-        }
-
-        String key = GPT_MODEL.toLowerCase();
-
-        // Match exato primeiro
-        Integer max = MODEL_CONTEXT_LENGTHS.get(key);
-        if (max != null) {
-            long calc = (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
-            log.debug("Threshold calculado: {} tokens ({}% de {} para modelo {})", 
-            		calc, (SUMMARIZATION_THRESHOLD_PERCENT/100),  max, GPT_MODEL);
-            
-            return calc;
-        }
-
-        // Match parcial (ex: gpt-4o-2024-11-20)
-        max = MODEL_CONTEXT_LENGTHS.entrySet().stream()
-            .filter(e -> key.contains(e.getKey()))
-            .map(Map.Entry::getValue)
-            .findFirst()
-            .orElse(null);
-        
-        if (max != null) {
-            long calc = (long) (max * SUMMARIZATION_THRESHOLD_PERCENT);
-            log.debug("Threshold calculado: {} tokens ({}% de {} para modelo {})", 
-            		calc, (SUMMARIZATION_THRESHOLD_PERCENT/100),  max, GPT_MODEL);
-            
-            return calc;
-        }
-
-        // Fallbacks por família
-        if (key.contains("gpt-5") || key.contains("o3")) return (long) (200_000 * 0.65);
-        if (key.contains("gpt-4o") || key.contains("o1") || key.contains("gpt-4.1") || key.contains("o4")) return (long) (128_000 * 0.65);
-        if (key.contains("gpt-4-turbo")) return (long) (128_000 * 0.65);
-        if (key.contains("gpt-4")) return (long) (8_192 * 0.65);
-        if (key.contains("gpt-3.5")) return (long) (16_385 * 0.65);
-
-        log.warn("Modelo desconhecido para contexto: {}. Usando 85k como fallback.", GPT_MODEL);
-        return 85_000;
-    }
-    
     private void summarizeMessages() {
         try {
         	log.info("Iniciando processo de sumarização do histórico ({} mensagens atuais)", messages.size());
@@ -255,7 +189,7 @@ public class OpenAITerosServiceCopy {
             tempMessages.addAll(messages);
 
             // 2. Fazer requisição ao modelo para gerar o resumo
-            String summary = adapter.sendChatRequest(GPT_MODEL, tempMessages).stream()
+            String summary = adapter.sendChatRequest(tempMessages).stream()
             	    .filter(ResponseOutputItem::isMessage)   // só itens que são mensagens
             	    .map(ResponseOutputItem::message)        // Optional<ResponseOutputMessage>
             	    .flatMap(Optional::stream)               // transforma Optional em Stream (0 ou 1 elemento)
@@ -369,7 +303,7 @@ public class OpenAITerosServiceCopy {
             }
 
             // 3. Envia tudo de volta ao modelo
-            List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(GPT_MODEL, toolRequest);
+            List<ResponseOutputItem> nextResponse = adapter.sendToolCallResult(toolRequest);
 
             // Processa resposta recursivamente
             String recursiveContent = processAiResponseMessage(nextResponse);
@@ -487,8 +421,8 @@ public class OpenAITerosServiceCopy {
         String header = "Today is %s. You are Teros, a smart and helpful assistant for the "
         		+ "Tedros desktop system. Engage intelligently with user %s.".formatted(date, user);
         
-        if (PROMPT_ASSISTANT != null)
-            header += " " + PROMPT_ASSISTANT;
+        if (assistantPrompt != null)
+            header += " " + assistantPrompt;
 
         messages.add(adapter.buildSysMessage(header));
         log.info("Mensagem de sistema inicial criada para usuário '{}'", user);

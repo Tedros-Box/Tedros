@@ -3,13 +3,17 @@
  */
 package org.tedros.tools.ai.setting;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.ai.TFunctionHelper;
 import org.tedros.ai.function.TFunction;
-import org.tedros.ai.openai.OpenAITerosService;
+import org.tedros.ai.service.AiServiceProvider;
+import org.tedros.ai.service.AiTerosServiceFactory;
+import org.tedros.ai.service.IAiTerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
@@ -46,16 +50,15 @@ import javafx.scene.layout.VBox;
  */
 public class TerosSetting extends TSetting {
 
-	private static final String TEROS_NAME = "Teros";
+	private static final String TEROS_NAME = "Teros";	
+	protected static IAiTerosService TEROS;
 	
 	private AiChatUtil util;
     private TRepository repo;
     private boolean scrollFlag = false;
-    private OpenAITerosService teros;
+    
     private TMessageProgressIndicator progressIndicator;
     
-   // private SimpleBooleanProperty p = new SimpleBooleanProperty(true);
-
 	/**
 	 * @param descriptor
 	 */
@@ -63,6 +66,53 @@ public class TerosSetting extends TSetting {
 		super(descriptor);
 		util = new AiChatUtil();
 		repo = new TRepository();
+		
+		String apiKey = TedrosContext.getAiApiKey();
+		String aiModel = TedrosContext.getAiModel();
+		AiServiceProvider aiProvider = TedrosContext.getAiServiceProvider();
+		String aiSystemPrompt = TedrosContext.getAiSystemPrompt();
+		
+		if(StringUtils.isNotBlank(apiKey) && StringUtils.isNotBlank(aiModel) 
+				&& StringUtils.isNotBlank(aiSystemPrompt) && aiProvider!=null) 
+		{
+			TEROS = AiTerosServiceFactory.create(apiKey, aiModel, aiSystemPrompt, aiProvider);
+		}
+		
+		TedrosContext.aiServiceProviderProperty().addListener((a,o,n)->{
+				String key = TedrosContext.getAiApiKey();
+				String model = TedrosContext.getAiModel();	
+				String systemPrompt = TedrosContext.getAiSystemPrompt();
+				if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(model) && n!=null) {
+					TEROS = AiTerosServiceFactory.create(key, model, systemPrompt, n);
+					resetAction();
+				}
+				
+			});
+		
+		TedrosContext.aiApiKeyProperty().addListener((a,o,n)->{
+				AiServiceProvider provider = TedrosContext.getAiServiceProvider();
+				String model = TedrosContext.getAiModel();		
+				String systemPrompt = TedrosContext.getAiSystemPrompt();		
+				if(provider!=null && StringUtils.isNotBlank(model) && StringUtils.isNotBlank(n)) {
+					TEROS = AiTerosServiceFactory.create(n, model, systemPrompt, provider);
+					resetAction();
+				}
+			});
+		
+		TedrosContext.aiModelProperty().addListener((a,o,n)->{
+			if(TEROS!=null)
+				TEROS.setAiModel(n);
+			});
+		
+		TedrosContext.aiSystemPromptProperty().addListener((a,o,n)->{
+			String key = TedrosContext.getAiApiKey();
+			String model = TedrosContext.getAiModel();	
+			AiServiceProvider provider = TedrosContext.getAiServiceProvider();
+			if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(model) && StringUtils.isNotBlank(n) && provider!=null) {
+				TEROS = AiTerosServiceFactory.create(key, model, n, provider);
+				resetAction();
+			}
+			});
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -74,16 +124,7 @@ public class TerosSetting extends TSetting {
 			
 			super.getForm().gettPresenter().getView().settProgressIndicator(progressIndicator);
 			
-			
-			String key = util.getOpenAiKey();
-			if(!"".equals(key)) {
-				OpenAITerosService.setGptModel(TedrosContext.getAiModel());
-				OpenAITerosService.setPromptAssistant(TedrosContext.getAiSystemPrompt());
-				
-				TedrosContext.aiModelProperty().addListener((a,o,n)->OpenAITerosService.setGptModel(n));
-				TedrosContext.aiSystemPromptProperty().addListener((a,o,n)->OpenAITerosService.setPromptAssistant(n));
-				
-				teros = OpenAITerosService.create(key);
+			if(TEROS!=null) {
 				
 				TFunction[] arr = new TFunction[] {
 						TFunctionHelper.listAllViewPathFunction(),
@@ -97,7 +138,7 @@ public class TerosSetting extends TSetting {
 				
 				arr = ArrayUtils.addAll(arr, TFunctionHelper.getAppsFunction());
 				
-				teros.createFunctionExecutor(arr);
+				TEROS.createFunctionExecutor(arr);
 				
 				ListChangeListener<String> reasoningMsgListener =  c->{
 					while(c.next()) {
@@ -110,12 +151,23 @@ public class TerosSetting extends TSetting {
 					}
 				};
 				repo.add("reasoningMsgListener", reasoningMsgListener);
-				teros.reasoningsMessageProperty().addListener(new WeakListChangeListener<>(reasoningMsgListener));
+				TEROS.reasoningsMessageProperty().addListener(new WeakListChangeListener<>(reasoningMsgListener));
 				
 			}else {
+				
+				List<String> messages = new ArrayList<>();
+				
+				if(StringUtils.isBlank(TedrosContext.getAiApiKey()))
+					messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_KEY_REQUIRED));
+				
+				if(StringUtils.isBlank(TedrosContext.getAiModel()))
+					messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_MODEL_REQUIRED));
+				
+				if(StringUtils.isBlank(TedrosContext.getAiSystemPrompt()))
+					messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_PROMPT_REQUIRED));
+				
 				super.getForm().gettPresenter().getView()
-				.tShowModal(new TMessageBox(TLanguage.getInstance()
-						.getString(ToolsKey.MESSAGE_AI_KEY_REQUIRED), TMessageType.WARNING), false);
+				.tShowModal(new TMessageBox(messages, TMessageType.WARNING), false);
 				return;	
 			}
 		}else {
@@ -149,19 +201,6 @@ public class TerosSetting extends TSetting {
 					scrollFlag = false;
 			}
 		});
-		
-		/*super.getForm().gettPresenter().getView()
-		.gettProgressIndicator().bind(p);
-		
-		Platform.runLater(()-> {
-			for(int i=0; i<50; i++) {
-				teros.reasoningsMessageProperty().add("Message teste "+i);
-			}
-      });
-		*/
-		
-		
-		
 	}
 
 	/**
@@ -233,8 +272,7 @@ public class TerosSetting extends TSetting {
 		scrollFlag = true;
 		VBox gp = super.getLayout("messages");
 		gp.getChildren().clear();
-		//TODO:
-		//teros.clearMessages();
+		//TEROS.clearMessages();
 	}
 
 	/**
@@ -252,7 +290,7 @@ public class TerosSetting extends TSetting {
 	public void dispose() {
 		repo.clear();
 		repo = null;
-		teros = null;
+		TEROS = null;
 		TerosMV mv = getModelView();
 		mv.getMessages().clear();
 	}

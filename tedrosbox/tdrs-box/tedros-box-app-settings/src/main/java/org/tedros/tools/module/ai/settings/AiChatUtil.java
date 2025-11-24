@@ -19,8 +19,6 @@ import org.tedros.core.ai.model.completion.chat.TChatRole;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.controller.TAiChatCompletionController;
 import org.tedros.core.controller.TAiChatMessageController;
-import org.tedros.core.controller.TPropertieController;
-import org.tedros.core.domain.TSystemPropertie;
 import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.fx.TFxKey;
 import org.tedros.fx.TUsualKey;
@@ -63,25 +61,6 @@ public class AiChatUtil {
 	private static String CLOSE_TAG = ")";
 	
 	private TLanguage iEngine = TLanguage.getInstance();
-	
-	public String getOpenAiKey() {
-		String key = "";
-		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
-		try {
-			TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
-			TResult<String> res = serv.getValue(TedrosContext.getLoggedUser().getAccessToken(), 
-					TSystemPropertie.OPENAI_KEY.getValue());
-			if(res.getState().equals(TState.SUCCESS) && StringUtils.isNotBlank(res.getValue()))
-				key = res.getValue();
-		}catch(Exception ex) {
-			ex.printStackTrace();
-			LOGGER.severe(ex.toString());
-		}finally{
-			loc.close();
-		}
-		
-		return key;
-	}
 	
 	public TAiChatCompletion saveChat(TAccessToken token, TAiChatCompletion chat) throws Exception {
 		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
