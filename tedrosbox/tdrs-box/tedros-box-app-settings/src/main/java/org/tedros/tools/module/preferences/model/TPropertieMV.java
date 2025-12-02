@@ -89,7 +89,7 @@ public class TPropertieMV extends TEntityModelView<TPropertie> {
 	
 	@TReaderHtml
 	@TLabel(text=TUsualKey.VALUE)
-	@TTextAreaField(wrapText=true, prefRowCount=2)
+	@TTextAreaField(wrapText=true, prefRowCount=16)
 	private SimpleStringProperty value;
 	
 	@TLabel(text=TUsualKey.FILE)

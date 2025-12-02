@@ -204,7 +204,7 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
                 }
             	
                 
-             // Envia tudo como uma mensagem de User (pois contém imagens)
+                // Envia tudo como uma mensagem de User (pois contém imagens)
                 messages.add(ChatCompletionMessageParam.ofUser(
                     ChatCompletionUserMessageParam.builder()
                         .contentOfArrayOfContentParts(contentParts) 

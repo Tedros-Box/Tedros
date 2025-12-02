@@ -146,11 +146,7 @@
       const mermaidDivs = msgDiv.querySelectorAll('.mermaid'); mermaidDivs.forEach(el => { try { mermaid.init(undefined, el); } catch(e) {} });
     }
     
-    window.onload = function() {
-        for(let i=1; i<=5; i++) {
-            appendAIResponse(`Mensagem de teste ${i}. A barra de rolagem agora é fina e combina com o tema.`, i%2==0);
-        }
-    }
+    
   </script>
 </body>
 </html>
