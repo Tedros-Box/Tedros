@@ -86,6 +86,11 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
         checkAndSummarize();
         removeUploadedFiles();
         
+        if(!result.isEmpty() && result.contains(EMPTY_TOOL_CALL_RESPONSE)) {
+        	result = result.replaceAll(EMPTY_TOOL_CALL_RESPONSE, "");
+        	return result;
+        }
+        
         return result.isEmpty() ? NO_RESPONSE : result;
     }
 
@@ -137,6 +142,11 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
 
         ToolCallResult result = resultOpt.get();
         
+        if(!result.itShouldRevertToTheAIModelInCaseOfSuccess()) {
+        	if(output.isEmpty())
+        		output.append(EMPTY_TOOL_CALL_RESPONSE);
+        	return;
+        }
 
         try {
         	if(result.getResult() != null) {

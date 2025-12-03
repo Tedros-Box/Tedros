@@ -117,7 +117,7 @@ public class TFunctionHelper {
                     LOGGER.info("File created successfully: {}", fullPath);
 
                     return new ToolCallResult("create_file",
-                        "File created successfully!\nPath: `!" + fullPath.replace("\\", "\\\\") + "`");
+                        "File created successfully!\nPath: `!" + fullPath.replace("\\", "\\\\") + "`", true);
 
                 } catch (Exception e) {
                     LOGGER.error("Failed to create file {}.{}: {}", 
@@ -292,11 +292,12 @@ public class TFunctionHelper {
 					StringBuilder sb = new StringBuilder(v.getViewPath());
 					TViewDescriptor vds = TedrosAppManager.getInstance()
 							.getViewDescriptor(v.getViewPath());
+					
 					if(vds!=null) {
-						Platform.runLater(()->{
+						Platform.runLater(()->
 							TedrosAppManager.getInstance()
-							.goToModule(vds.getModuleDescriptor().getType(), vds.getModelView());
-						});
+							.goToModule(vds.getModuleDescriptor().getType(), vds.getModelView())
+						);
 						sb.append(" opened successfully!");
 					}
 					

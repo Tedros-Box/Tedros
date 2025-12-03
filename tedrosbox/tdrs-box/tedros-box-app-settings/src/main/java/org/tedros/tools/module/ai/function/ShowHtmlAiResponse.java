@@ -60,6 +60,7 @@ public class ShowHtmlAiResponse extends TFunction<HtmlContent> {
 					LOGGER.info("Conteudo HTML recebido: {}",v.htmlContent());
 					return run(v); 
 				});
+		setRevertToTheAIModelInCaseOfSuccess(false);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

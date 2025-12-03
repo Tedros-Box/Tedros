@@ -274,9 +274,9 @@ public final class TedrosAppManager extends TedrosAppLoader {
 		ChangeListener<Node> chl = new ChangeListener<Node>() {
 			@Override
 			public void changed(ObservableValue<? extends Node> a, Node o, Node n) {
-				if(n instanceof ITModule) {
-					ITModule m = (ITModule) n;
-					if(getModuleContext(m).getModuleDescriptor().getPath().equals(path)) {
+				if(n instanceof ITModule m) {
+					TModuleContext mc = getModuleContext(m); 
+					if(mc!=null && mc.getModuleDescriptor().getPath().equals(path)) {
 						f.accept(m);
 						TedrosContext.viewProperty().removeListener(this);
 					}

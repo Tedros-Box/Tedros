@@ -15,6 +15,7 @@ public class TFunction<T> {
 	private String description;
 	private Function<T, Object> callback;
 	private Class<T> model;
+    private boolean revertToTheAIModelInCaseOfSuccess = true;
 	
 	/**
 	 * @param name
@@ -28,6 +29,14 @@ public class TFunction<T> {
 		this.description = description;
 		this.model = model;
 		this.callback = callback;
+	}
+	
+	public void setRevertToTheAIModelInCaseOfSuccess(boolean revertToTheAIModelInCaseOfSuccess) {
+		this.revertToTheAIModelInCaseOfSuccess = revertToTheAIModelInCaseOfSuccess;
+	}
+	
+	public boolean itShouldRevertToTheAIModelInCaseOfSuccess() {
+		return revertToTheAIModelInCaseOfSuccess;
 	}
 
 	/**

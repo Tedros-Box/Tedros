@@ -11,11 +11,14 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.ai.TFunctionHelper;
 import org.tedros.ai.function.TFunction;
+import org.tedros.ai.function.model.ViewPath;
 import org.tedros.ai.service.AiServiceProvider;
 import org.tedros.ai.service.AiTerosServiceFactory;
 import org.tedros.ai.service.IAiTerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.core.TLanguage;
+import org.tedros.core.context.TViewDescriptor;
+import org.tedros.core.context.TedrosAppManager;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.TMessageProgressIndicator;
 import org.tedros.core.message.TMessageType;
@@ -26,6 +29,8 @@ import org.tedros.fx.form.TSetting;
 import org.tedros.fx.modal.TMessageBox;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
+import org.tedros.tools.module.ai.model.HtmlMessageViewerMV;
+import org.tedros.tools.module.ai.model.HtmlMessageViewerModel;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
 import javafx.collections.ListChangeListener;
@@ -112,7 +117,19 @@ public class TerosSetting extends TSetting {
 				TEROS = AiTerosServiceFactory.create(key, model, n, provider);
 				resetAction();
 			}
-			});
+		});
+		
+		openHtmlMessageViewer();
+	}
+
+	private void openHtmlMessageViewer() {
+		TedrosAppManager manager = TedrosAppManager.getInstance();
+		TViewDescriptor vd = manager.getViewDescriptor(HtmlMessageViewerMV.class, HtmlMessageViewerModel.class);
+		
+		ViewPath path = new ViewPath();
+		path.setViewPath(vd.getPath());
+		
+		TFunctionHelper.callUpViewFunction().getCallback().apply(path);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -252,8 +269,9 @@ public class TerosSetting extends TSetting {
 			mv.getPrompt().setValue(null);
 			TerosProcess p = new TerosProcess();
 			p.stateProperty().addListener((a,o,n)->{
-				if(n.equals(State.SUCCEEDED))
-					showMsg(TEROS_NAME, p.getValue());
+				String msg = p.getValue();
+				if(n.equals(State.SUCCEEDED) && StringUtils.isNotBlank(msg) ) 
+					showMsg(TEROS_NAME, msg);
 			});
 			super.getForm().gettPresenter().getView()
 			.gettProgressIndicator().bind(p.runningProperty());

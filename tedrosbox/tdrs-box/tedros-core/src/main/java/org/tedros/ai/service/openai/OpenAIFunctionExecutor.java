@@ -45,10 +45,10 @@ public class OpenAIFunctionExecutor {
             Object arg = mapper.readValue(argumentsJson, fn.getModel());
             Function cb = fn.getCallback();
             Object result = cb.apply(arg);
-            return Optional.of(new ToolCallResult(name, result));
+            return Optional.of(new ToolCallResult(name, result, fn.itShouldRevertToTheAIModelInCaseOfSuccess()));
         } catch (Exception e) {
             LOGGER.error("Erro executando função {}: {}", name, e.getMessage());
-            return Optional.of(new ToolCallResult(name, new ToolError(name, e.getMessage())));
+            return Optional.of(new ToolCallResult(name, new ToolError(name, e.getMessage()), fn.itShouldRevertToTheAIModelInCaseOfSuccess()));
         }
     }
     

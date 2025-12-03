@@ -22,8 +22,8 @@ import javafx.beans.property.SimpleStringProperty;
 @TForm(scroll=false)
 //@TSetting(TmpSettings.class)
 @TPresenter(model=HtmlMessageViewerModel.class,
-decorator=@TDecorator(type=TViewDecorator.class, viewTitle=ToolsKey.VIEW_AI_CHAT_MESSAGE_VIEWER, 
-	region = @TRegion(parse = true, maxWidth = 1080, maxHeight=620)),
+decorator=@TDecorator(type=TViewDecorator.class, viewTitle=ToolsKey.VIEW_AI_CHAT_MESSAGE_VIEWER/*, 
+	region = @TRegion(parse = true, maxWidth = 1080, maxHeight=620)*/),
 behavior=@TBehavior(type=TViewBehavior.class))
 @TSecurity(id=DomainApp.MESSAGE_VIEWER_FORM_ID,
 appName=ToolsKey.APP_TOOLS, moduleName=ToolsKey.MODULE_AI, viewName=ToolsKey.VIEW_AI_CHAT_MESSAGE_VIEWER,
@@ -34,7 +34,7 @@ public class HtmlMessageViewerMV extends TModelView<HtmlMessageViewerModel> {
 	//private final static double HEIGHT = 500;
 		
 	@TWebView(engine = @TWebEngine(load = TWebEngine.MODULE_FOLDER+"/"+TConstant.UUI+"/teros_ia_response.html"),
-			maxWidth = 1040, maxHeight=550, zoom = 0.8)
+			/*maxWidth = 1040, maxHeight=550,*/ zoom = 0.8)
 	private SimpleStringProperty webContent;
 
 	public HtmlMessageViewerMV(HtmlMessageViewerModel model) {

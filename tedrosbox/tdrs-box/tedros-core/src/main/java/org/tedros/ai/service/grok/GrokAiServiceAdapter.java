@@ -93,7 +93,7 @@ public class GrokAiServiceAdapter {
                         FunctionParameters.Builder paramsBuilder = FunctionParameters.builder();
                         schemaMap.forEach((k, v) -> paramsBuilder.putAdditionalProperty(k, AiHelper.toJsonValue(v)));
                     	
-                        ChatCompletionTool functionTool = ChatCompletionTool.ofFunction(ChatCompletionFunctionTool.builder()
+                        return ChatCompletionTool.ofFunction(ChatCompletionFunctionTool.builder()
                                 .function(FunctionDefinition.builder()
                                 		.name(f.getName())
                                 		.description(f.getDescription())
@@ -101,8 +101,6 @@ public class GrokAiServiceAdapter {
                                 		.build())                            
                                 .build());
                         
-                        return functionTool;
-
                     } catch (Exception e) {
                         throw new RuntimeException("Erro ao gerar schema para função: " + f.getName(), e);
                     }

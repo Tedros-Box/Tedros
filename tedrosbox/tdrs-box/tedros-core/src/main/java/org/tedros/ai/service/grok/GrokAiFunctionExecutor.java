@@ -46,10 +46,10 @@ public class GrokAiFunctionExecutor {
             Function cb = fn.getCallback();
             Object result = cb.apply(arg);
             return result instanceof ToolCallResult tollCallResult?
-            		 Optional.of(tollCallResult) : Optional.of(new ToolCallResult(name, result));
+            		 Optional.of(tollCallResult) : Optional.of(new ToolCallResult(name, result, fn.itShouldRevertToTheAIModelInCaseOfSuccess()));
         } catch (Exception e) {
             LOGGER.error("Erro executando função {}: {}", name, e.getMessage());
-            return Optional.of(new ToolCallResult(name, new ToolError(name, e.getMessage())));
+            return Optional.of(new ToolCallResult(name, new ToolError(name, e.getMessage()), fn.itShouldRevertToTheAIModelInCaseOfSuccess()));
         }
     }
     

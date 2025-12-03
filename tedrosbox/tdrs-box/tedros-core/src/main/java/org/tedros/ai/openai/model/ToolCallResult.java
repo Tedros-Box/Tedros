@@ -12,21 +12,25 @@ public class ToolCallResult {
     private final String name;
     private Object result;
     private List<TFileContentInfo> filesContentInfo;
+    private boolean revertToTheAIModelInCaseOfSuccess;
 
-    public ToolCallResult(String name, Object result) {
+    public ToolCallResult(String name, Object result, boolean revertToTheAIModelInCaseOfSuccess) {
         this.name = name;
         this.result = result;
+        this.revertToTheAIModelInCaseOfSuccess = revertToTheAIModelInCaseOfSuccess;
     }
     
-    public ToolCallResult(String name, List<TFileContentInfo> filesContentInfo) {
+    public ToolCallResult(String name, List<TFileContentInfo> filesContentInfo, boolean revertToTheAIModelInCaseOfSuccess) {
         this.name = name;
         this.filesContentInfo = filesContentInfo;
+        this.revertToTheAIModelInCaseOfSuccess = revertToTheAIModelInCaseOfSuccess;
     }
     
-    public ToolCallResult(String name, Object result, List<TFileContentInfo> filesContentInfo) {
+    public ToolCallResult(String name, Object result, List<TFileContentInfo> filesContentInfo, boolean revertToTheAIModelInCaseOfSuccess) {
         this.name = name;
         this.result = result;
         this.filesContentInfo = filesContentInfo;
+        this.revertToTheAIModelInCaseOfSuccess = revertToTheAIModelInCaseOfSuccess;
     }
 
     public String getName() {
@@ -39,6 +43,10 @@ public class ToolCallResult {
 
 	public List<TFileContentInfo> getFilesContentInfo() {
 		return filesContentInfo;
+	}
+	
+	public boolean itShouldRevertToTheAIModelInCaseOfSuccess() {
+		return revertToTheAIModelInCaseOfSuccess;
 	}
 
 }
