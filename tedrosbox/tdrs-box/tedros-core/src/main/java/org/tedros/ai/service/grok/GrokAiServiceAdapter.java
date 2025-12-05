@@ -81,9 +81,16 @@ public class GrokAiServiceAdapter {
 
     @SuppressWarnings("rawtypes")
     public void functions(List<TFunction> functions) {
+    	List<String> names = new ArrayList<>();
     	this.tools = functions.stream()
                 .map(f -> {
                     try {
+                    	
+                    	if(names.contains(f.getName())) {
+                    		throw new RuntimeException("The function "+f.getName()+" already exists!");
+                    	}
+                    	
+                    	names.add(f.getName());
                     	
                     	JsonSchema jsonSchema = schemaGen.generateSchema(f.getModel());
                         Map<String, Object> schemaMap = mapper.convertValue(jsonSchema, new TypeReference<>() {});

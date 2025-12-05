@@ -14,7 +14,7 @@
   
   	<dependency>
 	    <groupId>org.tedros</groupId>
-	    <artifactId>app-redmine-tools-ejb-ear</artifactId>
+	    <artifactId>app-itsupport-tools-ejb-ear</artifactId>
 	    <type>ear</type>
 	    <version>1.0-SNAPSHOT</version>
 	</dependency>
@@ -333,7 +333,7 @@
 		      
 		      <deployable>
 		        <groupId>org.tedros</groupId>
-		        <artifactId>app-redmine-tools-ejb-ear</artifactId>
+		        <artifactId>app-itsupport-tools-ejb-ear</artifactId>
 		        <type>ear</type>
 		      </deployable>
 		      
