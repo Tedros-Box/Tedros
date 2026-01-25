@@ -64,6 +64,11 @@ public class Response {
 	public void setObject(Object object) {
 		this.object = object;
 	}
+
+	@Override
+	public String toString() {
+		return "Response [message=" + message + ", object=" + object + "]";
+	}
 	
 
 }

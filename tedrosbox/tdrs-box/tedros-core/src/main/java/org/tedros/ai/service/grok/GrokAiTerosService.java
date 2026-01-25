@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 import org.slf4j.Logger;
-import org.tedros.ai.openai.model.ToolCallResult;
+import org.tedros.ai.function.ToolCallResult;
 import org.tedros.ai.service.AiServiceBase;
 import org.tedros.ai.service.DocumentConverter;
 import org.tedros.ai.service.IAiTerosService;
@@ -35,7 +35,7 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
 
     private static final Logger log = TLoggerUtil.getLogger(GrokAiTerosService.class);
     
-    private static GrokAiTerosService instance;
+    private static IAiTerosService instance;
     private final GrokAiServiceAdapter adapter;
     
     private final List<ChatCompletionMessageParam> messages = new ArrayList<>();
@@ -47,13 +47,17 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
         setPromptAssistant(assistantPrompt);
         createSystemMessage();
     }
+    
+    public static IAiTerosService newInstance(String apiKey, String aiModel, String assistantPrompt) {
+        return new GrokAiTerosService(apiKey, aiModel, assistantPrompt);
+    }
 
-    public static GrokAiTerosService create(String apiKey, String aiModel, String assistantPrompt) {
+    public static IAiTerosService create(String apiKey, String aiModel, String assistantPrompt) {
         if (instance == null) instance = new GrokAiTerosService(apiKey, aiModel, assistantPrompt);
         return instance;
     }
 
-    public static GrokAiTerosService getInstance() {
+    public static IAiTerosService getInstance() {
         if (instance == null) throw new IllegalStateException("Instância não criada!");
         return instance;
     }
@@ -86,6 +90,11 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
         checkAndSummarize();
         removeUploadedFiles();
         
+        if(!result.isEmpty() && result.contains(EMPTY_TOOL_CALL_RESPONSE)) {
+        	result = result.replaceAll(EMPTY_TOOL_CALL_RESPONSE, "");
+        	return result;
+        }
+        
         return result.isEmpty() ? NO_RESPONSE : result;
     }
 
@@ -117,7 +126,7 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
 
     private void processToolCall(ChatCompletionMessageToolCall messageToolCall, StringBuilder output, int currentDepth) {
     	
-    	// TRAVA DE SEGURANÇA AQUI
+    	// TRAVA DE SEGURANÇA
         if (currentDepth >= MAX_RECURSION_DEPTH) {
             log.warn("Limite de recursão de Tool Calls atingido ({})", MAX_RECURSION_DEPTH);
             return; 
@@ -126,7 +135,7 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
     	
     	Optional<ChatCompletionMessageFunctionToolCall> functionToolCallOpt = messageToolCall.function();
     	ChatCompletionMessageFunctionToolCall toolCall = functionToolCallOpt.get();
-        log.info("Tool call detectada: {} (id={})", toolCall.function().name(), toolCall.id());
+        log.info("Tool call detectada: {} ", toolCall);
 
         Optional<ToolCallResult> resultOpt = functionExecutor.callFunction(toolCall);
         if (resultOpt.isEmpty()) {
@@ -135,8 +144,14 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
             return;
         }
 
-        ToolCallResult result = resultOpt.get();
+        ToolCallResult result = resultOpt.get();        
+        log.info("Resultado da função {} : {}", toolCall.function().name(), result);
         
+        if(!result.isRevertToTheAIModelInCaseOfSuccess()) {
+        	if(output.isEmpty())
+        		output.append(EMPTY_TOOL_CALL_RESPONSE);
+        	return;
+        }
 
         try {
         	if(result.getResult() != null) {
@@ -145,13 +160,11 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
 	            		.toolCallId(toolCall.id())
 	            		.contentAsJson(resultJson)
 	            		.build()));
-	            log.info("Resultado da função {} adicionado no historico de mensagens", toolCall.function().name());
+	            log.info("Resultado da função {} adicionado no historico de mensagens: {}", toolCall.function().name(), resultJson);
             }
-
+        	
             // Upload de arquivos retornados
-            if ((result.getFilesContentInfo() != null && !result.getFilesContentInfo().isEmpty())
-            		
-            		) {
+            if ((result.getFilesContentInfo() != null && !result.getFilesContentInfo().isEmpty())){
                 
             	// Lista para montar a mensagem multimodal do USUÁRIO
                 List<ChatCompletionContentPart> contentParts = new ArrayList<>();
@@ -203,8 +216,7 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
                     }
                 }
             	
-                
-             // Envia tudo como uma mensagem de User (pois contém imagens)
+                // Envia tudo como uma mensagem de User (pois contém imagens)
                 messages.add(ChatCompletionMessageParam.ofUser(
                     ChatCompletionUserMessageParam.builder()
                         .contentOfArrayOfContentParts(contentParts) 
@@ -212,21 +224,6 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
                 ));
                 
                 log.info("Contexto multimodal injetado.");
-                
-            	/*for (TFileContentInfo fileInfo : result.getFilesContentInfo()) {
-            		
-            		FileObject uploaded = adapter.uploadFile(fileInfo.bytes(), fileInfo.fileName());
-                    log.info("Upload do arquivo {} realizado para na função: {} (id={})", 
-                    		fileInfo.fileName(), toolCall.function().name(), toolCall.id());
-                    
-                    uploadedFileIds.add(uploaded.id());
-                    
-                    messages.add(ChatCompletionMessageParam.ofSystem(ChatCompletionSystemMessageParam.builder()
-                    		.content("Arquivo anexado: " + fileInfo.fileName() + " (file_id: " + uploaded.id() + ")")
-                    		.build()));
-                    log.info("Dados do arquivo {} adicionado no historico da mensagem para na função: {} (id={})", 
-                    		fileInfo.fileName(), toolCall.function().name(), toolCall.id());
-                }*/
             }
 
             // Nova chamada recursiva
@@ -281,17 +278,12 @@ public class GrokAiTerosService extends AiServiceBase implements IAiTerosService
         		.content(systemPrompt)
         		.build()));
     }
-    
-    public static void main(String[] args) {
-				GrokAiTerosService service = GrokAiTerosService.create(
-						"key-here", 
-						"grok-4-fast-reasoning", "Voce é um assistente útil.");
-				
-				service.setPromptAssistant("Responda de forma clara e objetiva.");
-				
-		String response = service.call("Qual a capital da França?", null);
-		log.info("Response: {}", response);
-	} 
-    
-    
+
+	@Override
+	public void cleanMessageHistory() {
+		this.messages.clear();
+		this.uploadedFileIds.clear();
+        createSystemMessage();
+	}
+        
 }

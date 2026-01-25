@@ -17,6 +17,7 @@ public abstract class AiServiceBase implements IAiServiceBase {
 	static final Logger log = TLoggerUtil.getLogger(AiServiceBase.class);
 
 	protected static final int MAX_RECURSION_DEPTH = 5;
+	protected static final String EMPTY_TOOL_CALL_RESPONSE = "EMPTY_TOOL_CALL_RESPONSE";
 	protected static final String NO_RESPONSE = TLanguage.getInstance().getString(TCoreKeys.AI_NO_RESPONSE);
 	protected static final double SUMMARIZATION_THRESHOLD_PERCENT = 0.65;
 	private static final Map<String, Integer> MODEL_CONTEXT_LENGTHS = AiHelper.buildModelContextLengths();
@@ -32,7 +33,7 @@ public abstract class AiServiceBase implements IAiServiceBase {
 	@Override
 	public void setPromptAssistant(String prompt) {
 	    assistantPrompt = prompt;
-	    log.info("Assistant prompt em uso: {}", prompt);
+	    log.info("Assistant prompt em uso: \n {}", prompt);
 	}
 
 	@Override

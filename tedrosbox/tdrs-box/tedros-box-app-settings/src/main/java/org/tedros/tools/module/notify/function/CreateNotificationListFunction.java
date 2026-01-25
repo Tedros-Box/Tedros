@@ -3,9 +3,13 @@
  */
 package org.tedros.tools.module.notify.function;
 
+import java.util.Map;
+
+import org.slf4j.Logger;
 import org.tedros.ai.function.TFunction;
-import org.tedros.ai.function.model.Response;
+import org.tedros.ai.function.ToolCallResult;
 import org.tedros.api.presenter.view.ITView;
+import org.tedros.core.TLanguage;
 import org.tedros.core.context.TViewDescriptor;
 import org.tedros.core.context.TedrosAppManager;
 import org.tedros.core.notify.model.TNotify;
@@ -13,6 +17,7 @@ import org.tedros.fx.presenter.dynamic.TDynaPresenter;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.module.notify.TNotifyModule;
 import org.tedros.tools.module.notify.model.TNotifyMV;
+import org.tedros.util.TLoggerUtil;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -23,12 +28,23 @@ import javafx.collections.ObservableList;
  *
  */
 public class CreateNotificationListFunction extends TFunction<Contents> {
+	
+	private static final Logger LOGGER = TLoggerUtil.getLogger(CreateNotificationListFunction.class);
+	
+	public static final String NAME = "create_list_of_drafts_email";
+	public static final String PROMPT = "Drafts and prepares email notifications for user review. " +
+            "This tool does NOT send emails immediately. It opens a validation screen (view '" 
+			+ TLanguage.getInstance().getString(ToolsKey.VIEW_NOTIFY) + "') " +
+            "listing the generated content so the user can check and manually send them.";
 
 	@SuppressWarnings("unchecked")
 	public CreateNotificationListFunction() {
-		super("create_list_of_email", "Creates a list of notifications to send in the view '"+ToolsKey.VIEW_NOTIFY+"'", 
+		super(NAME, PROMPT, 
 			Contents.class, 
 			v->{
+				
+				LOGGER.info("Creating notification list with {} items.", v.getList().size());
+				
 				//Gets the view descriptor of the currently open view, if any.
 				TedrosAppManager mng = TedrosAppManager.getInstance();
 				TViewDescriptor vds = mng.getCurrentViewDescriptor();
@@ -39,19 +55,36 @@ public class CreateNotificationListFunction extends TFunction<Contents> {
 					TDynaPresenter<TNotifyMV> p = vw.gettPresenter();
 					
 					Platform.runLater(()->{
-						ObservableList<TNotifyMV> lst = createNotifyList(v);
-						p.getBehavior().loadModelViewList(lst); // loads list in current view
+						try {
+							ObservableList<TNotifyMV> lst = createNotifyList(v);
+							p.getBehavior().loadModelViewList(lst); // loads list in current view
+						} catch (Exception e) {
+							LOGGER.error(e.getMessage(), e);
+						}
 					});
 					
 				}else{
 					Platform.runLater(()->{
-						ObservableList<TNotifyMV> lst = createNotifyList(v);
-						mng.loadInModule(TNotifyModule.class, lst); //calls the module, opens the view and loads the list
+						try {
+							ObservableList<TNotifyMV> lst = createNotifyList(v);
+							mng.loadInModule(TNotifyModule.class, lst); //calls the module, opens the view and loads the list
+						} catch (Exception e) {
+							LOGGER.error(e.getMessage(), e);
+						}
 					});
 					
 				}
-
-				return new Response("Successful");
+				
+				return ToolCallResult.builder()
+						.message("Drafts created successfully")
+						.result(Map.of(
+			                    STATUS, SUCCESS,
+			                    "drafts_created_count", v.getList().size(),
+			                    ACTION, "user_validation_screen_opened",
+			                    SYSTEM_INSTRUCTION, "The drafts were created and loaded in the notification module for user review. "
+			                    		+ "Do not retry again. Inform the user to check and send manually."
+			                ))
+						.build();
 			});
 	}
 

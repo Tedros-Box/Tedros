@@ -7,7 +7,15 @@
 package org.tedros.fx.builder;
 
 import java.lang.annotation.Annotation;
+import java.util.UUID;
 
+import org.tedros.api.form.ITForm;
+import org.tedros.fx.component.ITComponent;
+import org.tedros.fx.component.TComponent;
+
+import javafx.beans.property.Property;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.scene.Node;
 
 
@@ -17,29 +25,25 @@ import javafx.scene.Node;
  * @author Davis Gordon
  *
  */
-public final class TComponentBuilder
+@SuppressWarnings("rawtypes")
+public final class TComponentBuilder 
 extends TBuilder
-implements ITComponentBuilder<Object> {
-
-	private static TComponentBuilder instance;
-	
-	private TComponentBuilder(){
+implements ITControlBuilder<Node, Property> {	
+	public Node build(final Annotation annotation, final Property attrProperty) throws Exception {
+		final TComponent ann = (TComponent) annotation;
+		ITComponent control = ann.type().getDeclaredConstructor().newInstance();
+		control.tInitializeComponent(getComponentDescriptor());
 		
+		ChangeListener<Boolean> disableChl = (obs, ov, nv) -> {
+			if(nv) {
+				control.tStopComponent();
+			}
+		};
+		
+		ITForm form = super.getComponentDescriptor().getForm();
+		form.gettObjectRepository().add(UUID.randomUUID().toString(), disableChl);
+		form.tDisposeProperty().addListener(new WeakChangeListener<>(disableChl));
+		
+		return (Node) control;
 	}
-	
-	public static  TComponentBuilder getInstance(){
-		if(instance==null)
-			instance = new TComponentBuilder();
-		return instance;	
-	}
-
-	public Node build(Annotation tComponent, Object fieldObject ) {
-		//final TNumberSpinnerField tAnnotation = (TNumberSpinnerField) annotation;
-		final org.tedros.fx.control.TNumberSpinnerField control = new org.tedros.fx.control.TNumberSpinnerField();
-		/*callParser(tAnnotation, control);
-		control.valueProperty().bindBidirectional(attrProperty);*/
-		return control;
-	}
-	
-	
 }

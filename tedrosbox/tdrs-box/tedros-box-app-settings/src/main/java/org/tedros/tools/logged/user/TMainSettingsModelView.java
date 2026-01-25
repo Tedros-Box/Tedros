@@ -5,6 +5,7 @@ package org.tedros.tools.logged.user;
 
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.annotation.control.THyperlinkField;
+import org.tedros.fx.annotation.form.TForm;
 import org.tedros.fx.annotation.presenter.TBehavior;
 import org.tedros.fx.annotation.presenter.TDecorator;
 import org.tedros.fx.annotation.presenter.TPresenter;
@@ -20,14 +21,14 @@ import javafx.beans.property.SimpleStringProperty;
  * @author Davis Gordon
  *
  */
-
+@TForm(editCssId = "t-rounded-form")
 @TPresenter(type=TDynaPresenter.class, 
 			decorator=@TDecorator(type = TSaveViewDecorator.class, 
 			buildModesRadioButton=false, saveButtonText=TUsualKey.EXIT ),
 			behavior=@TBehavior(type=TMainSettingsBehavior.class, saveOnlyChangedModels=false))
 public class TMainSettingsModelView extends TModelView<MainSettings> {
 
-	@THyperlinkField(labeled=@TLabeled(text=TUsualKey.CLEAR_HISTORY, parse = true),
+	@THyperlinkField(labeled=@TLabeled(text=TUsualKey.CLOSE_BACKGROUND_SCREENS, parse = true),
 			buttonBase=@TButtonBase(onAction=ClearHistoryEventBuilder.class))
 	private SimpleStringProperty clearHistory;
 	

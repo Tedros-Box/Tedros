@@ -21,6 +21,8 @@ public interface ToolsKey {
 	static final String MESSAGE_AI_MODEL_REQUIRED = "#{message.ai.model.required}";
 	static final String MESSAGE_AI_PROMPT_REQUIRED = "#{message.ai.prompt.required}";
 	static final String MESSAGE_AI_TIMEOUT = "#{message.ai.timeout}";
+	static final String MESSAGE_NO_AI_PROVIDER_CONFIGURED = "#{message.no.ai.provider.configured}";
+	static final String MESSAGE_PERMISSION_DENIED = "#{message.permission.denied}";
 	static final String MESSAGE_SELECT_IMAGE = "#{message.select.image}";
 	static final String MIMETYPE_IMPORT_RULE_DESC = "#{mimetype.import.rule.desc}";
 	static final String MODULE_AI = "#{module.ai}";
@@ -38,6 +40,7 @@ public interface ToolsKey {
 	static final String PROMPT_AI_CREATE_IMAGE = "#{prompt.ai.create.image}";
 	static final String PROMPT_AI_PROMPT = "#{prompt.ai.prompt}";
 	static final String PROMPT_AI_RESPONSE = "#{prompt.ai.response}";
+	static final String PROMPT_ENTER_PROMPT_FOR_ALL_MODELS = "#{prompt.enter.prompt.for.all.models}";
 	static final String PROMPT_PROFILE_DESCRIPTION = "#{prompt.profile.description}";
 	static final String PROMPT_PROFILE_NAME = "#{prompt.profile.name}";
 	static final String SECURITY_AUTHORIZATION_FORM_NAME = "#{security.authorization.form.name}";
@@ -71,6 +74,8 @@ public interface ToolsKey {
 	static final String VIEW_AI_CHAT_DESC = "#{view.ai.chat.desc}";
 	static final String VIEW_AI_CHAT_MESSAGE_VIEWER = "#{view.ai.chat.message.viewer}";
 	static final String VIEW_AI_CHAT_MESSAGE_VIEWER_DESC = "#{view.ai.chat.message.viewer.desc}";
+	static final String VIEW_AI_COMPARE_MODELS = "#{view.ai.compare.models}";
+	static final String VIEW_AI_COMPARE_MODELS_DESC = "#{view.ai.compare.models.desc}";
 	static final String VIEW_AI_COMPLETION = "#{view.ai.completion}";
 	static final String VIEW_AI_COMPLETION_DESC = "#{view.ai.completion.desc}";
 	static final String VIEW_AI_CREATE_IMAGE = "#{view.ai.create.image}";
@@ -96,6 +101,8 @@ public interface ToolsKey {
 	static final String VIEW_PROFILE_DESC = "#{view.profile.desc}";
 	static final String VIEW_SYSTEM_PROPERTIES = "#{view.system.properties}";
 	static final String VIEW_SYSTEM_PROPETIES_DESC = "#{view.system.propeties.desc}";
+	static final String VIEW_TEROS_CHAT = "#{view.teros.chat}";
+	static final String VIEW_TEROS_CHAT_DESC = "#{view.teros.chat.desc}";
 	static final String VIEW_THEMES = "#{view.themes}";
 	static final String VIEW_THEMES_DESC = "#{view.themes.desc}";
 	static final String VIEW_USER = "#{view.user}";

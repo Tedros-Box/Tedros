@@ -19,11 +19,8 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
  */
 public final class TPdfUtil {
 
-	/**
-	 * 
-	 */
 	private TPdfUtil() {
-		// TODO Auto-generated constructor stub
+		
 	}
 	
 	public static void convert(String html, String output) throws FileNotFoundException, IOException  {

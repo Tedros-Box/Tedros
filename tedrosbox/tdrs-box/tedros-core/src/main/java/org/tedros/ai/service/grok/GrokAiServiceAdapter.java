@@ -81,9 +81,16 @@ public class GrokAiServiceAdapter {
 
     @SuppressWarnings("rawtypes")
     public void functions(List<TFunction> functions) {
+    	List<String> names = new ArrayList<>();
     	this.tools = functions.stream()
                 .map(f -> {
                     try {
+                    	
+                    	if(names.contains(f.getName())) {
+                    		throw new RuntimeException("The function "+f.getName()+" already exists!");
+                    	}
+                    	
+                    	names.add(f.getName());
                     	
                     	JsonSchema jsonSchema = schemaGen.generateSchema(f.getModel());
                         Map<String, Object> schemaMap = mapper.convertValue(jsonSchema, new TypeReference<>() {});
@@ -93,7 +100,7 @@ public class GrokAiServiceAdapter {
                         FunctionParameters.Builder paramsBuilder = FunctionParameters.builder();
                         schemaMap.forEach((k, v) -> paramsBuilder.putAdditionalProperty(k, AiHelper.toJsonValue(v)));
                     	
-                        ChatCompletionTool functionTool = ChatCompletionTool.ofFunction(ChatCompletionFunctionTool.builder()
+                        return ChatCompletionTool.ofFunction(ChatCompletionFunctionTool.builder()
                                 .function(FunctionDefinition.builder()
                                 		.name(f.getName())
                                 		.description(f.getDescription())
@@ -101,8 +108,6 @@ public class GrokAiServiceAdapter {
                                 		.build())                            
                                 .build());
                         
-                        return functionTool;
-
                     } catch (Exception e) {
                         throw new RuntimeException("Erro ao gerar schema para função: " + f.getName(), e);
                     }
@@ -122,7 +127,6 @@ public class GrokAiServiceAdapter {
 
             if (!tools.isEmpty()) {
                 builder.tools(tools);
-                //.toolChoice(ChatCompletionToolChoiceOption.Auto.AUTO);
             }
 
             ChatCompletion response = client.chat().completions().create(builder.build());

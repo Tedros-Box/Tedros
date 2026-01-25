@@ -9,13 +9,16 @@ import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.tedros.ai.TFunctionHelper;
 import org.tedros.ai.function.TFunction;
+import org.tedros.ai.function.TFunctionHelper;
+import org.tedros.ai.function.model.ViewPath;
 import org.tedros.ai.service.AiServiceProvider;
 import org.tedros.ai.service.AiTerosServiceFactory;
 import org.tedros.ai.service.IAiTerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.core.TLanguage;
+import org.tedros.core.context.TViewDescriptor;
+import org.tedros.core.context.TedrosAppManager;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.TMessageProgressIndicator;
 import org.tedros.core.message.TMessageType;
@@ -26,6 +29,8 @@ import org.tedros.fx.form.TSetting;
 import org.tedros.fx.modal.TMessageBox;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
+import org.tedros.tools.module.ai.model.HtmlMessageViewerMV;
+import org.tedros.tools.module.ai.model.HtmlMessageViewerModel;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
 import javafx.collections.ListChangeListener;
@@ -63,7 +68,8 @@ public class TerosSetting extends TSetting {
 	 * @param descriptor
 	 */
 	public TerosSetting(ITComponentDescriptor descriptor) {
-		super(descriptor);
+		super(descriptor);		
+		openHtmlMessageViewer();
 		util = new AiChatUtil();
 		repo = new TRepository();
 		
@@ -75,7 +81,7 @@ public class TerosSetting extends TSetting {
 		if(StringUtils.isNotBlank(apiKey) && StringUtils.isNotBlank(aiModel) 
 				&& StringUtils.isNotBlank(aiSystemPrompt) && aiProvider!=null) 
 		{
-			TEROS = AiTerosServiceFactory.create(apiKey, aiModel, aiSystemPrompt, aiProvider);
+			TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(apiKey, aiModel, aiSystemPrompt, aiProvider);
 		}
 		
 		TedrosContext.aiServiceProviderProperty().addListener((a,o,n)->{
@@ -83,7 +89,7 @@ public class TerosSetting extends TSetting {
 				String model = TedrosContext.getAiModel();	
 				String systemPrompt = TedrosContext.getAiSystemPrompt();
 				if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(model) && n!=null) {
-					TEROS = AiTerosServiceFactory.create(key, model, systemPrompt, n);
+					TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(key, model, systemPrompt, n);
 					resetAction();
 				}
 				
@@ -94,7 +100,7 @@ public class TerosSetting extends TSetting {
 				String model = TedrosContext.getAiModel();		
 				String systemPrompt = TedrosContext.getAiSystemPrompt();		
 				if(provider!=null && StringUtils.isNotBlank(model) && StringUtils.isNotBlank(n)) {
-					TEROS = AiTerosServiceFactory.create(n, model, systemPrompt, provider);
+					TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(n, model, systemPrompt, provider);
 					resetAction();
 				}
 			});
@@ -109,10 +115,20 @@ public class TerosSetting extends TSetting {
 			String model = TedrosContext.getAiModel();	
 			AiServiceProvider provider = TedrosContext.getAiServiceProvider();
 			if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(model) && StringUtils.isNotBlank(n) && provider!=null) {
-				TEROS = AiTerosServiceFactory.create(key, model, n, provider);
+				TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(key, model, n, provider);
 				resetAction();
 			}
-			});
+		});
+	}
+
+	private void openHtmlMessageViewer() {
+		TedrosAppManager manager = TedrosAppManager.getInstance();
+		TViewDescriptor vd = manager.getViewDescriptor(HtmlMessageViewerMV.class, HtmlMessageViewerModel.class);
+		
+		ViewPath path = new ViewPath();
+		path.setViewPath(vd.getPath());
+		
+		TFunctionHelper.callUpViewFunction().getCallback().apply(path);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -252,8 +268,9 @@ public class TerosSetting extends TSetting {
 			mv.getPrompt().setValue(null);
 			TerosProcess p = new TerosProcess();
 			p.stateProperty().addListener((a,o,n)->{
-				if(n.equals(State.SUCCEEDED))
-					showMsg(TEROS_NAME, p.getValue());
+				String msg = p.getValue();
+				if(n.equals(State.SUCCEEDED) && StringUtils.isNotBlank(msg) ) 
+					showMsg(TEROS_NAME, msg);
 			});
 			super.getForm().gettPresenter().getView()
 			.gettProgressIndicator().bind(p.runningProperty());
@@ -272,7 +289,7 @@ public class TerosSetting extends TSetting {
 		scrollFlag = true;
 		VBox gp = super.getLayout("messages");
 		gp.getChildren().clear();
-		//TEROS.clearMessages();
+		TEROS.cleanMessageHistory();
 	}
 
 	/**
