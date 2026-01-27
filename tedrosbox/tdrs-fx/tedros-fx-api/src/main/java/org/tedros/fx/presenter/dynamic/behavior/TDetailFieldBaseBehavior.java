@@ -29,7 +29,6 @@ import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.event.WeakEventHandler;
 import javafx.scene.Node;
@@ -73,7 +72,7 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 			
 			this.decorator = (TDetailFieldBaseDecorator<M>) presenter.getDecorator();
 			this.entityClass = (Class<? extends ITEntity>) presenter.getModelClass();
-			//final TForm tForm = presenter.getFormAnnotation();
+			
 			final TBehavior tBehavior = presenter.getPresenterAnnotation().behavior();
 			
 			// set the custom behavior actions
@@ -81,7 +80,7 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 			
 			TTableView tableViewAnn = modalPresenter.tableView();
 
-			TModelView model = (M) super.getModelViewClass().getConstructor(entityClass).newInstance(entityClass.getDeclaredConstructor().newInstance());
+			TModelView model = super.getModelViewClass().getConstructor(entityClass).newInstance(entityClass.getDeclaredConstructor().newInstance());
 
 			
 	    	Object[] arrControl = TReflectionUtil.getControlBuilder(Arrays.asList(tableViewAnn));
@@ -99,16 +98,16 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 			EventHandler<MouseEvent> ev = e ->{
 				if(e.getClickCount()==2) {
 					int index = tableView.getSelectionModel().getSelectedIndex();
-					TModelView new_ = (TModelView) tableView.getItems().get(index);
-					selectedItemAction(new_);
+					TModelView tmv = (TModelView) tableView.getItems().get(index);
+					selectedItemAction(tmv);
 				}
 			};
 			super.getListenerRepository().add("tvmclkeh", ev);
 			tableView.setOnMouseClicked(new WeakEventHandler<>(ev));
 			
-			ChangeListener<TModelView> mvcl = (a0, old_, new_) -> {
-				if(new_!=null && decorator.gettRemoveButton()!=null)
-					decorator.gettRemoveButton().setDisable(!getModels().contains(new_));
+			ChangeListener<TModelView> mvcl = (a, o, n) -> {
+				if(n!=null && decorator.gettRemoveButton()!=null)
+					decorator.gettRemoveButton().setDisable(!getModels().contains(n));
 			};
 			
 			super.getListenerRepository().add("setmodelviewCL", mvcl);
@@ -126,13 +125,7 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * */
 	public void configCleanButton() {
 		final Button cleanButton = this.decorator.gettCleanButton();
-			cleanButton.setOnAction(new EventHandler<ActionEvent>() {
-				@Override
-				public void handle(ActionEvent event) {
-					cleanAction();
-				}
-			});
-		
+		cleanButton.setOnAction(e->cleanAction());
 	}
 	
 	/**
@@ -140,12 +133,7 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * */
 	public void configAddButton() {
 		final Button addButton = this.decorator.gettAddButton();
-		addButton.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				addAction();
-			}
-		});
+		addButton.setOnAction(e->addAction());
 		
 	}
 	
@@ -155,12 +143,7 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * */
 	public void configRemoveButton() {
 		final Button removeButton = this.decorator.gettRemoveButton();
-		removeButton.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				removeAction();
-			}
-		});
+		removeButton.setOnAction(e->removeAction());
 	}
 	
 	// ACTIONS
@@ -169,11 +152,11 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * Perform this action when a model is selected.
 	 * */
 	@SuppressWarnings("unchecked")
-	public void selectedItemAction(TModelView new_val) {
+	public void selectedItemAction(TModelView selectedMv) {
 		if(actionHelper.runBefore(TActionType.SELECTED_ITEM)){
-			if(new_val==null)
+			if(selectedMv==null)
 				return;
-			setModelView((M) new_val);
+			setModelView((M) selectedMv);
 			showForm(TViewMode.EDIT);
 		
 		}
@@ -222,7 +205,7 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 
 	private void processClean() {
 		try {
-			M model = (M) getModelViewClass().getConstructor(entityClass).newInstance(entityClass.getDeclaredConstructor().newInstance());
+			M model = getModelViewClass().getConstructor(entityClass).newInstance(entityClass.getDeclaredConstructor().newInstance());
 			setModelView(model);
 			showForm(TViewMode.EDIT);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException

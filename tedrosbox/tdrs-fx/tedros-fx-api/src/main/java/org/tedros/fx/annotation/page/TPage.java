@@ -59,5 +59,4 @@ public @interface TPage {
 	 * */
 	boolean showOrderBy() default false;
 	
-	//public TOption[] orderBy() default {@TOption(text=TFxKey.CODE, field="id")};
 }

@@ -43,7 +43,7 @@ public @interface TTextInputControl {
 	*  Default value: Empty string
 	* </pre>
 	**/
-	public java.lang.String promptText() default "";
+	public String promptText() default "";
 
 	/**
 	* <pre>
@@ -58,7 +58,7 @@ public @interface TTextInputControl {
 	*  Default value: Empty string
 	* </pre>
 	**/
-	public java.lang.String text() default "";
+	public String text() default "";
 
 	/**
 	* <pre>

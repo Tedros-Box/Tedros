@@ -24,6 +24,7 @@ import javafx.scene.control.cell.ChoiceBoxTableCell;
 import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.ProgressBarTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldListCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
@@ -253,6 +254,9 @@ public class TTableViewParser extends TAnnotationParser<TTableView, TableView> {
 			else						
 			if(tableCellClass==TextFieldTableCell.class)
 				tableColumn.setCellFactory(TextFieldTableCell.forTableColumn(converter.getDeclaredConstructor().newInstance()));
+			else						
+				if(tableCellClass==TextFieldListCell.class)
+					tableColumn.setCellFactory(TextFieldListCell.forListView(converter.getDeclaredConstructor().newInstance()));
 		}
 	}
 	

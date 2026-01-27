@@ -64,7 +64,7 @@ public class TTextField extends TRequiredTextField  {
 	public void setMaxLength(int maxLength) {
 		if(this.maxLength==null)
 			this.maxLength = new SimpleIntegerProperty();
-		this.maxLength.setValue(maxLength);;
+		this.maxLength.setValue(maxLength);
 	}
 	/**
 	 * Get the maxLenghtProperty

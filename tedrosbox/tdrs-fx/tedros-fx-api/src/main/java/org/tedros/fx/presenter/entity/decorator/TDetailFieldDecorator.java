@@ -5,6 +5,8 @@ import org.tedros.fx.model.TEntityModelView;
 import org.tedros.fx.presenter.dynamic.decorator.TDetailFieldBaseDecorator;
 
 import javafx.scene.control.TableView;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 /**
@@ -30,8 +32,11 @@ extends TDetailFieldBaseDecorator<M>
 		// get the views
 		final ITDynaView<M> view = getPresenter().getView();
 		
+		StackPane formSpace = view.gettFormSpace();
+		
 		box = new VBox();
-		box.getChildren().add(view.gettFormSpace());
+		box.getChildren().add(formSpace);
+		VBox.setVgrow(formSpace, Priority.ALWAYS);
 		addItemInTCenterContent(box);
 		setViewTitle(null);
 		
@@ -43,8 +48,9 @@ extends TDetailFieldBaseDecorator<M>
 	
 	@Override
 	public void settTableView(TableView<M> tv) {
-		super.settTableView(tv);
+		super.settTableView(tv);		
 		box.getChildren().add(tv);
+		VBox.setVgrow(tv, Priority.ALWAYS);
 	}
 	
 

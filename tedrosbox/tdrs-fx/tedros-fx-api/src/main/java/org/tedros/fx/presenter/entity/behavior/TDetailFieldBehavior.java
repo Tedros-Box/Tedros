@@ -46,7 +46,7 @@ extends TDetailFieldBaseBehavior<M, E> {
 		super.configRemoveButton();
 		
 		try {
-			M model = (M) super.getModelViewClass().getConstructor(entityClass).newInstance(entityClass.getDeclaredConstructor().newInstance());
+			M model = super.getModelViewClass().getConstructor(entityClass).newInstance(entityClass.getDeclaredConstructor().newInstance());
 			setModelView(model);
 			super.showForm(TViewMode.EDIT);
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -70,8 +70,8 @@ extends TDetailFieldBaseBehavior<M, E> {
 			super.addAction(action);
 		}else {
 			final ITPresenter pre = getModulePresenter();
-			final TDynaPresenter presenter = pre instanceof TDynaPresenter 
-					? (TDynaPresenter) pre
+			final TDynaPresenter presenter = pre instanceof TDynaPresenter dynaPresenter
+					? dynaPresenter
 							: (TDynaPresenter) ((TGroupPresenter)pre).getSelectedView().gettPresenter();
 			
 			final TDynaViewSimpleBaseBehavior behavior = (TDynaViewSimpleBaseBehavior) presenter.getBehavior(); 
