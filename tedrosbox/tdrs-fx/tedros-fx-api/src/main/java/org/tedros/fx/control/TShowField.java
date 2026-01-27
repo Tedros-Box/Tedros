@@ -228,8 +228,8 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 				? getObject(f.getName(), obj)
 					: obj;
 		if(t!=null) {
-			if(t instanceof Property) 
-				t = ((Property)t).getValue();
+			if(t instanceof Property property) 
+				t = property.getValue();
 			
 			if(f.getConverter()!=TConverter.class) {
 				TConverter c = f.getConverter().getDeclaredConstructor().newInstance();
@@ -238,9 +238,9 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 				return (String) c.getOut();
 			}
 		
-			if(t instanceof Date) {
+			if(t instanceof Date date) {
 				if(StringUtils.isNotBlank(f.getFormat()))
-					v = TDateUtil.format((Date) t, f.getFormat());
+					v = TDateUtil.format(date, f.getFormat());
 				else {
 					v = TDateUtil.create(TLanguage.getLocale())
 						.setDateStyle(f.getDateStyle().getValue())

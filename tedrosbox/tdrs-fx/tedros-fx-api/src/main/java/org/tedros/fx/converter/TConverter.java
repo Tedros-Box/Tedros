@@ -49,11 +49,11 @@ public abstract class TConverter<IN, OUT> {
 	private ITComponentDescriptor componentDescriptor;
 	private IN value;
 	
-	public TConverter(IN value) {
+	protected TConverter(IN value) {
 		this.value = value;
 	}
 	
-	public TConverter() {
+	protected TConverter() {
 		
 	}
 	
