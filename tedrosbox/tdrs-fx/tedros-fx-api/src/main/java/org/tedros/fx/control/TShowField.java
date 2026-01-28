@@ -21,7 +21,6 @@ import org.tedros.util.TLoggerUtil;
 import javafx.beans.Observable;
 import javafx.beans.property.ListProperty;
 import javafx.beans.property.Property;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener.Change;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -102,8 +101,8 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 		
 		super.setAlignment(Pos.TOP_CENTER);
 		buildPane();
-		if(value instanceof ListProperty) {
-			((ListProperty)value).addListener((Change c) -> {
+		if(value instanceof ListProperty property) {
+			property.addListener((Change c) -> {
 				buildPane();
 				for(Object obj : c.getList()) {
 					try {
@@ -118,7 +117,7 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 				addField(obj);
 			}
 		}else {
-			((ObservableValue)value).addListener((a,b,n)->{
+			value.addListener((a,b,n)->{
 				try {
 					buildPane();
 					if(n!=null)
@@ -180,11 +179,10 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 		c.setId("t-form-label-field-value");
 		return c;
 	}
-
-	@SuppressWarnings("rawtypes")
+	
 	private String getValue(Object obj) {
-		if(obj!=null && obj instanceof Property) {
-			obj = ((Property)obj).getValue();
+		if(obj instanceof Property property) {
+			obj = property.getValue();
 		}
 		return obj!=null ? obj.toString() : "";
 	}
