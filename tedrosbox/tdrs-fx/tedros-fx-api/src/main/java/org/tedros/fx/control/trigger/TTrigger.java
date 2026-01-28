@@ -19,7 +19,7 @@ public abstract class TTrigger<T> {
 	private Map<String, TFieldBox> associatedFields;
 	
 	
-	public TTrigger(TFieldBox source, TFieldBox target) {
+	protected TTrigger(TFieldBox source, TFieldBox target) {
 		this.source = source;
 		this.target = target;
 	}
@@ -30,7 +30,7 @@ public abstract class TTrigger<T> {
 			throw new IllegalArgumentException("Method addAssociatedField(TFieldBox fieldBox) in TTrigger.class dont accept null values!");
 		
 		if(associatedFields == null)
-			associatedFields = new HashMap<String, TFieldBox>();
+			associatedFields = new HashMap<>();
 		associatedFields.put(fieldBox.gettControlFieldName(), fieldBox);
 	}
 	
