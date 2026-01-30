@@ -86,11 +86,11 @@ public abstract class TNumberField<N extends Number> extends TRequiredNumberFiel
 				if(obj == BigDecimal.class)
 					valueProperty.setValue(new_value==null ? null : (N) new BigDecimal(new_value));
 				if(obj == Double.class)
-					valueProperty.setValue(new_value==null ? null : (N) new Double(new_value));
+					valueProperty.setValue(new_value==null ? null : (N) Double.valueOf(new_value));
 				if(obj == Long.class)
-					valueProperty.setValue(new_value==null ? null : (N) new Long(new_value));
+					valueProperty.setValue(new_value==null ? null : (N) Long.valueOf(new_value));
 				if(obj == Integer.class)
-					valueProperty.setValue(new_value==null ? null : (N) new Integer(new_value));
+					valueProperty.setValue(new_value==null ? null : (N) Integer.valueOf(new_value));
 			}
 			
 			private Number getMaxVAlue(Class<?> obj) {

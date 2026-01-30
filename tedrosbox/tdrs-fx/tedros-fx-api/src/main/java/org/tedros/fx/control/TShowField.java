@@ -42,7 +42,7 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 	private String t_componentId;
 	private TLayoutType layout = TLayoutType.HBOX;
 	@SuppressWarnings("rawtypes")
-	private Property value;
+	private Observable value;
 	private TField[] fields;
 	private ITComponentDescriptor descriptor;
 	
@@ -53,7 +53,7 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 	 * @param fields
 	 */
 	@SuppressWarnings("rawtypes")
-	public TShowField(TLayoutType layout, Property value, TField... fields) {
+	public TShowField(TLayoutType layout, Observable value, TField... fields) {
 		this.layout = layout;
 		this.value = value;
 		this.fields = fields;
@@ -64,7 +64,7 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 		}
 	}
 	@SuppressWarnings("rawtypes")
-	public TShowField(TLayoutType layout, Property value, ITComponentDescriptor descriptor ,TField... fields) {
+	public TShowField(TLayoutType layout, Observable value, ITComponentDescriptor descriptor ,TField... fields) {
 		this.descriptor = descriptor;
 		this.layout = layout;
 		this.value = value;
@@ -116,8 +116,10 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 			for(Object obj : lst) {
 				addField(obj);
 			}
-		}else {
-			value.addListener((a,b,n)->{
+		}
+		else if(value instanceof Property property)
+		 {
+			property.addListener((a,b,n)->{
 				try {
 					buildPane();
 					if(n!=null)
@@ -126,7 +128,7 @@ public class TShowField extends StackPane implements ITField, ITComponent{
 					TLoggerUtil.error(getClass(), e.getMessage(), e);
 				}
 			});
-			addField(value.getValue());
+			addField(property.getValue());
 		}
 		
 	}

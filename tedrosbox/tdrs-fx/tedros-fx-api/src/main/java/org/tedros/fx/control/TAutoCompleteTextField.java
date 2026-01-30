@@ -40,23 +40,28 @@ public class TAutoCompleteTextField extends TTextField implements ITTriggeredabl
 		this.setTooltip(new Tooltip(TLanguage.getInstance().getString(TFxKey.TOOLTIP_AUTOCOMPLETE)));
 		entries = new TreeSet<>();
 		entriesPopup = new ContextMenu();
-		textProperty().addListener((a,o,n)->{
-				if (n==null || n.isEmpty()) {
-					entriesPopup.hide();
-					selectedEntryProperty.setValue(null);
-				} else {
-					LinkedList<String> searchResult = new LinkedList<>();
-					searchResult.addAll(entries.subSet(n, n + Character.MAX_VALUE));
-					if (!entries.isEmpty()) {
-						populatePopup(searchResult);
-						if (!entriesPopup.isShowing()) {
-							entriesPopup.show(TAutoCompleteTextField.this, Side.BOTTOM, 0, 0);
-						}
-					} else {
+		
+		this.sceneProperty().addListener((obs, oldScene, newScene) -> {
+			if(newScene != null) {
+				textProperty().addListener((a,o,n)->{
+					if (n==null || n.isEmpty()) {
 						entriesPopup.hide();
+						selectedEntryProperty.setValue(null);
+					} else {
+						LinkedList<String> searchResult = new LinkedList<>();
+						searchResult.addAll(entries.subSet(n, n + Character.MAX_VALUE));
+						if (!entries.isEmpty()) {
+							populatePopup(searchResult);
+							if (!entriesPopup.isShowing()) {							
+								entriesPopup.show(TAutoCompleteTextField.this, Side.BOTTOM, 0, 0);
+							}
+						} else {
+							entriesPopup.hide();
+						}
 					}
-				}
-			});
+				});
+			}
+		});
 
 		focusedProperty().addListener((a,o,n)->entriesPopup.hide());
 
