@@ -94,6 +94,12 @@ public @interface TShowField {
 		TLabelPosition labelPosition() default TLabelPosition.DEFAULT;
 		
 		/**
+	     * Defines if the field value should be rendered as HTML.
+	     * Default is false.
+	     */
+	    boolean renderHtml() default false;
+		
+		/**
 		 * The TConverter&ltObject,String&gt to be applied
 		 * */
 		@SuppressWarnings("rawtypes")

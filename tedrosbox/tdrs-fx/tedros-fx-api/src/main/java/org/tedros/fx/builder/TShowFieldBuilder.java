@@ -15,7 +15,6 @@ import org.tedros.fx.domain.TLayoutType;
 import org.tedros.util.TLoggerUtil;
 
 import javafx.beans.Observable;
-import javafx.beans.value.ObservableValue;
 
 
 /**
@@ -24,7 +23,6 @@ import javafx.beans.value.ObservableValue;
  * @author Davis Gordon
  *
  */
-@SuppressWarnings("rawtypes")
 public class TShowFieldBuilder 
 extends TBuilder
 implements ITControlBuilder<TShowField, Observable> {
@@ -40,7 +38,7 @@ implements ITControlBuilder<TShowField, Observable> {
 		for(TField f : tfs) {
 			org.tedros.fx.control.TField v = 
 					new org.tedros.fx.control.TField(f.name(), f.mask(), f.format(), 
-							f.dateStyle(), f.timeStyle(), f.label(), f.labelPosition(), f.converter());
+							f.dateStyle(), f.timeStyle(), f.label(), f.labelPosition(), f.converter(), f.renderHtml());
 			fields = ArrayUtils.add(fields, v);
 		}
 		try {
