@@ -102,6 +102,7 @@ public interface TUsualKey {
 	static final String DOMAIN = "#{label.domain}";
 	static final String DONATION = "#{label.donation}";
 	static final String DONATIONS = "#{label.donations}";
+	static final String EDIT = "#{label.edit}";
 	static final String EDIT_CONTENT = "#{label.edit.content}";
 	static final String EMAIL = "#{label.email}";
 	static final String EMPLOYEE = "#{label.employee}";
@@ -233,6 +234,7 @@ public interface TUsualKey {
 	static final String QUANTITY = "#{label.quantity}";
 	static final String QUEUED = "#{label.queued}";
 	static final String REF_CODE = "#{label.ref.code}";
+	static final String REFRESH = "#{label.refresh}";
 	static final String REGISTRATION_FEE = "#{label.registration.fee}";
 	static final String REPEAT = "#{label.repeat}";
 	static final String REPEAT_OR_REFLECT = "#{label.repeat.or.reflect}";

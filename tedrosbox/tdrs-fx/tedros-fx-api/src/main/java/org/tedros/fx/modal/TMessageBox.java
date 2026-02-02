@@ -102,6 +102,11 @@ public class TMessageBox extends Pane {
     	tAddMessage(messages, type);
 	}
     
+    public TMessageBox(TMessage message) {
+    	init();
+    	tAddMessage(List.of(message));
+	}
+    
     public TMessageBox(List<TMessage> messages) {
     	init();
     	tAddMessage(messages);
