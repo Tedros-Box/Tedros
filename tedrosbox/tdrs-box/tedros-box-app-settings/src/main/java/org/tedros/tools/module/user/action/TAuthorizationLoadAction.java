@@ -14,6 +14,7 @@ import org.tedros.core.annotation.security.TSecurity;
 import org.tedros.core.message.TMessage;
 import org.tedros.core.message.TMessageType;
 import org.tedros.core.security.model.TAuthorization;
+import org.tedros.fx.TFxKey;
 import org.tedros.fx.control.action.TPresenterAction;
 import org.tedros.fx.exception.TException;
 import org.tedros.fx.exception.TProcessException;
@@ -73,7 +74,11 @@ public class TAuthorizationLoadAction extends TPresenterAction {
 								TMessageBox tMessageBox = new TMessageBox(msg, TMessageType.GENERIC);
 								behavior.getView().tShowModal(tMessageBox, true);
 							}else{
-								TMessageBox tMessageBox = new TMessageBox(res.getMessage());
+								String msgStr = StringUtils.isNotBlank(res.getMessage()) 
+										?  res.getMessage()
+												: TLanguage.getInstance().getString(TFxKey.MESSAGE_SAVE);
+								
+								TMessageBox tMessageBox = new TMessageBox(msgStr);
 								behavior.getView().tShowModal(tMessageBox, true);
 							}
 							if(behavior instanceof TAuthorizationBehavior) {
