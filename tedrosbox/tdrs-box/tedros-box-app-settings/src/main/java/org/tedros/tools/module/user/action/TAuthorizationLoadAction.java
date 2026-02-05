@@ -74,11 +74,7 @@ public class TAuthorizationLoadAction extends TPresenterAction {
 								TMessageBox tMessageBox = new TMessageBox(msg, TMessageType.GENERIC);
 								behavior.getView().tShowModal(tMessageBox, true);
 							}else{
-								String msgStr = StringUtils.isNotBlank(res.getMessage()) 
-										?  res.getMessage()
-												: TLanguage.getInstance().getString(TFxKey.MESSAGE_SAVE);
-								
-								TMessageBox tMessageBox = new TMessageBox(msgStr);
+								TMessageBox tMessageBox = new TMessageBox(res.getMessage());
 								behavior.getView().tShowModal(tMessageBox, true);
 							}
 							if(behavior instanceof TAuthorizationBehavior) {

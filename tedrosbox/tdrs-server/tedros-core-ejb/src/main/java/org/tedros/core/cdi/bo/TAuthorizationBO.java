@@ -130,7 +130,9 @@ public class TAuthorizationBO extends TGenericBO<TAuthorization> {
 			}
 		}
 		
-		
+		if(msg.isEmpty()) {
+			msg.add("No changes found.");
+		}
 		
 		return msg;
 	}
