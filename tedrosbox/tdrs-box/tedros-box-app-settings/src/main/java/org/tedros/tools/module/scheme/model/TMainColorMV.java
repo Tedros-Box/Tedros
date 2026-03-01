@@ -38,7 +38,9 @@ import org.tedros.tools.module.scheme.behaviour.TMainColorBehavior;
 import org.tedros.tools.module.scheme.decorator.TMainColorDecorator;
 import org.tedros.tools.module.scheme.process.TMainColorProcess;
 import org.tedros.tools.module.scheme.trigger.TMainColorTrigger;
+import org.tedros.tools.start.TConstant;
 import org.tedros.util.TLoggerUtil;
+import org.tedros.util.TedrosFolder;
 
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -115,7 +117,7 @@ public class TMainColorMV extends TEntityModelView<TMainColor> {
 	showFilePath=false, showImage=false, 
 	maxImageHeight = 60, minImageHeight = 30, maxFileSize = 256000)
 	@TGenericType(model=TFileModel.class)
-	@TTrigger(type=TMainColorTrigger.class, mode=TViewMode.EDIT)
+	@TTrigger(type=TMainColorTrigger.class, mode=TViewMode.EDIT, runAfterFormBuild = true)
 	private TSimpleFileProperty<TFileModel> fileLogo;
 	
 	// nav bar
@@ -187,7 +189,8 @@ public class TMainColorMV extends TEntityModelView<TMainColor> {
 		
 		if(path!=null) {
 			try {
-				TFileModel fileModel = new TFileModel(new File(path));
+				String logoPath = TedrosFolder.MODULE_FOLDER.getFullPath()+TConstant.UUI+File.separator+path;
+				TFileModel fileModel = new TFileModel(new File(logoPath));
 				this.fileLogo.setValue(fileModel);
 			} catch (IOException e) {
 				TLoggerUtil.error(getClass(), e.getMessage(), e);
@@ -196,8 +199,6 @@ public class TMainColorMV extends TEntityModelView<TMainColor> {
 		this.mainCorTexto.setValue(mainCorTexto!=null ? Color.web(mainCorTexto) : Color.WHITE);
 		this.mainCorFundo.setValue(mainCorFundo!=null ? Color.web(mainCorFundo) : Color.BLACK);
 		this.mainOpacidade.setValue(mainOpacidade!=null ? Double.parseDouble(mainOpacidade) : DEFAULT_MAIN_OPACIT);
-		
-		
 		
 		this.navCorTexto.setValue(navCorTexto!=null ? Color.web(navCorTexto) : Color.WHITE);
 		this.navCorFundo.setValue(navCorFundo!=null ? Color.web(navCorFundo) : Color.BLACK);
