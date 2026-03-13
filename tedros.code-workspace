@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../tedros-apps"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../../backup"
+		},
+		{
+			"path": "../../docker"
+		}
+	]
+}
