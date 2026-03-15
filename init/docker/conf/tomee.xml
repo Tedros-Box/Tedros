@@ -7,9 +7,9 @@
   
   <Resource id="tedrosDataSource" type="DataSource">
   JdbcDriver org.h2.Driver
-  JdbcUrl jdbc:h2:tcp://h2db:1521/db
-  UserName tdrs
-  Password xpto
+  JdbcUrl jdbc:h2:tcp://h2db:1521/h2/db;INIT=RUNSCRIPT FROM '/opt/h2-data/init.sql';
+  UserName <USER_NAME>
+  Password <PASSWORD>
   JtaManaged true
   PoolPreparedStatements true
   DefaultAutoCommit true

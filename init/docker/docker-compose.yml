@@ -34,20 +34,38 @@ services:
     container_name: tedros-h2db
     restart: always
     environment:
-      - H2_OPTIONS=-tcpAllowOthers -baseDir /opt/h2-data
+      - H2_OPTIONS=-web -webAllowOthers -tcp -tcpAllowOthers -baseDir /opt/h2-data
     ports:
       - "1521:1521"
+      - "81:81"
     volumes:
       - h2_data:/opt/h2-data
     networks:
       - tedros-net
-
+      
   mongodb:
     image: mongo:8.0
     container_name: tedros-mongodb
     restart: always
+    environment:
+      - MONGO_INITDB_DATABASE=itsupport
+    ports:
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./nginx/ssl_local/mongodb.pem:/etc/ssl/mongodb.pem:ro
+      # Novo mapeamento para a Autoridade Certificadora (CA) do mkcert
+      - ./nginx/ssl_local/rootCA.pem:/etc/ssl/rootCA.pem:ro
+    command: [
+      "mongod", 
+      "--tlsMode", "requireTLS", 
+      "--tlsCertificateKeyFile", "/etc/ssl/mongodb.pem",
+      # Informa a cadeia de confiança exigida pelo Mongo 8.0
+      "--tlsCAFile", "/etc/ssl/rootCA.pem",
+      # Permite que o Java e o Compass conectem sem precisar enviar um certificado de cliente
+      "--tlsAllowConnectionsWithoutCertificates"
+    ]
     networks:
       - tedros-net
 
@@ -60,8 +78,12 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/letsencrypt:ro
+      # Produção
+      # - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      # - ./nginx/ssl:/etc/letsencrypt:ro
+      # Local tests (mkcert)
+      - ./nginx/conf.d.local:/etc/nginx/conf.d:ro
+      - ./nginx/ssl_local:/etc/nginx/ssl:ro
     depends_on:
       - tomee1
       - tomee2
