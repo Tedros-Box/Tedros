@@ -15,6 +15,9 @@
 	<name>App Chat Parent</name>
 	<description>Tedros Chat</description>
 
+	<properties>
+        <docker.app.folder>D:\GitHub\Tedros-Box\Tedros\init\docker\deployment_app</docker.app.folder>
+	</properties>
 	<!-- BUILD -->
 	<build>
 		<plugins>
