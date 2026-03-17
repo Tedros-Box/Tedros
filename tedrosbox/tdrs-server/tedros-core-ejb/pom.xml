@@ -51,7 +51,14 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<version>${jackson.version}</version>
-			<scope>test</scope>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>5.1.5</version>
+			<scope>compile</scope>
 		</dependency>
 	  	
 		<dependency>
