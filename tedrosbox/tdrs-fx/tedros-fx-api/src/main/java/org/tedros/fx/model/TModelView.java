@@ -49,21 +49,19 @@ import javafx.collections.ObservableMap;
 import javafx.collections.ObservableSet;
 import javafx.collections.SetChangeListener;
 
-
 /**
  * <p>
- * This engine can bind all javafx property between a {@link TModelView} and a 
- * {@link ITModel}, listeners are build to listen changes in the properties and 
+ * This engine can bind all javafx property between a {@link TModelView} and a
+ * {@link ITModel}, listeners are build to listen changes in the properties and
  * set the new values in the {@link ITModel}.
  * </p>
  * <h3>Sample Usage</h3>
+ * 
  * <pre>
  * <code>
  * // The model
  * public class ExampleModel implements ITModel {
  * 
- *    private Long id;
- *    ...
  *    private String <b style='color:red'>name</b>;
  *    private BigDecimal <b style='color:green'>value</b>;
  *    private Date <b style='color:blue'>date</b>;
@@ -74,10 +72,9 @@ import javafx.collections.SetChangeListener;
  * // The TModelView
  * public class ExampleModelView extends TModelView&lt;ExampleModel&gt;{
  *  
- *    private SimpleLongProperty id;
- *    ...
  *    private SimpleStringProperty <b style='color:red'>name</b>;
- *    private SimpleObjectProperty&lt;BigDecimal&gt; <b style='color:green'>value</b>;
+ *    private SimpleObjectProperty&lt;BigDecimal&gt; <b style=
+'color:green'>value</b>;
  *    private SimpleObjectProperty&lt;Date&gt; <b style='color:blue'>date</b>;
  *    
  *    public ExampleModelView(ExampleModel model) {
@@ -87,55 +84,58 @@ import javafx.collections.SetChangeListener;
  *    // getters and setters
  *  }
  * </code>
+ * 
  * @author Davis Gordon
  */
 public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
-	
-	private final static Logger 			LOGGER = TLoggerUtil.getLogger(TModelView.class);
-	
-	protected	final static String 		SET = "set";
-	protected	final static String 		GET = "get";
-	
-	protected 	M 							model;
-	
-	private 	int 						lastHashCode;
-	private 	SimpleIntegerProperty		lastHashCodeProperty;
-	private 	SimpleLongProperty 			loadedProperty;
-	private 	boolean 					changed = false;
-	
-	private 	TListenerHelper<M> 			tListenerHelper;
-	
-	private 	Map<String, Observable> 	properties = new HashMap<>();
-	
-	private 	String						modelViewId;
-	
-	private 	SimpleStringProperty		display;
-	
+
+	private final static Logger LOGGER = TLoggerUtil.getLogger(TModelView.class);
+
+	protected final static String SET = "set";
+	protected final static String GET = "get";
+
+	protected M model;
+
+	private int lastHashCode;
+	private SimpleIntegerProperty lastHashCodeProperty;
+	private SimpleLongProperty loadedProperty;
+	private boolean changed = false;
+
+	private TListenerHelper<M> tListenerHelper;
+
+	private Map<String, Observable> properties = new HashMap<>();
+
+	private String modelViewId;
+
+	private SimpleStringProperty display;
+
 	/**
 	 * <pre>
-	 * Bind the properties of this model view with the fields of the given model. 
+	 * Bind the properties of this model view with the fields of the given model.
 	 * </pre>
-	 * */
+	 */
 	public TModelView(final M model) {
-		
+
 		this.display = new SimpleStringProperty();
-		this.modelViewId = UUID.randomUUID().toString(); 
+		this.modelViewId = UUID.randomUUID().toString();
 		this.model = model;
-		if(this.model==null)
+		if (this.model == null)
 			return;
-		
+
 		tListenerHelper = new TListenerHelper<>(this);
-		
-		TLoggerUtil.timeComplexity(this.getClass(), "Wraping "+model.getClass().getName()+" -> "+model.toString(),
-		()->{
-			loadFields();
-			
-			buildLastHashCode();
-			buildLastHashCodeListener();
-		});
+
+		TLoggerUtil.timeComplexity(this.getClass(), "Wraping " + model.getClass().getName() + " -> " + model.toString(),
+				() -> {
+					loadFields();
+
+					buildLastHashCode();
+					buildLastHashCodeListener();
+				});
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#getModelViewId()
 	 */
 	@Override
@@ -143,7 +143,9 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		return modelViewId;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#setModelViewId(java.lang.String)
 	 */
 	@Override
@@ -151,7 +153,9 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		this.modelViewId = modelViewId;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#toStringProperty()
 	 */
 	@Override
@@ -160,56 +164,60 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		return display;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#formatToString(java.lang.String, javafx.beans.value.ObservableValue)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#formatToString(java.lang.String,
+	 * javafx.beans.value.ObservableValue)
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public void formatToString(String format, ObservableValue<?>... fields) {
-		
+
 		setDisplayValue(format, fields);
-		
+
 		int i = 0;
-		for(ObservableValue<?> ob : fields) {
-			String lid = "tDisplayFieldIdx_"+(i++);
+		for (ObservableValue<?> ob : fields) {
+			String lid = "tDisplayFieldIdx_" + (i++);
 			ChangeListener<Object> chl = (ChangeListener<Object>) getListenerRepository().get(lid);
-			if(chl==null) {
-				chl = (a,o,n) -> {
+			if (chl == null) {
+				chl = (a, o, n) -> {
 					setDisplayValue(format, fields);
 				};
 				addListener(lid, chl);
-			}else
+			} else
 				ob.removeListener(chl);
-			
+
 			ob.addListener(chl);
 		}
-		
-	}
-	
 
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#formatToString(org.tedros.fx.model.TFormatter)
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#formatToString(org.tedros.fx.model.
+	 * TFormatter)
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public void formatToString(TFormatter formatter) {
 		int x = 0;
-		for(Item i : formatter.items) {
-			String lid = "tDisplayFieldIdx_"+(x++);
+		for (Item i : formatter.items) {
+			String lid = "tDisplayFieldIdx_" + (x++);
 			ChangeListener<Object> chl = (ChangeListener<Object>) getListenerRepository().get(lid);
-			if(chl==null) {
-				chl = (a,o,n) -> {
+			if (chl == null) {
+				chl = (a, o, n) -> {
 					toStringProperty().setValue(TLanguage.getInstance().getString(formatter.toString()));
 				};
 				addListener(lid, chl);
-			}else
+			} else
 				i.ob.removeListener(chl);
-			
+
 			i.ob.addListener(chl);
 		}
 		toStringProperty().setValue(TLanguage.getInstance().getString(formatter.toString()));
 	}
-	
 
 	/**
 	 * @param format
@@ -217,48 +225,52 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 	 */
 	private void setDisplayValue(String format, ObservableValue<?>... fields) {
 		Object[] arr = new Object[] {};
-		for(ObservableValue<?> f : fields) {
+		for (ObservableValue<?> f : fields) {
 			Object o = f.getValue();
-			if(o instanceof Date) {
+			if (o instanceof Date) {
 				Calendar cal = Calendar.getInstance();
 				cal.setTime((Date) o);
 				arr = ArrayUtils.add(arr, cal);
-			}else
-				arr = ArrayUtils.add(arr, o!=null ? o : "");
+			} else
+				arr = ArrayUtils.add(arr, o != null ? o : "");
 		}
 		toStringProperty().setValue(TLanguage.getInstance().getString(String.format(format, arr)));
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#getModel()
 	 */
 	@Override
 	@Transient
-	public M getModel(){
+	public M getModel() {
 		return this.model;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#reload(M)
 	 */
 	@Override
 	public void reload(M model) {
-		
-		TLoggerUtil.timeComplexity(this.getClass(), "Reloading " + this.toString(), 
-		()->{
-			this.model = model;
-			loadFields();
-			buildLastHashCode();
-			loadedProperty().setValue(Calendar.getInstance().getTimeInMillis());
-			buildLastHashCodeListener();
-			changed = false;
-		});
-		
+
+		TLoggerUtil.timeComplexity(this.getClass(), "Reloading " + this.toString(),
+				() -> {
+					this.model = model;
+					loadFields();
+					buildLastHashCode();
+					loadedProperty().setValue(Calendar.getInstance().getTimeInMillis());
+					buildLastHashCodeListener();
+					changed = false;
+				});
+
 	}
 
 	private void buildLastHashCodeListener() {
-		ChangeListener<Number> listener =  getListenerRepository().get("lastHashCodeProperty");
-		if(listener==null){
+		ChangeListener<Number> listener = getListenerRepository().get("lastHashCodeProperty");
+		if (listener == null) {
 			listener = new ChangeListener<Number>() {
 				@Override
 				public void changed(ObservableValue<? extends Number> arg0,
@@ -267,32 +279,39 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 				}
 			};
 			addListener("lastHashCodeProperty", listener);
-		}else
+		} else
 			lastHashCodeProperty.removeListener(listener);
-		
+
 		lastHashCodeProperty.addListener(listener);
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#hashCode()
 	 */
 	@Override
 	public int hashCode() {
-		return reflectionHashCode(new String[]{});
+		return reflectionHashCode(new String[] {});
 	}
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#reflectionHashCode(java.lang.String)
 	 */
 	@Override
 	@Transient
-	public int reflectionHashCode(String... excludeFields){
-		if(excludeFields!=null && excludeFields.length>0){
+	public int reflectionHashCode(String... excludeFields) {
+		if (excludeFields != null && excludeFields.length > 0) {
 			return HashCodeBuilder.reflectionHashCode(model, excludeFields);
-		}else
+		} else
 			return HashCodeBuilder.reflectionHashCode(model);
 	}
-	  
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#getLastHashCode()
 	 */
 	@Override
@@ -300,65 +319,78 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 	public int getLastHashCode() {
 		return lastHashCode;
 	}
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#isChanged()
 	 */
 	@Override
 	@Transient
-	public boolean isChanged(){
+	public boolean isChanged() {
 		return changed;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#lastHashCodeProperty()
 	 */
 	@Override
 	@Transient
 	public SimpleIntegerProperty lastHashCodeProperty() {
-		if(lastHashCodeProperty==null)
+		if (lastHashCodeProperty == null)
 			lastHashCodeProperty = new SimpleIntegerProperty();
 		return lastHashCodeProperty;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#loadedProperty()
 	 */
 	@Override
 	@Transient
 	public SimpleLongProperty loadedProperty() {
-		if(loadedProperty==null)
+		if (loadedProperty == null)
 			loadedProperty = new SimpleLongProperty();
 		return loadedProperty;
-	}	
-	
-	/* (non-Javadoc)
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#toString()
 	 */
 	@Override
 	public String toString() {
-		return toStringProperty().getValue()!=null ? toStringProperty().getValue() : "";	
+		return toStringProperty().getValue() != null ? toStringProperty().getValue() : "";
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#equals(java.lang.Object)
 	 */
 	@SuppressWarnings("rawtypes")
 	@Override
 	public boolean equals(Object obj) {
-		
-		if(obj == null || !(obj instanceof TModelView))
+
+		if (obj == null || !(obj instanceof TModelView))
 			return false;
-		
+
 		TModelView p = (TModelView) obj;
-		
-		if(getModelViewId()!=null && p.getModelViewId()!=null){
+
+		if (getModelViewId() != null && p.getModelViewId() != null) {
 			return getModelViewId().equals(p.getModelViewId());
-		}	
-		
+		}
+
 		return false;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#getProperty(java.lang.String)
 	 */
 	@Override
@@ -366,264 +398,296 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 	public <T extends Observable> T getProperty(String fieldName) {
 		return (T) properties.get(fieldName);
 	}
-	
+
 	/**
 	 * Register a property
-	 * */
-	protected void registerProperty(String fieldName, Observable value){
+	 */
+	protected void registerProperty(String fieldName, Observable value) {
 		properties.put(fieldName, value);
 	}
-	
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void loadFields() {
-		
+
 		final Map<String, Field> modelFields = new HashMap<>();
 		Class superClass = this.model.getClass();
-		
-		Class<?> target = (TReflectionUtil.isImplemented(superClass, ITEntity.class)) 
-				? ITEntity.class 
-						: (TReflectionUtil.isImplemented(superClass, ITModel.class)) 
+
+		Class<?> target = (TReflectionUtil.isImplemented(superClass, ITEntity.class))
+				? ITEntity.class
+				: (TReflectionUtil.isImplemented(superClass, ITModel.class))
 						? ITModel.class
-								: null;
-		
-		if(target != null){
-			while(TReflectionUtil.isImplemented(superClass, target)){
-				for(Field f : superClass.getDeclaredFields())
+						: null;
+
+		if (target != null) {
+			while (TReflectionUtil.isImplemented(superClass, target)) {
+				for (Field f : superClass.getDeclaredFields())
 					modelFields.put(f.getName(), f);
 				superClass = superClass.getSuperclass();
 			}
 		}
-		
+
 		Map<String, TPropertyHelper> propertyMap = new HashMap<>();
 		target = ITModelView.class;
 		superClass = this.getClass();
-		
-		while(TReflectionUtil.isImplemented(superClass, target)){
-			if(!superClass.equals(TModelView.class)) {
+
+		while (TReflectionUtil.isImplemented(superClass, target)) {
+			if (!superClass.equals(TModelView.class)) {
 				Arrays.asList(superClass.getDeclaredFields()).stream()
-				.forEach(f->{
-					if(!propertyMap.containsKey(f.getName()))
-						try {
-							propertyMap.put(f.getName(), new TPropertyHelper(f, this));
-						} catch (Throwable e) {
-							LOGGER.error(e.getMessage(), e);
-						}
-				});
+						.forEach(f -> {
+							if (!propertyMap.containsKey(f.getName()))
+								try {
+									propertyMap.put(f.getName(), new TPropertyHelper(f, this));
+								} catch (Throwable e) {
+									LOGGER.error(e.getMessage(), e);
+								}
+						});
 			}
 			superClass = superClass.getSuperclass();
 		}
-		
+
 		properties.clear();
 		this.registerProperty("toStringProperty", display);
-		// percorre os campos do model view 
+		// percorre os campos do model view
 		propertyMap.values()
-		//.parallelStream()
-		.forEach(h -> {
-			if(h.isElegible()){
-				try{
-					//Used to stop at a specific field load at debug time
-					/* int x = 0;
-					if(h.name.contains("id"))
-						x = 1;
-					*/
-					// recupera o campo equivalente no model
-					Field entityField = modelFields.get(h.name);
-					
-					if(entityField!=null) {
-						
-						final Class entityFieldType = entityField.getType();
-						// recupera o metodo set do atributo na entidade
-						final Method entidadeSetMethod = TReflectionUtil.getSetterMethod(this.model.getClass(), h.name, entityFieldType);
-						//final Method entidadeSetMethod = this.model.getClass().getMethod(SET+StringUtils.capitalize(h.name), entidadeFieldType);;
-						
-						// recupera o valor do campo na entidade
-						final Method entityGetMethod = TReflectionUtil.getGetterMethod(this.model.getClass(), h.name);
-						//final Method entidadeGetMethod = this.model.getClass().getMethod(GET+StringUtils.capitalize(h.name));
-						// recupera o objeto da entidade
-						final Object obj = entityGetMethod.invoke(this.model);
-						
-						if(TPropertyUtil.isCollectionObservableType(h.type)){
-							
-							Class modelViewClass = null; 
-							Class entityClass = null;
-							if(h.genericType!=null){
-								modelViewClass = h.genericType.modelView();
-								entityClass = h.genericType.model();
-							}
-							
-							// ObservableList.class
-							if(TReflectionUtil.isImplemented(h.type, ObservableList.class)){ // OK
-								
-								final ObservableList property = (ObservableList) h.value; 
-								
-								final ListChangeListener listener = (ListChangeListener) tListenerHelper.tObjectRepository.get(h.name); 
-										
-								if(listener!=null){
-									property.removeListener(listener);
-									property.clear();
-								}
-								if(obj!=null){
-									for(Object o : (Collection) obj){
-										//if(o instanceof TModelView){
-										if(o instanceof ITModel){
-											if(modelViewClass==null && entityClass==null)
-												throw new Exception("\n\nT_ERROR "
-														+ "\nType: "+TErrorType.COLLECTION_CONFIGURATION
-														+ "\nFIELD: "+getClass().getSimpleName() + "."+h.name
-														+ "\n\n-Use the @TGenericType annotation at field "+getClass().getSimpleName() + "."+h.name+"\n\n");
-											try{
-												if(modelViewClass!=TModelView.class && entityClass!=null)
-													property.add(modelViewClass.getConstructor(entityClass).newInstance(o));
-												else
-													property.add(o);
-											}catch(IllegalArgumentException e){
-												String error = "\n\nT_ERROR\nType: "+TErrorType.BUILD
-														+ "\nModel View class: "+modelViewClass.getName()+".class"
-														+ "\nModel View constructor argument type: "+entityClass.getName()+".class"
-														+ "\nModel to bind: "+o.getClass().getName()+".class"
-														+ "\n\n-Check the configuration of the field "+h.name+" at "+getClass().getName()+".java\n\n";
-												
-												LOGGER.error(error, e);
-											}
-										}else if(o instanceof ITFileModel){
-											property.add(new TSimpleFileProperty<ITFileModel>((ITFileModel)o));
-										}
-									}
-								}
-								if(listener==null)
-									tListenerHelper.buildListListener(h.type, entityGetMethod, entidadeSetMethod, entityFieldType, property, h.name);
-								else
-									property.addListener(listener);
-								properties.put(h.name, property);
-							} 
-							
-							// ObservableSet.class
-							if(h.type == ObservableSet.class){ // TODO: DEVE SER TESTADO
-								final ObservableSet property = (ObservableSet) h.value; // modelViewGetMethod.invoke(this);
-								
-								//TODO: TESTAR LISTENER REPO - BEGIN
-								/*final SetChangeListener listener = (changeListenersRepository!=null) 
-										? (SetChangeListener)changeListenersRepository.get(entidadeSetMethod.getName())
-												:null;*/
-								
-								final SetChangeListener listener = (SetChangeListener) tListenerHelper.tObjectRepository.get(h.name);
-								//END
-										
-								if(listener!=null){
-									property.removeListener(listener);
-									property.clear();
-								}
-								if(obj!=null)
-									for(Object o : (Collection) obj)
-										if(modelViewClass!=TModelView.class && entityClass!=null)
-											property.add(modelViewClass.getConstructor(entityClass).newInstance(o));
-										else
-											property.add(o);
-								if(listener==null)
-									tListenerHelper.buildSetListener(h.type, entityGetMethod, entidadeSetMethod, entityFieldType, property, h.name);
-								else
-									property.addListener(listener);
-								properties.put(h.name, property);
-							}
-							
-							// ObservableMap.class
-							if(h.type == ObservableMap.class ){ // TODO: DEVE SER TESTADO
-								final ObservableMap property = (ObservableMap) h.value; //modelViewGetMethod.invoke(this);
-								if(!h.buildListener){
-									
-									//TODO: TESTAR LISTENER REPO - BEGIN
-									// final MapChangeListener listener = (MapChangeListener)changeListenersRepository.get(entidadeSetMethod.getName());
-									
-									final MapChangeListener listener = (MapChangeListener)	tListenerHelper.tObjectRepository.get(h.name);
-									//END
-									
-									if(listener!=null){
-										property.removeListener(listener);
-										property.clear();
-									}
-									
-									property.addListener(listener);
-								}
-								property.putAll((Map) obj);
-								if(h.buildListener)
-									tListenerHelper.buildMapListener(h.type, entityGetMethod, entidadeSetMethod, property, h.name);
-								properties.put(h.name, property);
-							}
-						}else{
-						
-							final Property property = (Property) h.value; //modelViewGetMethod.invoke(this);
-							if(!TCompatibleTypesHelper.isTypesCompatible(h.type, entityFieldType)){
-								
-								String error = "\n\nTERROR :: FIELD "+h.name+" of type "+h.type.getSimpleName()+" in "+getClass().getSimpleName()
-										+" is not compatible for the type "+entityFieldType+" on "+getModel().getClass().getSimpleName()+"\n";
-								error += "TINFO :: TModelView "+ h.type.getSimpleName() +" compatible types: ";
-								for(Class c : TCompatibleTypesHelper.compatibleTypes.get(property.getClass()))
-									error += c.getSimpleName()+", ";
-								
-								throw new TException(error.substring(0, error.length()-2)+"\n");
-							}
-							
-							// seta o valor do property com o valor da entidade
-							if(obj!=null){
-								if(obj instanceof String && property instanceof BooleanProperty){
-									String v = (String) obj;
-									String literal = v.equals("1") || v.toUpperCase().trim().equals("T") ||  v.toUpperCase().trim().equals("TRUE")  
-													? "true" : "false";
-									property.setValue(Boolean.valueOf(literal));
-								}else if(obj instanceof ITModel) {
-									Class modelViewClass = null; 
+				// .parallelStream()
+				.forEach(h -> {
+					if (h.isElegible()) {
+						try {
+							// Used to stop at a specific field load at debug time
+							/*
+							 * int x = 0;
+							 * if(h.name.contains("id"))
+							 * x = 1;
+							 */
+							// recupera o campo equivalente no model
+							Field entityField = modelFields.get(h.name);
+
+							if (entityField != null) {
+
+								final Class entityFieldType = entityField.getType();
+								// recupera o metodo set do atributo na entidade
+								final Method entidadeSetMethod = TReflectionUtil.getSetterMethod(this.model.getClass(),
+										h.name, entityFieldType);
+								// final Method entidadeSetMethod =
+								// this.model.getClass().getMethod(SET+StringUtils.capitalize(h.name),
+								// entidadeFieldType);;
+
+								// recupera o valor do campo na entidade
+								final Method entityGetMethod = TReflectionUtil.getGetterMethod(this.model.getClass(),
+										h.name);
+								// final Method entidadeGetMethod =
+								// this.model.getClass().getMethod(GET+StringUtils.capitalize(h.name));
+								// recupera o objeto da entidade
+								final Object obj = entityGetMethod.invoke(this.model);
+
+								if (TPropertyUtil.isCollectionObservableType(h.type)) {
+
+									Class modelViewClass = null;
 									Class entityClass = null;
-									
-									if(h.genericType!=null){
+									if (h.genericType != null) {
 										modelViewClass = h.genericType.modelView();
 										entityClass = h.genericType.model();
 									}
-									try{
-										if(modelViewClass!=TModelView.class && entityClass!=null)
-											property.setValue(modelViewClass.getConstructor(entityClass).newInstance(obj));
-										else
-											property.setValue(obj);
-									}catch(IllegalArgumentException e){
-										String error = "\n\nT_ERROR\nType: "+TErrorType.BUILD
-												+ "\nModel View class: "+modelViewClass.getName()+".class"
-												+ "\nModel View constructor argument type: "+entityClass.getName()+".class"
-												+ "\nModel to bind: "+obj.getClass().getName()+".class"
-												+ "\n\n-Check the configuration of the field "+h.name+" at "+getClass().getName()+".java\n\n";
-										
-										LOGGER.error(error, e);
-									}
-	
-								}else {
-									property.setValue(obj);
-								}
-							}else if(!(property instanceof TSimpleFileProperty))
-								property.setValue(null);
-							
-							// gera os ChangeListener(s)
-							if(h.buildListener)
-								tListenerHelper.buildListeners(h.type, entityFieldType, property, entidadeSetMethod, obj, h.name);
-							
-							properties.put(h.name, property);
-						}
-					
-					}
-					
-				}catch(Throwable e){				
-					LOGGER.error(e.toString(), e);
-				}
-			}else{
-				String types = "";
-				for (Class c : TCompatibleTypesHelper.compatibleTypes.keySet()) 
-					types += c.getSimpleName()+", ";
-				
-				LOGGER.info(h.name+" field of type "+h.type.getSimpleName()+" in "+getClass().getSimpleName()+" is not compatible for a TModelView!");
-				LOGGER.info("TModelView compatible types: "+types.substring(0,types.length()-2));
-			}
-		});
-		
-	}
 
+									// ObservableList.class
+									if (TReflectionUtil.isImplemented(h.type, ObservableList.class)) { // OK
+
+										final ObservableList property = (ObservableList) h.value;
+
+										final ListChangeListener listener = (ListChangeListener) tListenerHelper.tObjectRepository
+												.get(h.name);
+
+										if (listener != null) {
+											property.removeListener(listener);
+											property.clear();
+										}
+										if (obj != null) {
+											for (Object o : (Collection) obj) {
+												// if(o instanceof TModelView){
+												if (o instanceof ITModel) {
+													if (modelViewClass == null && entityClass == null)
+														throw new Exception("\n\nT_ERROR "
+																+ "\nType: " + TErrorType.COLLECTION_CONFIGURATION
+																+ "\nFIELD: " + getClass().getSimpleName() + "."
+																+ h.name
+																+ "\n\n-Use the @TGenericType annotation at field "
+																+ getClass().getSimpleName() + "." + h.name + "\n\n");
+													try {
+														if (modelViewClass != TModelView.class && entityClass != null)
+															property.add(modelViewClass.getConstructor(entityClass)
+																	.newInstance(o));
+														else
+															property.add(o);
+													} catch (IllegalArgumentException e) {
+														String error = "\n\nT_ERROR\nType: " + TErrorType.BUILD
+																+ "\nModel View class: " + modelViewClass.getName()
+																+ ".class"
+																+ "\nModel View constructor argument type: "
+																+ entityClass.getName() + ".class"
+																+ "\nModel to bind: " + o.getClass().getName()
+																+ ".class"
+																+ "\n\n-Check the configuration of the field " + h.name
+																+ " at " + getClass().getName() + ".java\n\n";
+
+														LOGGER.error(error, e);
+													}
+												} else if (o instanceof ITFileModel) {
+													property.add(new TSimpleFileProperty<ITFileModel>((ITFileModel) o));
+												}
+											}
+										}
+										if (listener == null)
+											tListenerHelper.buildListListener(h.type, entityGetMethod,
+													entidadeSetMethod, entityFieldType, property, h.name);
+										else
+											property.addListener(listener);
+										properties.put(h.name, property);
+									}
+
+									// ObservableSet.class
+									if (h.type == ObservableSet.class) { // TODO: DEVE SER TESTADO
+										final ObservableSet property = (ObservableSet) h.value; // modelViewGetMethod.invoke(this);
+
+										// TODO: TESTAR LISTENER REPO - BEGIN
+										/*
+										 * final SetChangeListener listener = (changeListenersRepository!=null)
+										 * ?
+										 * (SetChangeListener)changeListenersRepository.get(entidadeSetMethod.getName())
+										 * :null;
+										 */
+
+										final SetChangeListener listener = (SetChangeListener) tListenerHelper.tObjectRepository
+												.get(h.name);
+										// END
+
+										if (listener != null) {
+											property.removeListener(listener);
+											property.clear();
+										}
+										if (obj != null)
+											for (Object o : (Collection) obj)
+												if (modelViewClass != TModelView.class && entityClass != null)
+													property.add(
+															modelViewClass.getConstructor(entityClass).newInstance(o));
+												else
+													property.add(o);
+										if (listener == null)
+											tListenerHelper.buildSetListener(h.type, entityGetMethod, entidadeSetMethod,
+													entityFieldType, property, h.name);
+										else
+											property.addListener(listener);
+										properties.put(h.name, property);
+									}
+
+									// ObservableMap.class
+									if (h.type == ObservableMap.class) { // TODO: DEVE SER TESTADO
+										final ObservableMap property = (ObservableMap) h.value; // modelViewGetMethod.invoke(this);
+										if (!h.buildListener) {
+
+											// TODO: TESTAR LISTENER REPO - BEGIN
+											// final MapChangeListener listener =
+											// (MapChangeListener)changeListenersRepository.get(entidadeSetMethod.getName());
+
+											final MapChangeListener listener = (MapChangeListener) tListenerHelper.tObjectRepository
+													.get(h.name);
+											// END
+
+											if (listener != null) {
+												property.removeListener(listener);
+												property.clear();
+											}
+
+											property.addListener(listener);
+										}
+										property.putAll((Map) obj);
+										if (h.buildListener)
+											tListenerHelper.buildMapListener(h.type, entityGetMethod, entidadeSetMethod,
+													property, h.name);
+										properties.put(h.name, property);
+									}
+								} else {
+
+									final Property property = (Property) h.value; // modelViewGetMethod.invoke(this);
+									if (!TCompatibleTypesHelper.isTypesCompatible(h.type, entityFieldType)) {
+
+										String error = "\n\nTERROR :: FIELD " + h.name + " of type "
+												+ h.type.getSimpleName() + " in " + getClass().getSimpleName()
+												+ " is not compatible for the type " + entityFieldType + " on "
+												+ getModel().getClass().getSimpleName() + "\n";
+										error += "TINFO :: TModelView " + h.type.getSimpleName()
+												+ " compatible types: ";
+										for (Class c : TCompatibleTypesHelper.compatibleTypes.get(property.getClass()))
+											error += c.getSimpleName() + ", ";
+
+										throw new TException(error.substring(0, error.length() - 2) + "\n");
+									}
+
+									// seta o valor do property com o valor da entidade
+									if (obj != null) {
+										if (obj instanceof String && property instanceof BooleanProperty) {
+											String v = (String) obj;
+											String literal = v.equals("1") || v.toUpperCase().trim().equals("T")
+													|| v.toUpperCase().trim().equals("TRUE")
+															? "true"
+															: "false";
+											property.setValue(Boolean.valueOf(literal));
+										} else if (obj instanceof ITModel) {
+											Class modelViewClass = null;
+											Class entityClass = null;
+
+											if (h.genericType != null) {
+												modelViewClass = h.genericType.modelView();
+												entityClass = h.genericType.model();
+											}
+											try {
+												if (modelViewClass != TModelView.class && entityClass != null)
+													property.setValue(modelViewClass.getConstructor(entityClass)
+															.newInstance(obj));
+												else
+													property.setValue(obj);
+											} catch (IllegalArgumentException e) {
+												String error = "\n\nT_ERROR\nType: " + TErrorType.BUILD
+														+ "\nModel View class: " + modelViewClass.getName() + ".class"
+														+ "\nModel View constructor argument type: "
+														+ entityClass.getName() + ".class"
+														+ "\nModel to bind: " + obj.getClass().getName() + ".class"
+														+ "\n\n-Check the configuration of the field " + h.name + " at "
+														+ getClass().getName() + ".java\n\n";
+
+												LOGGER.error(error, e);
+											}
+
+										} else {
+											property.setValue(obj);
+										}
+									} else if (!(property instanceof TSimpleFileProperty))
+										property.setValue(null);
+
+									// gera os ChangeListener(s)
+									if (h.buildListener)
+										tListenerHelper.buildListeners(h.type, entityFieldType, property,
+												entidadeSetMethod, obj, h.name);
+
+									properties.put(h.name, property);
+								}
+
+							}
+
+						} catch (Throwable e) {
+							LOGGER.error(e.toString(), e);
+						}
+					} else {
+						String types = "";
+						for (Class c : TCompatibleTypesHelper.compatibleTypes.keySet())
+							types += c.getSimpleName() + ", ";
+
+						LOGGER.info(h.name + " field of type " + h.type.getSimpleName() + " in "
+								+ getClass().getSimpleName() + " is not compatible for a TModelView!");
+						LOGGER.info("TModelView compatible types: " + types.substring(0, types.length() - 2));
+					}
+				});
+
+	}
 
 	@Transient
 	protected void buildLastHashCode() {
@@ -637,7 +701,9 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		this.lastHashCode = lastHashCode;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#removeAllListener()
 	 */
 	@Override
@@ -645,7 +711,9 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		tListenerHelper.removeAllListener();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#removeListener(java.lang.String)
 	 */
 	@Override
@@ -653,7 +721,9 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		return tListenerHelper.removeListener(listenerId);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#getListenerKeys()
 	 */
 	@Override
@@ -661,42 +731,56 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		return tListenerHelper.getListenerKeys();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.model.ITModelView#getListenerRepository()
 	 */
 	@Override
 	public TRepository getListenerRepository() {
 		return tListenerHelper.getListenerRepository();
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String, javafx.beans.InvalidationListener)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String,
+	 * javafx.beans.InvalidationListener)
 	 */
 	@Override
 	public void addListener(final String fieldName, InvalidationListener invalidationListener) {
 		tListenerHelper.addListener(fieldName, invalidationListener);
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String, javafx.beans.value.ChangeListener)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String,
+	 * javafx.beans.value.ChangeListener)
 	 */
 	@Override
 	@SuppressWarnings("rawtypes")
 	public void addListener(final String fieldName, ChangeListener changeListener) {
 		tListenerHelper.addListener(fieldName, changeListener);
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String, javafx.collections.MapChangeListener)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String,
+	 * javafx.collections.MapChangeListener)
 	 */
 	@Override
 	@SuppressWarnings("rawtypes")
 	public void addListener(final String fieldName, final MapChangeListener changeListener) {
 		tListenerHelper.addListener(fieldName, changeListener);
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String, javafx.collections.SetChangeListener)
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String,
+	 * javafx.collections.SetChangeListener)
 	 */
 	@Override
 	@SuppressWarnings("rawtypes")
@@ -704,13 +788,16 @@ public abstract class TModelView<M extends ITModel> implements ITModelView<M> {
 		tListenerHelper.addListener(fieldName, changeListener);
 	}
 
-	/* (non-Javadoc)
-	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String, javafx.collections.ListChangeListener)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.tedros.core.model.ITModelView#addListener(java.lang.String,
+	 * javafx.collections.ListChangeListener)
 	 */
 	@Override
 	@SuppressWarnings("rawtypes")
 	public void addListener(final String fieldName, final ListChangeListener changeListener) {
 		tListenerHelper.addListener(fieldName, changeListener);
 	}
-		
+
 }
