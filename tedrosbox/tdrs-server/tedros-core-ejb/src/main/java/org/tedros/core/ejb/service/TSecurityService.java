@@ -71,7 +71,20 @@ public class TSecurityService {
 
         jedisPool = new JedisPool(poolConfig, redisHost, redisPort);
         objectMapper = new ObjectMapper();
+        objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.findAndRegisterModules();
+        
+        // Módulo para desserializar TAccessToken (que não tem construtor padrão)
+        com.fasterxml.jackson.databind.module.SimpleModule module = new com.fasterxml.jackson.databind.module.SimpleModule();
+        module.addDeserializer(TAccessToken.class, new com.fasterxml.jackson.databind.JsonDeserializer<TAccessToken>() {
+            @Override
+            public TAccessToken deserialize(com.fasterxml.jackson.core.JsonParser p, com.fasterxml.jackson.databind.DeserializationContext ctxt) throws java.io.IOException {
+                com.fasterxml.jackson.databind.JsonNode node = p.getCodec().readTree(p);
+                String token = node.has("token") ? node.get("token").asText() : node.asText();
+                return new TAccessToken(token);
+            }
+        });
+        objectMapper.registerModule(module);
 
         LOG.info("TSecurityService conectado ao Redis em " + redisHost + ":" + redisPort);
     }
