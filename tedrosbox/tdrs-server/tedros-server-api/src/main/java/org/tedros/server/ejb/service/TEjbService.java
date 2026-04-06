@@ -32,22 +32,22 @@ public abstract class TEjbService<E extends ITEntity> implements ITEjbService<E>
     public abstract ITGenericBO<E> getBussinesObject();
 
     @Override
-    public List<E> search(TSelect<E> sel) {
+    public List<E> search(TSelect<E> sel) throws Exception {
         return getBussinesObject().search(sel);
     }
 
     @Override
-    public List<E> search(Long userId, TSelect<E> sel) {
+    public List<E> search(Long userId, TSelect<E> sel) throws Exception {
         return getBussinesObject().search(userId, sel);
     }
 
     @Override
-    public List<E> search(TSelect<E> sel, int firstResult, int maxResult) {
+    public List<E> search(TSelect<E> sel, int firstResult, int maxResult) throws Exception {
         return getBussinesObject().search(sel, firstResult, maxResult);
     }
 
     @Override
-    public List<E> search(Long userId, TSelect<E> sel, int firstResult, int maxResult) {
+    public List<E> search(Long userId, TSelect<E> sel, int firstResult, int maxResult) throws Exception {
         return getBussinesObject().search(userId, sel, firstResult, maxResult);
     }
 

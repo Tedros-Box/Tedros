@@ -19,8 +19,9 @@ public interface ITGenericBO<E extends ITEntity> {
      *
      * @param sel the selection criteria
      * @return list of matching entities
+     * @throws Exception 
      */
-    List<E> search(TSelect<E> sel);
+    List<E> search(TSelect<E> sel) throws Exception;
 
     /**
      * Searches for entities using the provided selection criteria with pagination.
@@ -30,7 +31,7 @@ public interface ITGenericBO<E extends ITEntity> {
      * @param maxResult   the maximum number of results to retrieve
      * @return paginated list of matching entities
      */
-    List<E> search(TSelect<E> sel, int firstResult, int maxResult);
+    List<E> search(TSelect<E> sel, int firstResult, int maxResult) throws Exception;
 
     /**
      * Counts the number of entities that match the provided selection criteria.
@@ -151,8 +152,9 @@ public interface ITGenericBO<E extends ITEntity> {
      * @param userId the ID of the user (usually the creator)
      * @param sel    the selection criteria
      * @return list of matching entities belonging to the user
+     * @throws Exception 
      */
-    List<E> search(Long userId, TSelect<E> sel);
+    List<E> search(Long userId, TSelect<E> sel) throws Exception;
 
     /**
      * Searches for entities using the provided selection criteria with pagination, filtered by user ID.
@@ -162,8 +164,9 @@ public interface ITGenericBO<E extends ITEntity> {
      * @param firstResult the index of the first result
      * @param maxResult   the maximum number of results
      * @return paginated list of matching entities belonging to the user
+     * @throws Exception 
      */
-    List<E> search(Long userId, TSelect<E> sel, int firstResult, int maxResult);
+    List<E> search(Long userId, TSelect<E> sel, int firstResult, int maxResult) throws Exception;
 
     /**
      * Counts entities that match the selection criteria, filtered by user ID.
