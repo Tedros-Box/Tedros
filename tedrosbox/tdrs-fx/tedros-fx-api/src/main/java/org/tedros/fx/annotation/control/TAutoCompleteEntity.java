@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
 
 import org.tedros.api.parser.ITAnnotationParser;
 import org.tedros.fx.annotation.TDefaultValue;
+import org.tedros.fx.annotation.parser.TAutoCompleteEntityParser;
 import org.tedros.fx.annotation.parser.TRequiredTextFieldParser;
 import org.tedros.fx.annotation.parser.TTextFieldParser;
 import org.tedros.fx.annotation.parser.TextFieldParser;
@@ -71,11 +72,11 @@ public @interface TAutoCompleteEntity  {
 	 * <pre>
 	 * The parser class for this annotation
 	 * 
-	 * Default value: {TRequiredTextFieldParser.class, TTextFieldParser.class, TextFieldParser.class}
+	 * Default value: {TAutoCompleteEntityParser.class, TRequiredTextFieldParser.class, TTextFieldParser.class, TextFieldParser.class}
 	 * </pre>
 	 * */
 	@SuppressWarnings("rawtypes")
-	public Class<? extends ITAnnotationParser>[] parser() default {TRequiredTextFieldParser.class, TTextFieldParser.class, TextFieldParser.class};
+	public Class<? extends ITAnnotationParser>[] parser() default {TAutoCompleteEntityParser.class, TRequiredTextFieldParser.class, TTextFieldParser.class, TextFieldParser.class};
 	
 	
 	/**

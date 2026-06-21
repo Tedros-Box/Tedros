@@ -21,6 +21,7 @@ import org.tedros.fx.annotation.parser.TRequiredDatePickerParser;
 import org.tedros.fx.annotation.scene.TNode;
 import org.tedros.fx.annotation.scene.control.TComboBoxBase;
 import org.tedros.fx.annotation.scene.control.TControl;
+import org.tedros.fx.builder.DateTimeFormatBuilder;
 import org.tedros.fx.builder.ITFieldBuilder;
 import org.tedros.fx.builder.ITGenericBuilder;
 import org.tedros.fx.builder.NullCalendarBuilder;
@@ -50,6 +51,8 @@ import javafx.util.Callback;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface TDatePickerField  {
+	
+	static final Class<DateTimeFormatBuilder> DATE_TIME_FORMAT_BUILDER = DateTimeFormatBuilder.class;
 	
 	/**
 	 *<pre>

@@ -72,7 +72,7 @@ public @interface TAutoCompleteTextField  {
 		String[] values() default {};
 		
 		Class<? extends ITGenericBuilder<List<String>>> factory() default NullStringListBuilder.class;
-	};
+	}
 	
 	/**
 	 *<pre>

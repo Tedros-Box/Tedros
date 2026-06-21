@@ -73,6 +73,10 @@ public abstract class TGenericEAO<E extends ITEntity> implements ITGenericEAO<E>
 		
 	}
 	
+	public void afterSearch(List<E> lst)throws Exception{
+		
+	}
+	
 	@Override
 	@SuppressWarnings("unchecked")
 	public E findById(E entity)throws Exception{
@@ -149,20 +153,22 @@ public abstract class TGenericEAO<E extends ITEntity> implements ITGenericEAO<E>
 	
 	@Override
 	@SuppressWarnings("unchecked")
-	public List<E> search(TSelect<E> sel){
+	public List<E> search(TSelect<E> sel) throws Exception{
 		Query qry = createSearchQuery(sel, false);
-		return qry.getResultList();
+		List<E> lst = qry.getResultList();
+		afterSearch(lst);		
+		return lst;
 	}
 	
 	@Override
 	@SuppressWarnings("unchecked")
-	public List<E> search(TSelect<E> sel, int firstResult, int maxResult){
-		
+	public List<E> search(TSelect<E> sel, int firstResult, int maxResult) throws Exception{		
 		Query qry = createSearchQuery(sel, false);
 		qry.setFirstResult(firstResult);
 		qry.setMaxResults(maxResult);
-		return qry.getResultList();
-		
+		List<E> lst = qry.getResultList();
+		afterSearch(lst);		
+		return lst;		
 	}
 	
 	@Override

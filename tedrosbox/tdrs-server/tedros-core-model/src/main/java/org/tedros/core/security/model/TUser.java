@@ -23,57 +23,67 @@ import org.tedros.server.security.TAccessToken;
 @Cacheable(false)
 @Table(name = DomainTables.user, schema = DomainSchema.tedros_core)
 public class TUser extends TVersionEntity implements ITUser {
-	
+
 	private static final long serialVersionUID = 2125379739952921937L;
 
-	@Column(name = "name", length=100, nullable = false)
+	@Column(name = "name", length = 100, nullable = false)
 	private String name;
-	
-	@Column(name = "login", length=100, nullable = false)
+
+	@Column(name = "login", length = 100, nullable = false)
 	private String login;
-	
-	@Column(name = "password", length=250, nullable = false)
+
+	@Column(name = "password", length = 250, nullable = false)
 	private String password;
-	
-	@Column(name = "active", length=1)
+
+	@Column(name = "active", length = 1)
 	private String active;
-	
-	@Column(length=1)
+
+	@Column(length = 1)
 	private String accessLogEnable;
-	
+
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(	name=DomainTables.user_profile,
-				schema=DomainSchema.tedros_core,
-				joinColumns= @JoinColumn(name="user_id"),
-				inverseJoinColumns= @JoinColumn(name="prof_id"))
+	@JoinTable(name = DomainTables.user_profile, schema = DomainSchema.tedros_core, joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "prof_id"))
 	private Set<TProfile> profiles;
-	
+
 	@ManyToOne
-	@JoinColumn(name="prof_id")
+	@JoinColumn(name = "prof_id")
 	private TProfile activeProfile;
-	
+
 	private TAccessToken accessToken;
-	
-	
+
 	public TUser() {
-		
+
 	}
-	
+
 	public TUser(String name, String login) {
 		this.name = name;
 		this.login = login;
 	}
-	
+
 	public TUser(String name) {
 		this.name = name;
 	}
-			
-	/* (non-Javadoc)
+
+	public TUser(String name, String login, String password, String active, String accessLogEnable,
+			Set<TProfile> profiles, TProfile activeProfile, TAccessToken accessToken) {
+		this.name = name;
+		this.login = login;
+		this.password = password;
+		this.active = active;
+		this.accessLogEnable = accessLogEnable;
+		this.profiles = profiles;
+		this.activeProfile = activeProfile;
+		this.accessToken = accessToken;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		if(obj==null)
+		if (obj == null)
 			return false;
 		if (this == obj)
 			return true;
@@ -87,8 +97,10 @@ public class TUser extends TVersionEntity implements ITUser {
 			return false;
 		return true;
 	}
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#hashCode()
 	 */
 	@Override
@@ -96,7 +108,9 @@ public class TUser extends TVersionEntity implements ITUser {
 		return HashCodeBuilder.reflectionHashCode(this, false);
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.security.model.ITUser#getName()
 	 */
 	@Override
@@ -148,7 +162,9 @@ public class TUser extends TVersionEntity implements ITUser {
 		this.activeProfile = activeProfile;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.security.model.ITUser#getAccessToken()
 	 */
 	@Override
@@ -177,14 +193,16 @@ public class TUser extends TVersionEntity implements ITUser {
 		this.accessLogEnable = accessLogEnable;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see org.tedros.core.security.model.ITUser#getProfilesText()
 	 */
 	@Override
 	public String getProfilesText() {
 		StringBuffer sb = new StringBuffer();
-		getProfiles().forEach(p->{
-			sb.append((sb.toString().isEmpty() ? "" : ", ")+ p.getName());
+		getProfiles().forEach(p -> {
+			sb.append((sb.toString().isEmpty() ? "" : ", ") + p.getName());
 		});
 		return sb.toString();
 	}

@@ -78,9 +78,7 @@ public class TListViewHelper<M extends TEntityModelView<? extends ITEntity>>{
 		
 		tListViewPane = new StackPane();
 		tListViewPane.getStyleClass().add("t-panel-background-color");
-		tListViewPane.setAlignment(Pos.CENTER);
-		//tListViewPane.maxWidthProperty().bind(listViewMaxWidth);
-		//tListViewPane.minWidthProperty().bind(listViewMinWidth);
+		tListViewPane.setAlignment(Pos.CENTER);		
 		
 		// build the list view box
 		tListViewLayout = new VBox(4);
@@ -107,16 +105,15 @@ public class TListViewHelper<M extends TEntityModelView<? extends ITEntity>>{
 			}
 			tPaginatorAccordion = new Accordion();
 			tPaginatorAccordion.autosize();
-			//tPaginatorAccordion.getStyleClass().add("t-accordion");
+			
 			TitledPane tp = new TitledPane(TLanguage.getInstance().getString(TFxKey.PAGINATION), tPaginator);
 			tPaginatorAccordion.getPanes().add(tp);
 			tPaginator.maxWidthProperty().bind(listViewMaxWidth);
 			tPaginator.minWidthProperty().bind(listViewMinWidth);
 		}
-		
-		if(TedrosContext.getArtificialIntelligenceEnabled() 
-				&& aiAssistant!=null && aiAssistant.show()) {
-			this.tAiAssistat = new  TAiAssistant<M>(aiAssistant.modelViewClass(), aiAssistant.jsonModel());
+		Boolean artificialIntelligenceEnabled = TedrosContext.getArtificialIntelligenceEnabled();
+		if(artificialIntelligenceEnabled!=null && artificialIntelligenceEnabled && aiAssistant!=null && aiAssistant.show()) {
+			this.tAiAssistat = new  TAiAssistant<>(aiAssistant.modelViewClass(), aiAssistant.jsonModel());
 			if(tPaginatorAccordion==null) {
 				tPaginatorAccordion = new Accordion();
 				tPaginatorAccordion.autosize();

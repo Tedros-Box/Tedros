@@ -56,11 +56,8 @@ import javafx.scene.layout.Priority;
 			buildDeleteButton=false, buildSaveButton=false, buildCollapseButton=false),
 		behavior=@TBehavior(type=TAuthorizationBehavior.class, action=TAuthorizationLoadAction.class)
 	))
-@TSecurity(	id=DomainApp.AUTHORIZATION_FORM_ID, 
-	appName=ToolsKey.APP_TOOLS, 
-	moduleName=ToolsKey.MODULE_USER, 
-	viewName=ToolsKey.VIEW_AUTHORIZATION,
-	allowedAccesses={TAuthorizationType.VIEW_ACCESS, TAuthorizationType.EDIT, TAuthorizationType.NEW})
+@TSecurity(	id=DomainApp.AUTHORIZATION_FORM_ID, appName=ToolsKey.APP_TOOLS, moduleName=ToolsKey.MODULE_USER, 
+	viewName=ToolsKey.VIEW_AUTHORIZATION, allowedAccesses={TAuthorizationType.VIEW_ACCESS, TAuthorizationType.EDIT, TAuthorizationType.NEW})
 public final class TAuthorizationMV extends TEntityModelView<TAuthorization> {
 	
 	@TLabel(text=TUsualKey.SECURITYID)
@@ -88,21 +85,13 @@ public final class TAuthorizationMV extends TEntityModelView<TAuthorization> {
 	@TShowField
 	@THBox(	pane=@TPane(children={"type","typeDescription"}), spacing=10, fillHeight=true,
 			hgrow=@THGrow(priority={@TPriority(field="type", priority=Priority.NEVER), 
-				   		@TPriority(field="typeDescription", priority=Priority.NEVER)}))
-			
+				   		@TPriority(field="typeDescription", priority=Priority.NEVER)}))			
 	private SimpleStringProperty type;
 	
 	@TLabel(text=TUsualKey.PERMISSION)
 	@TShowField
 	private SimpleStringProperty typeDescription;
-	/*
-	@TLabel(text=TUsualKey.ENABLED, position=TLabelPosition.LEFT)
-	@THorizontalRadioGroup(alignment=Pos.TOP_LEFT, spacing=4,
-	radioButtons = {@TRadioButton(text=TUsualKey.YES, userData="S"), 
-					@TRadioButton(text=TUsualKey.NO, userData="N")
-	})
-	private SimpleStringProperty enabled;
-*/
+	
 	public TAuthorizationMV(TAuthorization entity) {
 		super(entity);
 		super.formatToString(TFormatter.create()

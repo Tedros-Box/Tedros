@@ -9,14 +9,18 @@ import java.io.Serializable;
  * @author Davis Gordon
  *
  */
-public class TAccessToken implements Serializable{
+public class TAccessToken implements Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -2699002059995469235L;
 	private String token;
-	
+
+	public TAccessToken() {
+
+	}
+
 	/**
 	 * @param token
 	 */
@@ -31,7 +35,9 @@ public class TAccessToken implements Serializable{
 		return token;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#hashCode()
 	 */
 	@Override
@@ -42,7 +48,9 @@ public class TAccessToken implements Serializable{
 		return result;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
 	@Override

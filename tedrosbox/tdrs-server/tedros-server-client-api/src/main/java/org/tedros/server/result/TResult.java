@@ -113,6 +113,24 @@ public class TResult<E> implements Serializable {
 		this.priorityMessage = priorityMessage;
 	}
 	
+	public boolean isSuccess() {
+		return TState.SUCCESS.equals(this.state);
+	}
 	
+	public boolean isError() {
+		return TState.ERROR.equals(this.state);
+	}
+	
+	public boolean isWarning() {
+		return TState.WARNING.equals(this.state);
+	}
+	
+	public boolean isOutdated() {
+		return TState.OUTDATED.equals(this.state);
+	}
+	
+	public boolean isNoResult() {
+		return TState.NO_RESULT.equals(this.state);
+	}
 	
 }

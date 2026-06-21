@@ -76,7 +76,7 @@ public class TAutoCompleteEntity extends TTextField {
 		this.tSelectedItemProperty = new SimpleObjectProperty<>();
 		this.entriesPopup = new ContextMenu();
 		this.entries = FXCollections.observableArrayList();
-		this.tConverter = e -> e.toString();
+		this.tConverter = Object::toString;
 		buildListeners();
 		this.entries.addListener(new WeakListChangeListener<>(lchl));
 		textProperty().addListener(chl);
@@ -134,11 +134,11 @@ public class TAutoCompleteEntity extends TTextField {
 					p.stateProperty().addListener((a1, o1, n1)->{
 						if(n1.equals(State.SUCCEEDED)) {
 							List<TResult<List>> l = (List<TResult<List>>) p.getValue();
-							if(l.size()>0) {
+							if(!l.isEmpty()) {
 								TResult<List> res = l.get(0);
 								if(res.getState().equals(TState.SUCCESS)) {
 									List l1 = res.getValue();
-									if(l1.size()>0)
+									if(!l1.isEmpty())
 										entries.addAll(l1);
 									else
 										entries.clear();
@@ -174,9 +174,7 @@ public class TAutoCompleteEntity extends TTextField {
 			final TEntity result = list.get(i);
 			TextFlow text = this.buildTextFlow(tConverter.apply(result), getText());
 			CustomMenuItem item = new CustomMenuItem(text, true);
-			item.setOnAction(ev ->  {
-				tSelectedItemProperty.setValue(result);
-			});
+			item.setOnAction(ev ->  tSelectedItemProperty.setValue(result));
 			menuItems.add(item);
 		}
 		entriesPopup.getItems().clear();

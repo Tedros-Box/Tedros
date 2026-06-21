@@ -27,7 +27,7 @@ public abstract class TRequiredTextField extends TextField implements ITRequirab
 	private TRequiredFieldHelper helper;
 	private SimpleObjectProperty<Node> tRequiredNodeProperty = new SimpleObjectProperty<>();
 	
-	public TRequiredTextField() {
+	protected TRequiredTextField() {
 		this.helper = new TRequiredFieldHelper(this, true);
 	}
 	

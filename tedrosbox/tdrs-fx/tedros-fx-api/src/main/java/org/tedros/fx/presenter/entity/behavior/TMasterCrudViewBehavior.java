@@ -196,14 +196,12 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 							}else{
 								String msg = resultados.getMessage();
 								TLoggerUtil.debug(getClass(), msg);
-								switch(resultados.getState()) {
-									case ERROR:
-										addMessage(new TMessage(TMessageType.ERROR, msg));
-										break;
-									default:
-										addMessage(new TMessage(TMessageType.WARNING, msg));
-										break;
+								if(resultados.getState().equals(TState.ERROR)) {
+									addMessage(new TMessage(TMessageType.ERROR, msg));
+								}else {
+									addMessage(new TMessage(TMessageType.WARNING, msg));
 								}
+								
 								setViewStateAsReady();
 							}
 							getListenerRepository().remove(PROCESSLOADLISTVIEW_KEY);

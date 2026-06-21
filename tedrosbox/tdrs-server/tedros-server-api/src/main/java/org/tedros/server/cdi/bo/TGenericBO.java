@@ -17,23 +17,23 @@ import org.tedros.server.query.TSelect;
 public abstract class TGenericBO<E extends ITEntity> implements ITGenericBO<E> {
 
     @Override
-    public List<E> search(TSelect<E> sel) {
+    public List<E> search(TSelect<E> sel) throws Exception {
         return getEao().search(sel);
     }
 
     @Override
-    public List<E> search(Long userId, TSelect<E> sel) {
+    public List<E> search(Long userId, TSelect<E> sel) throws Exception {
         sel.addAndCondition(sel.getAlias(), ITGenericEAO.CREATED_BY_USER_ID, TCompareOp.EQUAL, userId);
         return getEao().search(sel);
     }
 
     @Override
-    public List<E> search(TSelect<E> sel, int firstResult, int maxResult) {
+    public List<E> search(TSelect<E> sel, int firstResult, int maxResult) throws Exception {
         return getEao().search(sel, firstResult, maxResult);
     }
 
     @Override
-    public List<E> search(Long userId, TSelect<E> sel, int firstResult, int maxResult) {
+    public List<E> search(Long userId, TSelect<E> sel, int firstResult, int maxResult) throws Exception {
         sel.addAndCondition(sel.getAlias(), ITGenericEAO.CREATED_BY_USER_ID, TCompareOp.EQUAL, userId);
         return getEao().search(sel, firstResult, maxResult);
     }

@@ -12,8 +12,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.tedros.fx.annotation.control.TShowField.TField;
 import org.tedros.fx.control.TShowField;
 import org.tedros.fx.domain.TLayoutType;
+import org.tedros.util.TLoggerUtil;
 
-import javafx.beans.property.Property;
+import javafx.beans.Observable;
 
 
 /**
@@ -22,13 +23,12 @@ import javafx.beans.property.Property;
  * @author Davis Gordon
  *
  */
-@SuppressWarnings("rawtypes")
 public class TShowFieldBuilder 
 extends TBuilder
-implements ITControlBuilder<TShowField, Property> {
+implements ITControlBuilder<TShowField, Observable> {
 
 	
-	public TShowField build(final Annotation annotation, final Property attrProperty) throws Exception {
+	public TShowField build(final Annotation annotation, final Observable attrProperty) throws Exception {
 		org.tedros.fx.annotation.control.TShowField tAnnotation = 
 				(org.tedros.fx.annotation.control.TShowField) annotation;
 		
@@ -38,13 +38,17 @@ implements ITControlBuilder<TShowField, Property> {
 		for(TField f : tfs) {
 			org.tedros.fx.control.TField v = 
 					new org.tedros.fx.control.TField(f.name(), f.mask(), f.format(), 
-							f.dateStyle(), f.timeStyle(), f.label(), f.labelPosition(), f.converter());
+							f.dateStyle(), f.timeStyle(), f.label(), f.labelPosition(), f.converter(), f.renderHtml());
 			fields = ArrayUtils.add(fields, v);
 		}
-		
-		TShowField control = new TShowField(layout, attrProperty, super.getComponentDescriptor(), fields);
-		
-		callParser(tAnnotation, control);
-		return control;
+		try {
+			TShowField control = new TShowField(layout, attrProperty, super.getComponentDescriptor(), fields);
+			
+			callParser(tAnnotation, control);
+			return control;
+		}catch (Exception e) {
+			TLoggerUtil.error(this.getClass(), "Erro no field: " + super.getComponentDescriptor().getFieldDescriptor().getFieldName(), e);
+			return null;
+		}
 	}
 }

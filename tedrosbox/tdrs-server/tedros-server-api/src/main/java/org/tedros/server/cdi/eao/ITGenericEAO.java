@@ -19,13 +19,15 @@ public interface ITGenericEAO<E extends ITEntity> {
 
 	/**
 	 * Search for entities
+	 * @throws Exception 
 	 * */
-	List<E> search(TSelect<E> sel);
+	List<E> search(TSelect<E> sel) throws Exception;
 
 	/**
 	 * Search for entities
+	 * @throws Exception 
 	 * */
-	List<E> search(TSelect<E> sel, int firstResult, int maxResult);
+	List<E> search(TSelect<E> sel, int firstResult, int maxResult) throws Exception;
 	
 	/**
 	 * Count a searched entities

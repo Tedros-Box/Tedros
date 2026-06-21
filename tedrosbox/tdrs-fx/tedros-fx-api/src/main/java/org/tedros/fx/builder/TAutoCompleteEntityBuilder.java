@@ -83,8 +83,8 @@ implements ITControlBuilder<org.tedros.fx.control.TAutoCompleteEntity, Property>
 			control.tSelectedItemProperty()
 			.addListener(new WeakChangeListener<>(chl));
 		}else {
-			if(attrProperty.getValue() instanceof TEntity)
-				control.tSelectedItemProperty().setValue((TEntity) attrProperty.getValue());
+			if(attrProperty.getValue() instanceof TEntity entity)
+				control.tSelectedItemProperty().setValue(entity);
 			attrProperty.bindBidirectional(control.tSelectedItemProperty());
 		}
 		

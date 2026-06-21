@@ -401,7 +401,7 @@ public class TPager extends BorderPane {
 							: "MM-dd-yyyy";
 				if(s.temporal.equals(TTemporal.DATETIME))
 					m+=" HH:mm";
-				if(m.length()==prompt.length()) {
+				if(prompt!=null && m.length()==prompt.length()) {
 					try {
 						value = TDateUtil.getDate(prompt, m);
 					} catch (ParseException e1) {

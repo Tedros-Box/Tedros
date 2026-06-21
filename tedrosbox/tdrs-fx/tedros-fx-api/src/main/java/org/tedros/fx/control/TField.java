@@ -17,8 +17,10 @@ public class TField{
 	private TTimeStyle timeStyle;
 	private String label;
 	private TLabelPosition labelPosition;
+	private boolean renderHtml;
 	@SuppressWarnings("rawtypes")
 	private Class<? extends TConverter> converter;
+	
 	
 	/**
 	 * @param name
@@ -32,7 +34,7 @@ public class TField{
 	 */
 	@SuppressWarnings("rawtypes")
 	public TField(String name, String mask, String format, TDateStyle dateStyle, TTimeStyle timeStyle, String label,
-			TLabelPosition labelPosition, Class<? extends TConverter> converter) {
+			TLabelPosition labelPosition, Class<? extends TConverter> converter, boolean renderHtml) {
 		super();
 		this.name = name;
 		this.mask = mask;
@@ -42,6 +44,7 @@ public class TField{
 		this.label = label;
 		this.labelPosition = labelPosition;
 		this.converter = converter;
+		this.renderHtml = renderHtml;
 	}
 
 	/**
@@ -99,4 +102,8 @@ public class TField{
 	public Class<? extends TConverter> getConverter() {
 		return converter;
 	}
+	
+	public boolean isRenderHtml() {
+        return renderHtml;
+    }
 }

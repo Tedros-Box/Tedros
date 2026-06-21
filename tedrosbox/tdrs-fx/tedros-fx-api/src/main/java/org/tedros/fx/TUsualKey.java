@@ -61,6 +61,7 @@ public interface TUsualKey {
 	static final String COLLAPSE_MENU = "#{label.collapse.menu}";
 	static final String COLLAPSE_MENU_TOOLTIP = "#{label.collapse.menu.tooltip}";
 	static final String COLOR = "#{label.color}";
+	static final String COMMENT = "#{label.comment}";
 	static final String COMMON = "#{label.common}";
 	static final String COMPANY = "#{label.company}";
 	static final String COMPLEMENT = "#{label.complement}";
@@ -101,6 +102,7 @@ public interface TUsualKey {
 	static final String DOMAIN = "#{label.domain}";
 	static final String DONATION = "#{label.donation}";
 	static final String DONATIONS = "#{label.donations}";
+	static final String EDIT = "#{label.edit}";
 	static final String EDIT_CONTENT = "#{label.edit.content}";
 	static final String EMAIL = "#{label.email}";
 	static final String EMPLOYEE = "#{label.employee}";
@@ -189,6 +191,7 @@ public interface TUsualKey {
 	static final String NONE = "#{label.none}";
 	static final String NOTIFY_LINK = "#{label.notify.link}";
 	static final String NOTIFY_RESPONSABLE = "#{label.notify.responsable}";
+	static final String NUMBER = "#{label.number}";
 	static final String NUMERIC_CODE = "#{label.numeric.code}";
 	static final String OBSERVATION = "#{label.observation}";
 	static final String OCCUPATION = "#{label.occupation}";
@@ -231,10 +234,12 @@ public interface TUsualKey {
 	static final String QUANTITY = "#{label.quantity}";
 	static final String QUEUED = "#{label.queued}";
 	static final String REF_CODE = "#{label.ref.code}";
+	static final String REFRESH = "#{label.refresh}";
 	static final String REGISTRATION_FEE = "#{label.registration.fee}";
 	static final String REPEAT = "#{label.repeat}";
 	static final String REPEAT_OR_REFLECT = "#{label.repeat.or.reflect}";
 	static final String REPORTS = "#{label.reports}";
+	static final String REQUESTER = "#{label.requester}";
 	static final String RESIGNATION_DATE = "#{label.resignation.date}";
 	static final String RESPONSABLE = "#{label.responsable}";
 	static final String RESPONSABLE_FUNCTIONARY = "#{label.responsable.functionary}";

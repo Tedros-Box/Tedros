@@ -9,8 +9,7 @@ import org.tedros.core.TLanguage;
 import org.tedros.fx.TFxKey;
 import org.tedros.fx.control.TText.TTextStyle;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Side;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
@@ -27,11 +26,13 @@ import javafx.scene.text.TextFlow;
  * 
  * @author Caleb Brinkman
  */
-public class TAutoCompleteTextField extends TTextField {
+public class TAutoCompleteTextField extends TTextField implements ITTriggeredable {
 	/** The existing autocomplete entries. */
 	private final SortedSet<String> entries;
 	/** The popup used to select an entry. */
 	private ContextMenu entriesPopup;
+	
+	private SimpleStringProperty selectedEntryProperty = new SimpleStringProperty();
 
 	/** Construct a new AutoCompleteTextField. */
 	public TAutoCompleteTextField() {
@@ -39,22 +40,28 @@ public class TAutoCompleteTextField extends TTextField {
 		this.setTooltip(new Tooltip(TLanguage.getInstance().getString(TFxKey.TOOLTIP_AUTOCOMPLETE)));
 		entries = new TreeSet<>();
 		entriesPopup = new ContextMenu();
-		textProperty().addListener((a,o,n)->{
-				if (n==null || n.length() == 0) {
-					entriesPopup.hide();
-				} else {
-					LinkedList<String> searchResult = new LinkedList<>();
-					searchResult.addAll(entries.subSet(n, n + Character.MAX_VALUE));
-					if (entries.size() > 0) {
-						populatePopup(searchResult);
-						if (!entriesPopup.isShowing()) {
-							entriesPopup.show(TAutoCompleteTextField.this, Side.BOTTOM, 0, 0);
-						}
-					} else {
+		
+		this.sceneProperty().addListener((obs, oldScene, newScene) -> {
+			if(newScene != null) {
+				textProperty().addListener((a,o,n)->{
+					if (n==null || n.isEmpty()) {
 						entriesPopup.hide();
+						selectedEntryProperty.setValue(null);
+					} else {
+						LinkedList<String> searchResult = new LinkedList<>();
+						searchResult.addAll(entries.subSet(n, n + Character.MAX_VALUE));
+						if (!entries.isEmpty()) {
+							populatePopup(searchResult);
+							if (!entriesPopup.isShowing()) {							
+								entriesPopup.show(TAutoCompleteTextField.this, Side.BOTTOM, 0, 0);
+							}
+						} else {
+							entriesPopup.hide();
+						}
 					}
-				}
-			});
+				});
+			}
+		});
 
 		focusedProperty().addListener((a,o,n)->entriesPopup.hide());
 
@@ -67,6 +74,12 @@ public class TAutoCompleteTextField extends TTextField {
 	 */
 	public SortedSet<String> getEntries() {
 		return entries;
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public SimpleStringProperty tValueProperty() {
+		return selectedEntryProperty;
 	}
 
 	/**
@@ -84,13 +97,11 @@ public class TAutoCompleteTextField extends TTextField {
 			final String result = searchResult.get(i);
 			TextFlow entry = this.buildTextFlow(result, getText());
 			CustomMenuItem item = new CustomMenuItem(entry, true);
-			item.setOnAction(new EventHandler<ActionEvent>() {
-				@Override
-				public void handle(ActionEvent actionEvent) {
-					setText(result);
-					entriesPopup.hide();
-				}
-			});
+			item.setOnAction(e->{
+				setText(result);
+				selectedEntryProperty.set(result);
+				entriesPopup.hide();
+			});			
 			menuItems.add(item);
 		}
 		entriesPopup.getItems().clear();
@@ -107,7 +118,6 @@ public class TAutoCompleteTextField extends TTextField {
 																								// sensitive"
 		textBefore.settTextStyle(TTextStyle.MEDIUM);
 		textAfter.settTextStyle(TTextStyle.MEDIUM);
-		// textFilter.settTextStyle(TTextStyle.MEDIUM);
 		textFilter.setFill(Color.ORANGE);
 		textFilter.setFont(Font.font("Tahoma", FontWeight.BOLD, 14));
 		return new TextFlow(textBefore, textFilter, textAfter);

@@ -33,9 +33,9 @@ public class TDateTimeTableCell extends TTableCell{
 		this.timeStyle = timeStyle;
 	}
 
+	@Override
 	public String processItem(Object item) {
-		if(item!=null && item instanceof Date) {
-			Date dt = (Date) item;
+		if(item instanceof Date dt) {
 			return DateFormat
 					.getDateTimeInstance(dateStyle, timeStyle, TLanguage.getLocale())
 					.format(dt);

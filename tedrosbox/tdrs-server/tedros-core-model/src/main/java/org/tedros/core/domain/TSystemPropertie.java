@@ -15,11 +15,13 @@ public enum TSystemPropertie {
 	TOKEN ("sys.token","Set Tedros license key"),
 	ORGANIZATION ("sys.org","Defines the company trademark to display in reports"),
 	REPORT_LOGOTYPE("sys.report.logo","Sets the trademark logo to be displayed in reports"),
+	
 	SMTP_USER ("sys.smtp.email","Define SMTP user email"),
 	SMTP_PASS ("sys.smtp.pass","Set SMTP user password"),
 	SMTP_HOST ("sys.smtp.host","Define SMTP host server"),
 	SMTP_PORT ("sys.smtp.port","Defines SMTP server port"),
 	SMTP_SOCKET_PORT ("sys.smtp.socket.port","Defines SMTP server socket port"),
+	
 	NOTIFY_INTERVAL_TIMER ("sys.notify.interval","Defines the interval time in minutes for sending e-mails queued by the Notify module"),
 	
 	OPENAI_KEY("sys.openai.key","Define the OpenAi Api key"),
@@ -35,7 +37,10 @@ public enum TSystemPropertie {
 	GROK_PROMPT("sys.grok.prompt","Define the model system prompt instructions"),
 	
 	AI_SERVICE_PROVIDER("sys.ai.provider","Define the Ai Service Provider: OPENAI or GROK"),
-	AI_ENABLED("sys.ai.enabled","Enable Teros artificial intelligence. Set true or false");
+	AI_ENABLED("sys.ai.enabled","Enable Teros artificial intelligence. Set true or false"),
+	
+	MONGODB_URI("sys.mongodb.uri","Define the MongoDB connection URI")
+	;
 	
 	private String value;
 	private String description;

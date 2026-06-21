@@ -12,6 +12,7 @@ import org.tedros.fx.annotation.scene.control.TInsets;
 import org.tedros.fx.annotation.scene.layout.TRegion;
 import org.tedros.fx.builder.ITFieldBuilder;
 import org.tedros.fx.builder.TShowFieldBuilder;
+import org.tedros.fx.converter.TBooleanToYesNoConverter;
 import org.tedros.fx.domain.TDateStyle;
 import org.tedros.fx.domain.TLabelPosition;
 import org.tedros.fx.domain.TLayoutType;
@@ -38,6 +39,9 @@ public @interface TShowField {
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.ANNOTATION_TYPE)
 	public @interface TField{
+		
+		public static final Class<TBooleanToYesNoConverter> BOOLEAN_TO_YES_NO_CONVERTER =  TBooleanToYesNoConverter.class;
+		
 		/**
 		 * The field name, empty string will refer the field object.
 		 * */
@@ -90,11 +94,17 @@ public @interface TShowField {
 		TLabelPosition labelPosition() default TLabelPosition.DEFAULT;
 		
 		/**
+	     * Defines if the field value should be rendered as HTML.
+	     * Default is false.
+	     */
+	    boolean renderHtml() default false;
+		
+		/**
 		 * The TConverter&ltObject,String&gt to be applied
 		 * */
 		@SuppressWarnings("rawtypes")
 		Class<? extends org.tedros.fx.converter.TConverter> converter() default org.tedros.fx.converter.TConverter.class;
-	};
+	}
 
 	/**
 	 *<pre>

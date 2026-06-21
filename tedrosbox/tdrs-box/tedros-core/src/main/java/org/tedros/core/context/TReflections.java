@@ -16,6 +16,7 @@ import java.util.Set;
 
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
+import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.tedros.core.annotation.TApplication;
 import org.tedros.core.model.ITModelView;
@@ -115,6 +116,7 @@ public final class TReflections {
 		try {
 			// Configuração correta para Reflections 0.10.2+
 	        ConfigurationBuilder config = new ConfigurationBuilder()
+	        	.setUrls(ClasspathHelper.forJavaClassPath())
 	            .setScanners(Scanners.TypesAnnotated);
 
 	        Reflections ref = new Reflections(config);
@@ -126,11 +128,11 @@ public final class TReflections {
 			}
 			
 			String propFilePath = TedrosFolder.CONF_FOLDER.getFullPath()+APP_PACKAGES_PROPERTIES;
-			FileOutputStream fos = new FileOutputStream(propFilePath);
-			Properties prop = new Properties();
-			prop.setProperty("packages", n);
-			prop.store(fos, "App packages");
-			fos.close();
+			try(FileOutputStream fos = new FileOutputStream(propFilePath)){
+				Properties prop = new Properties();
+				prop.setProperty("packages", n);
+				prop.store(fos, "App packages");
+			}
 		} catch (Exception e) {
 			TLoggerUtil.error(TReflections.class, e.getMessage(), e);
 		}

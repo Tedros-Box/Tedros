@@ -18,7 +18,7 @@ import org.tedros.server.entity.TVersionEntity;
 
 @Entity
 @Table(name = DomainTables.propertie, schema = DomainSchema.tedros_core,
-uniqueConstraints=@UniqueConstraint(columnNames = { "key", "type" }))
+uniqueConstraints=@UniqueConstraint(columnNames = { "key"}))
 public class TPropertie extends TVersionEntity {
 	
 	private static final long serialVersionUID = -3294433359406122382L;
