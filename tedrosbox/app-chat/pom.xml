@@ -16,7 +16,7 @@
 	<description>Tedros Chat</description>
 
 	<properties>
-        <docker.app.folder>D:\GitHub\Tedros-Box\Tedros\init\docker\deployment_app</docker.app.folder>
+        <docker.app.folder>../../../../tedros-environment/docker/deployment_app</docker.app.folder>
 	</properties>
 	<!-- BUILD -->
 	<build>
