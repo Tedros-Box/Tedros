@@ -842,26 +842,22 @@ A arquitetura dos módulos segue uma hierarquia inteligente de dependências par
 
 ## 🏆 Caso de Sucesso: ONG Somos Social
 
-O sistema Tedros está em uso produtivo, gerenciando toda a logística da ONG [Somos Social](http://www.somossocial.org.br). 
+O sistema Tedros está em uso produtivo, gerenciando toda a logística da ONG [Somos Social]
 
 Iniciada de forma amadora durante a pandemia da Covid-19 distribuindo marmitas para pessoas em vulnerabilidade, a iniciativa cresceu exponencialmente. O framework Tedros acompanhou esse salto, abraçando necessidades complexas de gestão de doações, cadastro e seleção de voluntários, controle de estoque e entrada/saída de produtos, malotes e relatórios.
 
 Atualmente, o site público da ONG está **completamente integrado via API aos serviços da Camada de Negócios (EJB)** do backend Tedros. A prova de robustez da arquitetura Tedros é que **todo o sistema roda de forma altamente funcional e estável, sem necessitar de intervenções críticas há mais de 1.5 anos**.
 
-### Visão do Sistema (Aplicação da ONG)
+## Visão do Sistema
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/tedrosbox.png" alt="Tela de Login" width="45%">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/menu.png" alt="Menu Lateral" width="45%">
+  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
+  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
 </p>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/teros3.png" alt="IA Teros" width="45%">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/producprice.png" alt="Visão de Preços" width="45%">
+  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/t-apps.png" alt="IA Teros" width="45%">
 </p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/somos4.png" alt="Formulário ONG" width="45%">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/somos6.png" alt="Relatório" width="45%">
-</p>
+
 
 ---
 
