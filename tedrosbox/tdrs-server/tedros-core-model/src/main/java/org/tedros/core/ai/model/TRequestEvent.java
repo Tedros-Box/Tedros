@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import org.tedros.core.domain.DomainSchema;
@@ -25,13 +26,16 @@ public class TRequestEvent extends TEntity implements Comparable<TRequestEvent>{
 
 	private static final long serialVersionUID = -4376333627387648321L;
 
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String response;
 	
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String prompt;
 	
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String log;
 	
 	@Column(length=30, nullable=false)

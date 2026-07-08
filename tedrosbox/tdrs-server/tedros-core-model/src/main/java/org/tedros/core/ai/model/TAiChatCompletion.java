@@ -46,7 +46,8 @@ public class TAiChatCompletion extends TEntity {
 	@Column
 	private Integer maxTokens=1024;
 	
-	@Column(length=100)
+	// "USER" e palavra reservada no PostgreSQL; nome explicito portavel entre bancos
+	@Column(name="user_name", length=100)
 	private String user;
 	
 	@Column

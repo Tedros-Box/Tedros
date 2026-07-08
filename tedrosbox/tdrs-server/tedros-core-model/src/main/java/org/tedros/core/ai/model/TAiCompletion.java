@@ -14,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
@@ -34,10 +35,12 @@ public class TAiCompletion extends TEntity {
 	@Column(nullable=false, length=40)
 	private String title;
 	
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String response;
 	
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String prompt;
 	
 	@Column
@@ -50,7 +53,8 @@ public class TAiCompletion extends TEntity {
 	@Enumerated(EnumType.STRING)
 	private TAiModel model = TAiModel.TEXT_DAVINCI_003;
 	
-	@Column(length=100)
+	// "USER" e palavra reservada no PostgreSQL; nome explicito portavel entre bancos
+	@Column(name="user_name", length=100)
 	private String user;
 	
 	@Column

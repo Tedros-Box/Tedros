@@ -10,7 +10,6 @@ import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.OptimisticLockException;
 
-import org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException;
 import org.tedros.server.controller.ITSecureEjbController;
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.exception.TBusinessException;
@@ -363,7 +362,7 @@ public abstract class TSecureEjbController<E extends ITEntity> implements ITSecu
             String message = (result.getValue() == null) ? "REMOVED" : "OUTDATED";
             return (T) new TResult<>(TState.OUTDATED, message, result.getValue());
         } else if (e instanceof EJBTransactionRolledbackException) {
-            if (this.isTheCause(e, JdbcSQLIntegrityConstraintViolationException.class))
+            if (this.isIntegrityViolation(e))
                 return (T) new TResult<>(TState.ERROR, true, "This operation cant be done to preserve data integrity!");
             else
                 return (T) new TResult<>(TState.ERROR, true, e.getCause().getMessage());
@@ -377,6 +376,27 @@ public abstract class TSecureEjbController<E extends ITEntity> implements ITSecu
         } else {
             return (T) new TResult<>(TState.ERROR, e.getMessage());
         }
+    }
+
+    /**
+     * Checks the cause chain for a database integrity constraint violation in a
+     * database-agnostic way, using the SQLState class "23" (integrity constraint
+     * violation in the SQL standard). Works with H2, PostgreSQL and any
+     * JDBC-compliant driver.
+     *
+     * @param e the throwable to inspect
+     * @return true if an integrity constraint violation is found in the cause chain
+     */
+    protected boolean isIntegrityViolation(Throwable e) {
+        while (e != null) {
+            if (e instanceof java.sql.SQLException sqle) {
+                String state = sqle.getSQLState();
+                if (state != null && state.startsWith("23"))
+                    return true;
+            }
+            e = e.getCause();
+        }
+        return false;
     }
 
     /**

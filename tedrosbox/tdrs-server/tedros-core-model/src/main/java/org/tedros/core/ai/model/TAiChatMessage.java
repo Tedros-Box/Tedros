@@ -11,6 +11,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
@@ -34,7 +35,8 @@ public class TAiChatMessage extends TEntity implements Comparable<TAiChatMessage
 	@Enumerated(EnumType.STRING)
 	private TChatRole role;
 	
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String content;
 
 	@ManyToOne(fetch=FetchType.EAGER)

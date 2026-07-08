@@ -21,7 +21,8 @@ public interface DomainTables {
 	final static String profile = "profile";
 	final static String notify = "notify";
 	final static String notifyLog = "notify_log";
-	final static String user = "user";
+	// "user" e palavra reservada no PostgreSQL
+	final static String user = "users";
 	final static String auditLog = "audit_log";
 	final static String user_profile = "user_profile";
 	final static String profile_authorization = "profile_authorization";

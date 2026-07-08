@@ -15,6 +15,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -38,7 +39,8 @@ public class TAiCreateImage extends TEntity {
 	@Column(nullable=false, length=40)
 	private String title;
 	
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String prompt;
 	
 	@Column
@@ -58,7 +60,8 @@ public class TAiCreateImage extends TEntity {
 	@JoinColumn(name="create_img_id")
 	private Set<TAiImage> data;
 	
-	@Column(length=100)
+	// "USER" e palavra reservada no PostgreSQL; nome explicito portavel entre bancos
+	@Column(name="user_name", length=100)
 	private String user;
 	
 	@Column

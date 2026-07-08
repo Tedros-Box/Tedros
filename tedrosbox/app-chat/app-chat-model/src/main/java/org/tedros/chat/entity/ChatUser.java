@@ -5,6 +5,7 @@ package org.tedros.chat.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import org.tedros.chat.domain.DomainSchema;
@@ -28,7 +29,8 @@ public class ChatUser extends TVersionEntity {
 	@Column(length=120, nullable=false)
 	private String name;
 	
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String profiles;
 
 	private TAccessToken token;

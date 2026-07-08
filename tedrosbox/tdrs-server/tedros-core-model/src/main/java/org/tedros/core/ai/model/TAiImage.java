@@ -12,6 +12,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -35,7 +36,8 @@ public class TAiImage extends TEntity {
 	@Enumerated(EnumType.STRING)
 	private TResponseFormat format;
 
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String url;
 	
 	@OneToOne(fetch=FetchType.EAGER, 
