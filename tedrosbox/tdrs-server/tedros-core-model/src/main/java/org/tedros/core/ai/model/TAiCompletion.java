@@ -14,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
@@ -34,10 +35,12 @@ public class TAiCompletion extends TEntity {
 	@Column(nullable=false, length=40)
 	private String title;
 	
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String response;
 	
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String prompt;
 	
 	@Column

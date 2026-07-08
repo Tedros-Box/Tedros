@@ -15,6 +15,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -38,7 +39,8 @@ public class TAiCreateImage extends TEntity {
 	@Column(nullable=false, length=40)
 	private String title;
 	
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String prompt;
 	
 	@Column

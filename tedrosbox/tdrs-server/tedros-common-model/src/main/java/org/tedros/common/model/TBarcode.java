@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -30,7 +31,8 @@ public class TBarcode extends TEntity implements ITBarcode {
 
 	private static final long serialVersionUID = -5862336001870552877L;
 
-	@Column(nullable=false)
+	@Lob
+	@Column(columnDefinition = "TEXT", nullable=false)
 	private String content;
 
 	@Column(length=25, nullable=false)
