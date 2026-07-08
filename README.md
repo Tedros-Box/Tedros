@@ -930,11 +930,11 @@ Atualmente, o site público da ONG está **completamente integrado via API aos s
 ## Visão do Sistema
 
 <p align="center">
-  <img src="https://github.com/Tedros-Box/tedros-apps/blob/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
-  <img src="https://github.com/Tedros-Box/tedros-apps/blob/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/tedros-apps/blob/master/printscreen/t-apps.png" alt="IA Teros" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" alt="IA Teros" width="45%">
 </p>
 
 
