@@ -156,12 +156,14 @@ public class LookupTest {
 	@SuppressWarnings("unused")
 	private static void initLocal(Properties p) {
 		p.put("java.naming.factory.initial", "org.apache.openejb.client.LocalInitialContextFactory");
-		
+
+		// Parametrizado via system properties para permitir testar contra H2 (default)
+		// ou PostgreSQL (-Dtedros.db.driver=org.postgresql.Driver -Dtedros.db.url=jdbc:postgresql://localhost:5432/tedros)
 		p.put("tedrosDataSource", "new://Resource?type=DataSource");
-		p.put("tedrosDataSource.UserName", "tdrs");
-		p.put("tedrosDataSource.Password", "xpto");
-		p.put("tedrosDataSource.JdbcDriver", "org.h2.Driver");
-		p.put("tedrosDataSource.JdbcUrl", "jdbc:h2:file:/usr/local/Tedros/Box/data1/db;");
+		p.put("tedrosDataSource.UserName", System.getProperty("tedros.db.user", "tdrs"));
+		p.put("tedrosDataSource.Password", System.getProperty("tedros.db.password", "xpto"));
+		p.put("tedrosDataSource.JdbcDriver", System.getProperty("tedros.db.driver", "org.h2.Driver"));
+		p.put("tedrosDataSource.JdbcUrl", System.getProperty("tedros.db.url", "jdbc:h2:file:/usr/local/Tedros/Box/data1/db;"));
 		p.put("tedrosDataSource.JtaManaged", "true");
 		
 		// change some logging

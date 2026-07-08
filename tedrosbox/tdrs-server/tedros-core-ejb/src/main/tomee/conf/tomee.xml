@@ -5,6 +5,10 @@
   <!-- activate next line to be able to deploy applications in apps -->
   <!-- <Deployments dir="apps" /> -->
   
+<!-- Datasource parametrizavel via system properties (-Dtedros.db.*).
+     Defaults apontam para o H2; para testar contra PostgreSQL rode com:
+     -Dtedros.db.driver=org.postgresql.Driver
+     -Dtedros.db.url=jdbc:postgresql://localhost:5432/tedros -->
 <Resource id="tedrosDataSource" type="DataSource">
   JdbcDriver org.h2.Driver
   JdbcUrl jdbc:h2:file:~/.tedros/data/db;INIT=RUNSCRIPT FROM 'c:/usr/local/Tedros/Box/init.sql'
@@ -14,5 +18,18 @@
   PoolPreparedStatements true
   DefaultAutoCommit true
 </Resource>
+
+<!-- Variante PostgreSQL (descomente e comente o resource acima):
+<Resource id="tedrosDataSource" type="DataSource">
+  JdbcDriver org.postgresql.Driver
+  JdbcUrl jdbc:postgresql://localhost:5432/tedros
+  UserName tdrs
+  Password xpto
+  JtaManaged true
+  PoolPreparedStatements true
+  DefaultAutoCommit true
+</Resource>
+-->
+
   
 </tomee>

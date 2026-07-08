@@ -45,7 +45,7 @@ public class TNotify extends TReceptiveEntity {
 	@Column(length=120, nullable=false)
 	private String subject;
 	
-	@Column(length=400, nullable=false)
+	@Column(name="send_to", length=400, nullable=false)
 	private String to;
 	
 	@Column(nullable=false)

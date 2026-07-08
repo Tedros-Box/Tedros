@@ -58,7 +58,8 @@ public class TAiCreateImage extends TEntity {
 	@JoinColumn(name="create_img_id")
 	private Set<TAiImage> data;
 	
-	@Column(length=100)
+	// "USER" e palavra reservada no PostgreSQL; nome explicito portavel entre bancos
+	@Column(name="user_name", length=100)
 	private String user;
 	
 	@Column

@@ -1,5 +1,10 @@
 package org.tedros.core.setting.model;
 
+import org.tedros.common.model.TFileEntity;
+import org.tedros.core.domain.DomainSchema;
+import org.tedros.core.domain.DomainTables;
+import org.tedros.server.entity.TVersionEntity;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -7,14 +12,10 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-
-import org.tedros.common.model.TFileEntity;
-import org.tedros.core.domain.DomainSchema;
-import org.tedros.core.domain.DomainTables;
-import org.tedros.server.entity.TVersionEntity;
 
 @Entity
 @Table(name = DomainTables.propertie, schema = DomainSchema.tedros_core,
@@ -29,7 +30,8 @@ public class TPropertie extends TVersionEntity {
 	@Column(length=20, nullable = false)
 	private String key;
 	
-	@Column
+	@Lob
+	@Column(columnDefinition = "TEXT")
 	private String value;
 	
 	@Column(length=500)

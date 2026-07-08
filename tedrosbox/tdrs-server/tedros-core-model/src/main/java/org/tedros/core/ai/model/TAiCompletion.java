@@ -50,7 +50,8 @@ public class TAiCompletion extends TEntity {
 	@Enumerated(EnumType.STRING)
 	private TAiModel model = TAiModel.TEXT_DAVINCI_003;
 	
-	@Column(length=100)
+	// "USER" e palavra reservada no PostgreSQL; nome explicito portavel entre bancos
+	@Column(name="user_name", length=100)
 	private String user;
 	
 	@Column
