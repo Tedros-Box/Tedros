@@ -56,7 +56,7 @@ O ecossistema é dividido em repositórios especializados para garantir uma arqu
 | :--- | :--- |
 | **`Tedros/`** | **Núcleo do Framework:** Contém as APIs do lado cliente (`tedros-fx`, `tedros-core`), lado servidor (`tedros-server`), persistência e segurança. |
 | **[`tedros-apps/`](https://github.com/Tedros-Box/tedros-apps)** | **Aplicações e Módulos Base:** Módulos corporativos prontos para extensão (Gestão de Pessoas, Extensões Geográficas, Estoque, Serviços, TI, Pedidos, Chat e Templates). O repositório também inclui manuais e *skills* prontos para serem consumidos por agentes de IA, auxiliando ativamente o desenvolvedor na criação de novos aplicativos. |
-| **[`tedros-environment/`](https://github.com/Tedros-Box/tedros-environment)** | **Infraestrutura e Deploy:** Contém a orquestração `docker-compose` do ambiente completo (TomEE, Nginx com SSL, MongoDB, Redis e H2) com suporte a *Remote Debug*. O ambiente é otimizado com um fluxo de build integrado (o Maven injeta os `.ear` recém-compilados diretamente nos contêineres para deploy imediato) e inclui scripts baseados em JPackage/Inno Setup para empacotar e gerar instaladores nativos (.exe) do cliente Desktop. |
+| **[`tedros-environment/`](https://github.com/Tedros-Box/tedros-environment)** | **Infraestrutura e Deploy:** Contém a orquestração `docker-compose` do ambiente completo (TomEE, Nginx com SSL, MongoDB, Redis e Postgres ou H2) com suporte a *Remote Debug*. O ambiente é otimizado com um fluxo de build integrado (o Maven injeta os `.ear` recém-compilados diretamente nos contêineres para deploy imediato) e inclui scripts baseados em JPackage/Inno Setup para empacotar e gerar instaladores nativos (.exe) do cliente Desktop. |
 
 ---
 
@@ -765,43 +765,122 @@ Para garantir que o fluxo de compilação automatizado funcione sem cópias manu
 Existem duas formas principais de executar o ambiente de desenvolvimento localmente, com base no repositório auxiliar `tedros-environment`:
 
 ### Opção 1: Ambiente Completo via Docker (Simula Produção)
-Ideal para homologação e execução integrada de todos os serviços. Esta opção sobe contêineres para Nginx, instâncias do TomEE, MongoDB, H2 e Redis em uma rede isolada.
+Ideal para homologação e execução integrada de todos os serviços. Esta opção sobe contêineres para Nginx, instâncias do TomEE, MongoDB, PostgreSQL (ou H2) e Redis em uma rede isolada.
 
 1. Clone o repositório do ambiente ao lado dos outros repositórios:
    ```bash
    git clone https://github.com/Tedros-Box/tedros-environment.git
    ```
-2. Acesse a pasta `tedros-environment/docker/nginx/ssl_local` e gere seus certificados TLS locais usando o utilitário `mkcert` (obrigatório para Nginx e MongoDB). Inclua também os mapeamentos (`tedros.test`, `h2db.tedros.test`) no seu arquivo `hosts` do Windows e importe o root CA no cacerts do seu JDK.
+2. **Gere seus certificados TLS locais** usando o utilitário `mkcert` (obrigatório para Nginx e MongoDB) e configure o JDK:
+   
+   *Passo a passo:*
+   - Instale o **mkcert** (ex: via Chocolatey com `choco install mkcert`).
+   - Abra o terminal (PowerShell) como **Administrador** e navegue até a pasta de certificados:
+     ```powershell
+     cd d:\GitHub\Tedros-Box\tedros-environment\docker\nginx\ssl_local
+     ```
+   - Instale a Autoridade Certificadora (CA) local:
+     ```powershell
+     mkcert -install
+     ```
+   - Gere os certificados:
+     ```powershell
+     mkcert tedros.test localhost 127.0.0.1 ::1 mongodb
+     ```
+   - Crie o certificado unificado para o MongoDB:
+     ```powershell
+     Get-Content tedros.test+4.pem, tedros.test+4-key.pem | Set-Content mongodb.pem
+     ```
+   - Copie a CA Root do mkcert para a pasta atual:
+     ```powershell
+     $caPath = mkcert -CAROOT
+     Copy-Item "$caPath\rootCA.pem" -Destination .\rootCA.pem
+     ```
+   - Importe a CA raiz no cacerts do seu JDK:
+     ```powershell
+     $keytool = "C:\Program Files\Java\jdk-17\bin\keytool.exe"
+     $cacerts = "C:\Program Files\Java\jdk-17\lib\security\cacerts"
+     $caFile = ".\rootCA.pem"
+     & $keytool -import -trustcacerts -keystore $cacerts -storepass changeit -alias mkcert-local -file $caFile -noprompt
+     ```
+
+   **Importante:** Inclua também os mapeamentos no seu arquivo `hosts` do Windows. Abra o arquivo como **Administrador** no caminho `C:\Windows\System32\drivers\etc\hosts` e adicione o seguinte conteúdo:
+   ```text
+   127.0.0.1       tedros.test
+   127.0.0.1       www.tedros.test
+   127.0.0.1       h2db.tedros.test
+   ```
 3. Inicie os contêineres:
+   O sistema suporta tanto PostgreSQL (padrão) quanto H2 (apenas para exemplo/testes) via *profiles* do Docker Compose.
+   
+   Para iniciar com o **PostgreSQL (recomendado)**:
+   Primeiro, crie um arquivo chamado `.env.postgres` na pasta `tedros-environment/docker` com o seguinte conteúdo (não versione este arquivo):
+   ```env
+   # Feature flag: valores TEDROS_DB_* para rodar o stack de producao com PostgreSQL.
+   # Uso: docker compose --profile postgres --env-file .env.postgres up -d
+   # ATENCAO: contem senha — restrinja a leitura (chmod 600 .env.postgres) e nao versione.
+   # NOTA: $ literal precisa ser escrito como $$ (o compose interpola $VAR em env files).
+   TEDROS_DB_DRIVER=org.postgresql.Driver
+   TEDROS_DB_URL=jdbc:postgresql://postgres:5432/tedros
+   TEDROS_DB_USER=tdrs
+   TEDROS_DB_PASSWORD=<SENHA FORTE>
+   ```
+   Em seguida, execute o comando:
    ```bash
    cd tedros-environment/docker
-   docker-compose up -d
+   docker-compose --profile postgres --env-file .env.postgres up -d --build
    ```
-4. Execute `mvn clean install` nos projetos de negócio para que os pacotes `.ear` sejam extraídos e auto-publicados nos contêineres TomEE. Configure seu cliente desktop na tela de login para apontar para `https://{0}/tomee/ejb` e domínio `tedros.test`.
+   
+   Para iniciar com o **H2**:
+   ```bash
+   cd tedros-environment/docker
+   docker-compose --profile h2 up -d --build
+   ```
+4. **Compile os projetos:** Você pode usar o script interativo `build-projects.ps1` localizado na pasta `tedros-apps` para compilar os projetos na ordem de dependência correta, ou executar manualmente `mvn clean install`. Isso fará com que os pacotes `.ear` sejam extraídos e auto-publicados nos contêineres TomEE.
+   
+   - **Usando o script (Recomendado):**
+     1. Edite o arquivo `tedros-apps/build-projects.ps1` e ajuste os caminhos (`Path`) da variável `$projects` para refletir as pastas da sua máquina local. Verifique também se precisa ajustar ou remover o caminho apontado para o `settings.xml` do Maven na linha de comando (`-s D:\maven\...`).
+     2. Se você criar um **novo aplicativo/projeto**, lembre-se de atualizar este script adicionando o novo projeto na lista, respeitando a ordem correta de dependências (por exemplo, dependentes do `app-person` devem vir abaixo dele).
+     3. Execute o script no PowerShell: `.\build-projects.ps1`, selecione os projetos na interface que vai se abrir e clique em OK.
+   
+   - **Manualmente:**
+     Entre na pasta de cada projeto (respeitando a hierarquia de dependências) e execute `mvn clean install -DskipTests`.
 
-### Opção 2: Servidor TomEE + H2 Local (Desenvolvimento Leve)
-Ideal para desenvolvimento rápido e debug direto na IDE sem precisar interagir com contêineres Docker.
+5. Configure seu cliente desktop na tela de login para apontar para `https://{0}/tomee/ejb` e domínio `tedros.test`.
 
-1. **Inicialize o Banco de Dados Local:** Na primeira vez que for rodar o ambiente, crie a estrutura do banco H2 localmente executando o script PowerShell:
+### Opção 2: Servidor TomEE + Banco de Dados Local (Desenvolvimento Leve)
+Ideal para desenvolvimento rápido e debug direto na IDE sem precisar interagir com os contêineres Docker da infraestrutura.
+
+1. **Inicialize o Banco de Dados Local:** Na primeira vez que for rodar o ambiente, inicie a estrutura do banco escolhido (PostgreSQL ou H2) executando o script PowerShell:
    ```powershell
    cd tedros-environment/startup-database
-   .\create-tedros-data.ps1
+   # Para PostgreSQL (padrão):
+   .\create-tedros-data.ps1 -Database postgres
+   # Ou, para H2:
+   .\create-tedros-data.ps1 -Database h2
    ```
-2. **Inicie o Banco de Dados H2:** Para subir o banco, execute o script `.bat` correspondente (isso abrirá o console do H2 no seu navegador):
-   ```cmd
-   .\db\h2-199\bin\h2.bat
-   ```
+2. **Inicie o Banco de Dados:** 
+   - **PostgreSQL:** O script acima já sobe um contêiner `tedros-postgres-local` com o banco preparado. Para subir futuramente, use: `docker compose -f docker-compose-pg.yml up -d`.
+   - **H2:** Para subir o banco H2, execute o script `.bat` correspondente (isso abrirá o console do H2 no seu navegador):
+     ```cmd
+     .\db\h2-199\bin\h2.bat
+     ```
+
    > **Credenciais de Acesso e Conexão (Desenvolvimento):**
    > - **Usuário:** `tdrs`
    > - **Senha:** `xpto`
-   > - **String JDBC:** `jdbc:h2:tcp://localhost/~/.tedrosData/h2/db;`
-   > *(As mesmas credenciais são utilizadas para acessar o MongoDB local).*
+   > - **String JDBC Postgres:** `jdbc:postgresql://localhost:5432/tedros`
+   > - **String JDBC H2:** `jdbc:h2:tcp://localhost/~/.tedrosData/h2/db;`
+   > *(As mesmas credenciais são utilizadas para acessar o MongoDB local).* 
 3. Navegue até o projeto do servidor local embutido:
    ```bash
    cd ../server-application
    ```
 4. Suba o servidor TomEE utilizando o plugin Maven Cargo:
    ```bash
+   # Para subir apontando para PostgreSQL:
+   mvn cargo:run -Pdb-postgres
+   # Para subir apontando para H2:
    mvn cargo:run
    ```
 5. O servidor fará deploy automático dos `.ear` que você compilou e instalou localmente (`mvn clean install`). Na tela de login do cliente desktop, configure para usar `http://{0}:8081/tomee/ejb` (Note a porta 8081 em HTTP) e o IP `127.0.0.1`.
@@ -851,11 +930,11 @@ Atualmente, o site público da ONG está **completamente integrado via API aos s
 ## Visão do Sistema
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
+  <img src="https://github.com/Tedros-Box/tedros-apps/blob/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
+  <img src="https://github.com/Tedros-Box/tedros-apps/blob/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
 </p>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Tedros-Box/tedros-apps/master/printscreen/t-apps.png" alt="IA Teros" width="45%">
+  <img src="https://github.com/Tedros-Box/tedros-apps/blob/master/printscreen/t-apps.png" alt="IA Teros" width="45%">
 </p>
 
 
