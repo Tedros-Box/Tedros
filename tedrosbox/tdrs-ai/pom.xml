@@ -1,0 +1,29 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.tedros</groupId>
+		<artifactId>tedrosbox</artifactId>
+		<version>17-0.0.1</version>
+	</parent>
+	<artifactId>tdrs-ai</artifactId>
+	<packaging>pom</packaging>
+	<name>Modulo com os projetos de inteligencia artificial</name>
+	<modules>
+		<module>tedros-ai-model</module>
+		<module>tedros-ai-ejb</module>
+		<module>tedros-ai-ejb-client</module>
+		<module>tedros-ai-ejb-ear</module>
+	</modules>
+	<properties>
+		<app.ext>17-1.0.0</app.ext>
+		<app.person>17-1.0.0</app.person>
+		<app.services>17-1.0.0</app.services>
+		<app.stock>17-1.0.0</app.stock>
+		<app.itsupport>1.0-SNAPSHOT</app.itsupport>
+		<tedros.fx>17-0.0.1</tedros.fx>
+		<app.settings>17-0.0.1</app.settings>
+		<tedros.jee>17-0.0.1</tedros.jee>
+	</properties>
+</project>
