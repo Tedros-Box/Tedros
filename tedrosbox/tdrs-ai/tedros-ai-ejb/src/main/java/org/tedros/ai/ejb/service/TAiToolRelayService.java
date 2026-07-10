@@ -20,6 +20,7 @@ import org.tedros.ai.toolrelay.TAiRelayConfig;
 import org.tedros.ai.toolrelay.TAiRelayConfigSnapshot;
 import org.tedros.ai.toolrelay.TAiRelayLoop;
 import org.tedros.ai.toolrelay.TRelayModelAdapter;
+import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
 import org.tedros.core.security.model.TUser;
 import org.tedros.server.ejb.controller.ITSecurityController;
@@ -117,9 +118,12 @@ public class TAiToolRelayService {
 				return error(conversationId, ERROR_ACCESS_DENIED, "User not found for the given token");
 			userId = user.getId();
 
+			// token do request CORRENTE — tokens podem expirar entre turnos
+			TAiToolContext ctx = new TAiToolContext(user, token);
+
 			resp = switch (request.getType()) {
-			case MESSAGE -> onMessage(request, user, cfg);
-			case TOOL_RESULTS -> onToolResults(request, user, cfg);
+			case MESSAGE -> onMessage(request, ctx, cfg);
+			case TOOL_RESULTS -> onToolResults(request, ctx, cfg);
 			default -> error(conversationId, ERROR_INVALID_REQUEST, "Unsupported request type");
 			};
 			conversationId = resp.getConversationId();
@@ -138,8 +142,9 @@ public class TAiToolRelayService {
 		}
 	}
 
-	private TAiTurnResponse onMessage(TAiTurnRequest request, TUser user, TAiRelayConfigSnapshot cfg) {
+	private TAiTurnResponse onMessage(TAiTurnRequest request, TAiToolContext ctx, TAiRelayConfigSnapshot cfg) {
 
+		TUser user = ctx.getUser();
 		if (request.getUserMessage() == null || request.getUserMessage().isBlank())
 			return error(request.getConversationId(), ERROR_INVALID_REQUEST, "userMessage is required");
 
@@ -174,16 +179,16 @@ public class TAiToolRelayService {
 			conv.getMemory().add(UserMessage.from(request.getUserMessage()));
 
 			ChatModel model = modelAdapter.modelFor(cfg);
-			TAiTurnResponse resp = loop.run(conv, model, catalog);
+			TAiTurnResponse resp = loop.run(conv, model, catalog, ctx);
 			return finish(resp, conv);
 		} finally {
 			conv.getLock().unlock();
 		}
 	}
 
-	private TAiTurnResponse onToolResults(TAiTurnRequest request, TUser user, TAiRelayConfigSnapshot cfg) {
+	private TAiTurnResponse onToolResults(TAiTurnRequest request, TAiToolContext ctx, TAiRelayConfigSnapshot cfg) {
 
-		TAiConversation conv = requireConversation(request.getConversationId(), user);
+		TAiConversation conv = requireConversation(request.getConversationId(), ctx.getUser());
 		if (conv == null)
 			return error(request.getConversationId(), ERROR_CONVERSATION_NOT_FOUND,
 					"Conversation not found");
@@ -204,7 +209,7 @@ public class TAiToolRelayService {
 						"Tool results do not match the pending tool calls");
 
 			ChatModel model = modelAdapter.modelFor(cfg);
-			TAiTurnResponse resp = loop.resume(conv, model, catalog, request.getToolResults());
+			TAiTurnResponse resp = loop.resume(conv, model, catalog, request.getToolResults(), ctx);
 			return finish(resp, conv);
 		} finally {
 			conv.getLock().unlock();

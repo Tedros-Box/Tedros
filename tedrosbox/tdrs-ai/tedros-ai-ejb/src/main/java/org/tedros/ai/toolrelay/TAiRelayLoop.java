@@ -12,6 +12,7 @@ import org.tedros.ai.model.TAiClientToolResult;
 import org.tedros.ai.model.TAiPendingToolCall;
 import org.tedros.ai.model.TAiTurnResponse;
 import org.tedros.ai.model.TAiTurnResponseType;
+import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
 import org.tedros.server.util.TLoggerUtil;
@@ -64,9 +65,11 @@ public class TAiRelayLoop {
 
 	/**
 	 * Roda o loop ate resposta final, suspensao por tools de frontend, limite
-	 * de profundidade ou erro do LLM.
+	 * de profundidade ou erro do LLM. O {@code ctx} carrega o token do request
+	 * CORRENTE — repassado as tools de backend a cada turno.
 	 */
-	public TAiTurnResponse run(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog) {
+	public TAiTurnResponse run(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog,
+			TAiToolContext ctx) {
 
 		List<ToolSpecification> tools = unionSpecifications(conv, catalog);
 
@@ -120,7 +123,7 @@ public class TAiRelayLoop {
 						LOGGER.warn("Tool name '{}' exists on both backend and client — backend wins",
 								req.name());
 					Optional<TServerAiFunction> fn = catalog.byName(req.name());
-					backendResults.put(req.id(), executeBackend(fn.get(), req, conv));
+					backendResults.put(req.id(), executeBackend(fn.get(), req, ctx));
 					if (fn.get().revertToModel())
 						backendRevert = true;
 				} else if (conv.hasClientTool(req.name())) {
@@ -176,7 +179,7 @@ public class TAiRelayLoop {
 	 * O chamador ja validou que os callIds conferem com os pendentes.
 	 */
 	public TAiTurnResponse resume(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog,
-			List<TAiClientToolResult> results) {
+			List<TAiClientToolResult> results, TAiToolContext ctx) {
 
 		TAiConversation.PendingTurn pending = conv.getPendingTurn();
 
@@ -198,7 +201,7 @@ public class TAiRelayLoop {
 		conv.setPendingTurn(null);
 
 		if (revert)
-			return run(conv, model, catalog);
+			return run(conv, model, catalog, ctx);
 
 		TAiTurnResponse resp = new TAiTurnResponse();
 		resp.setType(TAiTurnResponseType.FINAL);
@@ -237,13 +240,13 @@ public class TAiRelayLoop {
 	}
 
 	private ToolExecutionResultMessage executeBackend(TServerAiFunction fn, ToolExecutionRequest req,
-			TAiConversation conv) {
+			TAiToolContext ctx) {
 		LOGGER.info("AI relay backend tool call: {} args: {}", req.name(), req.arguments());
 		try {
 			String args = (req.arguments() == null || req.arguments().isBlank()) ? "{}"
 					: JsonSanitizer.sanitize(req.arguments());
 			Object arg = MAPPER.readValue(args, fn.getModel());
-			Object result = fn.execute(arg, conv.getUser());
+			Object result = fn.execute(arg, ctx);
 			return ToolExecutionResultMessage.from(req, MAPPER.writeValueAsString(result));
 		} catch (Exception e) {
 			LOGGER.error("Error executing backend tool " + req.name(), e);

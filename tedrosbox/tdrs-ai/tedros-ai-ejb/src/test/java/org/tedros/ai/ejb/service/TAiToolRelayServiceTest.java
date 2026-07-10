@@ -30,6 +30,7 @@ import org.tedros.ai.toolrelay.TAiRelayConfig;
 import org.tedros.ai.toolrelay.TAiRelayConfigSnapshot;
 import org.tedros.ai.toolrelay.TAiRelayLoop;
 import org.tedros.ai.toolrelay.TRelayModelAdapter;
+import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
 import org.tedros.core.security.model.TUser;
@@ -153,6 +154,7 @@ public class TAiToolRelayServiceTest {
 		final boolean revert;
 		final AtomicInteger executions = new AtomicInteger();
 		volatile TUser lastUser;
+		volatile TAccessToken lastToken;
 
 		BackendTool(boolean revert) {
 			this.revert = revert;
@@ -174,9 +176,10 @@ public class TAiToolRelayServiceTest {
 		}
 
 		@Override
-		public Object execute(Object arg, TUser user) {
+		public Object execute(Object arg, TAiToolContext ctx) {
 			executions.incrementAndGet();
-			lastUser = user;
+			lastUser = ctx.getUser();
+			lastToken = ctx.getToken();
 			return Map.of("status", "success");
 		}
 
@@ -292,6 +295,9 @@ public class TAiToolRelayServiceTest {
 		assertEquals(1, tool.executions.get());
 		assertNotNull(tool.lastUser);
 		assertEquals(Long.valueOf(1), tool.lastUser.getId());
+		// token do request corrente propagado a tool de BE
+		assertNotNull(tool.lastToken);
+		assertEquals("token-1", tool.lastToken.getToken());
 		// tokens acumulados das duas idas ao LLM
 		assertEquals(Long.valueOf(30), resp.getTokenUsage().getTotal());
 	}

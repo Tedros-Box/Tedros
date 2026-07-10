@@ -5,8 +5,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
-import org.tedros.core.security.model.TUser;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
@@ -39,7 +37,7 @@ public class ServerDateTimeFunction implements TServerAiFunction {
 	}
 
 	@Override
-	public Object execute(Object arg, TUser user) {
+	public Object execute(Object arg, TAiToolContext ctx) {
 		ZonedDateTime now = ZonedDateTime.now();
 		return Map.of(
 				"datetime", now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),

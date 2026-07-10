@@ -1,7 +1,5 @@
 package org.tedros.ai.toolrelay.function;
 
-import org.tedros.core.security.model.TUser;
-
 /**
  * Contrato das tools de backend do relay — mesma ideia do {@code TFunction}
  * do frontend, executada no servidor.
@@ -27,13 +25,14 @@ public interface TServerAiFunction {
 
 	/**
 	 * Executa a tool. As implementacoes DEVEM respeitar a autorizacao do
-	 * usuario autenticado recebido.
+	 * usuario autenticado recebido; chamadas a controllers seguros usam o
+	 * token do request corrente ({@link TAiToolContext#getToken()}).
 	 *
-	 * @param arg  instancia de {@link #getModel()} desserializada dos argumentos
-	 * @param user usuario autenticado da conversa
+	 * @param arg instancia de {@link #getModel()} desserializada dos argumentos
+	 * @param ctx contexto do turno (usuario autenticado + token corrente)
 	 * @return resultado serializavel em JSON para o LLM
 	 */
-	Object execute(Object arg, TUser user);
+	Object execute(Object arg, TAiToolContext ctx);
 
 	/**
 	 * Se true (default), o resultado retorna ao LLM para nova iteracao do
