@@ -3,15 +3,15 @@
  */
 package org.tedros.chat.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
-
 import org.tedros.chat.domain.DomainSchema;
 import org.tedros.chat.domain.DomainTables;
 import org.tedros.server.entity.TVersionEntity;
 import org.tedros.server.security.TAccessToken;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 
 /**
  * @author Davis Gordon

@@ -2,10 +2,10 @@ package org.tedros.server.cdi.eao;
 
 import java.util.List;
 
-import jakarta.persistence.EntityManager;
-
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.query.TSelect;
+
+import jakarta.persistence.EntityManager;
 
 public interface ITGenericEAO<E extends ITEntity> {
 	

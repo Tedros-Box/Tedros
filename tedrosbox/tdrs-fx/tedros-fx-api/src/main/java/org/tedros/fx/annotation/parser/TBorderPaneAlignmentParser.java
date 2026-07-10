@@ -3,8 +3,8 @@ package org.tedros.fx.annotation.parser;
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.api.descriptor.ITFieldDescriptor;
 import org.tedros.fx.annotation.layout.TBorderPane.TAlignment;
-import org.tedros.fx.annotation.parser.engine.TAnnotationParser;
 import org.tedros.fx.annotation.layout.TPos;
+import org.tedros.fx.annotation.parser.engine.TAnnotationParser;
 
 import javafx.scene.layout.BorderPane;
 

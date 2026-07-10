@@ -1,14 +1,14 @@
 package org.tedros.core.security.model;
 
+import org.tedros.core.domain.DomainSchema;
+import org.tedros.core.domain.DomainTables;
+import org.tedros.server.entity.TEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
-
-import org.tedros.core.domain.DomainSchema;
-import org.tedros.core.domain.DomainTables;
-import org.tedros.server.entity.TEntity;
 
 @Entity
 @Table(name = DomainTables.auditLog, schema = DomainSchema.tedros_core)

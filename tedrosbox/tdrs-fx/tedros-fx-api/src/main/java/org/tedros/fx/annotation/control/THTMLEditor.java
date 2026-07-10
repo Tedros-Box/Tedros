@@ -24,6 +24,7 @@ import org.tedros.fx.domain.TDefaultValues;
 
 import javafx.scene.Node;
 import javafx.scene.control.Control;
+import javafx.scene.web.HTMLEditor;
 
 /**
  * <pre>

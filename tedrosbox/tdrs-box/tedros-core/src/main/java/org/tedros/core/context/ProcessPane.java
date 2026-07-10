@@ -1,5 +1,8 @@
 package org.tedros.core.context;
 
+import org.tedros.app.process.ITProcess;
+import org.tedros.core.TLanguage;
+
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker.State;
@@ -11,9 +14,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
-import org.tedros.app.process.ITProcess;
-import org.tedros.core.TLanguage;
 
 public class ProcessPane extends BorderPane {
 	

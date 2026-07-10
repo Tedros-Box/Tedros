@@ -1,5 +1,9 @@
 package com.openai.example;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
@@ -11,9 +15,6 @@ import com.openai.models.responses.FunctionTool;
 import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.ResponseFunctionToolCall;
 import com.openai.models.responses.ResponseInputItem;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public final class ResponsesFunctionCallingRawExample {
     private ResponsesFunctionCallingRawExample() {}

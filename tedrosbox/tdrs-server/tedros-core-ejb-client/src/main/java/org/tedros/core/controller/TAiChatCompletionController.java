@@ -3,14 +3,14 @@
  */
 package org.tedros.core.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.core.ai.model.TAiChatCompletion;
 import org.tedros.core.ai.model.completion.chat.TChatRequest;
 import org.tedros.core.ai.model.completion.chat.TChatResult;
 import org.tedros.server.controller.ITSecureEjbController;
 import org.tedros.server.result.TResult;
 import org.tedros.server.security.TAccessToken;
+
+import jakarta.ejb.Remote;
 
 /**
  * @author Davis Gordon

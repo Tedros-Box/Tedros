@@ -5,15 +5,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.PersistenceContextType;
-import jakarta.persistence.Query;
-import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
-
 import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.jpa.JpaEntityManager;
 import org.eclipse.persistence.queries.QueryByExamplePolicy;
@@ -23,6 +14,15 @@ import org.eclipse.persistence.queries.ReportQueryResult;
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.query.TCompareOp;
 import org.tedros.server.query.TSelect;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceContextType;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 
 public abstract class TGenericEAO<E extends ITEntity> implements ITGenericEAO<E>  {
 	

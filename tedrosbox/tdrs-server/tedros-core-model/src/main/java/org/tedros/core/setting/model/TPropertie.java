@@ -27,7 +27,7 @@ public class TPropertie extends TVersionEntity {
 	@Column(length=40, nullable = false)
 	private String name;
 	
-	@Column(length=20, nullable = false)
+	@Column(length=120, nullable = false)
 	private String key;
 	
 	@Lob

@@ -76,7 +76,7 @@ public class TPropertieMV extends TEntityModelView<TPropertie> {
 	
 	@TReaderHtml
 	@TLabel(text=TUsualKey.KEY)
-	@TTextField(maxLength=25, required=true)
+	@TTextField(maxLength=120, required=true)
 	private SimpleStringProperty key;
 	
 	@TReaderHtml

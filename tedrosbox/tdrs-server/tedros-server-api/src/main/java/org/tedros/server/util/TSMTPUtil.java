@@ -4,7 +4,6 @@ package org.tedros.server.util;
 import java.util.Properties;
 
 import jakarta.activation.DataHandler;
-
 import jakarta.mail.Address;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Message;

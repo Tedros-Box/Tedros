@@ -3,14 +3,14 @@
  */
 package org.tedros.core.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.core.ai.model.TAiCreateImage;
 import org.tedros.core.ai.model.image.TCreateImageRequest;
 import org.tedros.core.ai.model.image.TImageResult;
 import org.tedros.server.controller.ITSecureEjbController;
 import org.tedros.server.result.TResult;
 import org.tedros.server.security.TAccessToken;
+
+import jakarta.ejb.Remote;
 
 /**
  * @author Davis Gordon

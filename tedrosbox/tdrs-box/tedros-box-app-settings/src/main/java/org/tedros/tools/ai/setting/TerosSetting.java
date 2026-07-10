@@ -21,12 +21,16 @@ import org.tedros.core.context.TViewDescriptor;
 import org.tedros.core.context.TedrosAppManager;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.TMessageProgressIndicator;
+import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.message.TMessageType;
 import org.tedros.core.repository.TRepository;
+import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.control.TButton;
 import org.tedros.fx.form.TSetting;
 import org.tedros.fx.modal.TMessageBox;
+import org.tedros.server.result.TResult;
+import org.tedros.server.result.TResult.TState;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
 import org.tedros.tools.module.ai.model.HtmlMessageViewerMV;
@@ -68,22 +72,30 @@ public class TerosSetting extends TSetting {
 	 * @param descriptor
 	 */
 	public TerosSetting(ITComponentDescriptor descriptor) {
-		super(descriptor);		
+		super(descriptor);
 		openHtmlMessageViewer();
 		util = new AiChatUtil();
 		repo = new TRepository();
-		
+
+		// Modo Tool Relay (sys.ai.toolrelay.enabled): a conversa, o loop de tool
+		// calling, a API key, o modelo e o prompt vivem no backend; os valores
+		// configurados no FE sao ignorados e os listeners abaixo nao se aplicam.
+		if(isToolRelayEnabled()) {
+			TEROS = AiTerosServiceFactory.createToolRelay();
+			return;
+		}
+
 		String apiKey = TedrosContext.getAiApiKey();
 		String aiModel = TedrosContext.getAiModel();
 		AiServiceProvider aiProvider = TedrosContext.getAiServiceProvider();
 		String aiSystemPrompt = TedrosContext.getAiSystemPrompt();
-		
-		if(StringUtils.isNotBlank(apiKey) && StringUtils.isNotBlank(aiModel) 
-				&& StringUtils.isNotBlank(aiSystemPrompt) && aiProvider!=null) 
+
+		if(StringUtils.isNotBlank(apiKey) && StringUtils.isNotBlank(aiModel)
+				&& StringUtils.isNotBlank(aiSystemPrompt) && aiProvider!=null)
 		{
 			TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(apiKey, aiModel, aiSystemPrompt, aiProvider);
 		}
-		
+
 		TedrosContext.aiServiceProviderProperty().addListener((a,o,n)->{
 				String key = TedrosContext.getAiApiKey();
 				String model = TedrosContext.getAiModel();	
@@ -119,6 +131,18 @@ public class TerosSetting extends TSetting {
 				resetAction();
 			}
 		});
+	}
+
+	private boolean isToolRelayEnabled() {
+		try (TEjbServiceLocator loc = TEjbServiceLocator.getInstance()) {
+			TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
+			TResult<String> res = serv.getValue(TedrosContext.getLoggedUser().getAccessToken(),
+					"sys.ai.toolrelay.enabled");
+			return TState.SUCCESS.equals(res.getState()) && Boolean.parseBoolean(res.getValue());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	private void openHtmlMessageViewer() {

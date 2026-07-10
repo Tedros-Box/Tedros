@@ -3,22 +3,6 @@
  */
 package org.tedros.tools.module.notify.function;
 
-import org.apache.commons.lang3.StringUtils;
-import org.tedros.ai.function.TFunction;
-import org.tedros.ai.function.model.Response;
-import org.tedros.api.presenter.view.ITView;
-import org.tedros.api.presenter.view.TViewMode;
-import org.tedros.core.context.TViewDescriptor;
-import org.tedros.core.context.TedrosAppManager;
-import org.tedros.core.notify.model.TNotify;
-import org.tedros.fx.presenter.dynamic.TDynaPresenter;
-import org.tedros.tools.ToolsKey;
-import org.tedros.tools.module.notify.TNotifyModule;
-import org.tedros.tools.module.notify.model.TNotifyMV;
-
-import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
-
 /**
  * @author Davis Gordon
  *

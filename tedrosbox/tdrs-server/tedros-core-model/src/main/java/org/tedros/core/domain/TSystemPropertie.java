@@ -36,7 +36,7 @@ public enum TSystemPropertie {
 	GROK_MODEL("sys.grok.model","Define the Grok Model"),
 	GROK_PROMPT("sys.grok.prompt","Define the model system prompt instructions"),
 	
-	AI_SERVICE_PROVIDER("sys.ai.provider","Define the Ai Service Provider: OPENAI or GROK"),
+	AI_SERVICE_PROVIDER("sys.ai.provider","Define the Ai Service Provider: OPENAI, GROK or GEMINI"),
 	AI_ENABLED("sys.ai.enabled","Enable Teros artificial intelligence. Set true or false"),
 	
 	MONGODB_URI("sys.mongodb.uri","Define the MongoDB connection URI")

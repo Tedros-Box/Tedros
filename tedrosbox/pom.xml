@@ -113,7 +113,8 @@
 		<module>tdrs-miscellaneous</module>
 		<module>tdrs-server</module>
     	<module>app-chat</module>
-  </modules>
+    	<module>tdrs-ai</module>
+	</modules>
 	
 	<!-- REPOSITORIES -->
 	<repositories>

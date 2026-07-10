@@ -1,9 +1,9 @@
 package org.tedros.chat.ejb.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.chat.entity.ChatMessage;
 import org.tedros.server.controller.ITSecureEjbController;
+
+import jakarta.ejb.Remote;
 
 @Remote
 public interface IChatMessageController extends ITSecureEjbController<ChatMessage>{

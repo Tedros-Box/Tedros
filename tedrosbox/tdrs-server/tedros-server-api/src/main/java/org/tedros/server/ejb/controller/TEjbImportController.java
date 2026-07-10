@@ -2,9 +2,6 @@ package org.tedros.server.ejb.controller;
 
 import java.util.List;
 
-import jakarta.ejb.TransactionAttribute;
-import jakarta.ejb.TransactionAttributeType;
-
 import org.tedros.server.controller.ITEjbImportController;
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.entity.ITFileEntity;
@@ -17,6 +14,9 @@ import org.tedros.server.security.TActionPolicie;
 import org.tedros.server.security.TMethodPolicie;
 import org.tedros.server.security.TMethodSecurity;
 import org.tedros.server.service.ITEjbImportService;
+
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 
 @TransactionAttribute(value = TransactionAttributeType.NOT_SUPPORTED)
 public abstract class TEjbImportController<E extends ITEntity> implements ITEjbImportController<E>, ITSecurity {

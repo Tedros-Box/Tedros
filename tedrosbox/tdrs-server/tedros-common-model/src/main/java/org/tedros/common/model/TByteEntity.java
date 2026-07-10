@@ -1,16 +1,16 @@
 package org.tedros.common.model;
 
-import jakarta.persistence.Basic;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
-
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.tedros.common.domain.DomainSchema;
 import org.tedros.common.domain.DomainTables;
 import org.tedros.server.entity.ITByteEntity;
 import org.tedros.server.entity.TVersionEntity;
+
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = DomainTables.binary, schema = DomainSchema.tedros_common)

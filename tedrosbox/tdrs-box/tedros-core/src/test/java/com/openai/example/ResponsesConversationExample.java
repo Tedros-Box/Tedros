@@ -2,6 +2,9 @@ package com.openai.example;
 
 import static java.util.stream.Collectors.toList;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.models.ChatModel;
@@ -9,8 +12,6 @@ import com.openai.models.responses.EasyInputMessage;
 import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.ResponseInputItem;
 import com.openai.models.responses.ResponseOutputMessage;
-import java.util.ArrayList;
-import java.util.List;
 
 public final class ResponsesConversationExample {
     private ResponsesConversationExample() {}

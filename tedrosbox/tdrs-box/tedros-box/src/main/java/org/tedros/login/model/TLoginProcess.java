@@ -17,7 +17,6 @@ import org.tedros.fx.exception.TProcessException;
 import org.tedros.fx.process.TEntityProcess;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
-
 import org.tedros.tools.module.user.action.TAuthorizationLoadAction;
 
 /**

@@ -3,17 +3,17 @@
  */
 package org.tedros.common.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-
 import org.tedros.common.domain.DomainSchema;
 import org.tedros.common.domain.DomainTables;
 import org.tedros.server.annotation.TCaseSensitive;
-import org.tedros.server.annotation.TImportInfo;
 import org.tedros.server.annotation.TField;
 import org.tedros.server.annotation.TFileType;
+import org.tedros.server.annotation.TImportInfo;
 import org.tedros.server.entity.TVersionEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 /**
  * @author Davis Gordon

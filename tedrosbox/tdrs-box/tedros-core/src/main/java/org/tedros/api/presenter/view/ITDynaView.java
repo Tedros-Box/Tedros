@@ -1,6 +1,5 @@
 package org.tedros.api.presenter.view;
 
-import org.tedros.api.presenter.ITPresenter;
 import org.tedros.core.model.ITModelView;
 
 import javafx.scene.control.Label;

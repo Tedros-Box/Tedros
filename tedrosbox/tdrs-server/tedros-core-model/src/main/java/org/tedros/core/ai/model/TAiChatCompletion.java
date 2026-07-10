@@ -7,6 +7,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.tedros.core.ai.model.completion.chat.TAiChatModel;
+import org.tedros.core.domain.DomainSchema;
+import org.tedros.core.domain.DomainTables;
+import org.tedros.server.entity.TEntity;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,11 +22,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-
-import org.tedros.core.ai.model.completion.chat.TAiChatModel;
-import org.tedros.core.domain.DomainSchema;
-import org.tedros.core.domain.DomainTables;
-import org.tedros.server.entity.TEntity;
 
 /**
  * @author Davis Gordon
