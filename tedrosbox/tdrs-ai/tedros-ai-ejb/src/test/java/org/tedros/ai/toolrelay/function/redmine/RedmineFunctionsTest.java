@@ -179,7 +179,7 @@ public class RedmineFunctionsTest {
 	}
 
 	@Test
-	public void getIssueErrorKeepsFrontendActionString() {
+	public void getIssueErrorResult() {
 		gateway.toThrow = new RuntimeException("boom");
 		var fn = withGateway(new GetRedmineIssueAiFunction());
 
@@ -188,8 +188,7 @@ public class RedmineFunctionsTest {
 		Map<String, Object> result = asMap(fn.execute(arg, null));
 
 		assertEquals(TServerFunctionConstants.ERROR, result.get(TServerFunctionConstants.STATUS));
-		// string preservada do FE (copy-paste historico de gitlab)
-		assertEquals("gitlab_repository_commit_error", result.get(TServerFunctionConstants.ACTION));
+		assertEquals("redmine_issue_retrieved", result.get(TServerFunctionConstants.ACTION));
 		assertEquals("boom", result.get(TServerFunctionConstants.ERROR_MESSAGE));
 	}
 

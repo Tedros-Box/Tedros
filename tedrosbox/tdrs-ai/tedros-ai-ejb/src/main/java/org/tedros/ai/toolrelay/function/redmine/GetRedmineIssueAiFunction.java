@@ -89,10 +89,9 @@ public class GetRedmineIssueAiFunction implements TServerAiFunction {
 
 		} catch (Exception e) {
 			LOGGER.error("Failed to fetch issue #" + v.getIssueId(), e);
-			// ACTION preservado do FE (mesmo sendo aparente copy-paste de gitlab)
 			return Map.of(
 					STATUS, ERROR,
-					ACTION, "gitlab_repository_commit_error",
+					ACTION, "redmine_issue_retrieved",
 					ERROR_MESSAGE, safeMessage(e));
 		}
 	}
