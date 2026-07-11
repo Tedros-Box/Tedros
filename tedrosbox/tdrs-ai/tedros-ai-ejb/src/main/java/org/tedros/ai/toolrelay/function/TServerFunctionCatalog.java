@@ -48,7 +48,8 @@ public class TServerFunctionCatalog {
 	void init() {
 		if (discovered != null)
 			discovered.forEach(this::register);
-		LOGGER.info("AI relay backend tool catalog initialized with {} tool(s)", functions.size());
+		LOGGER.info("AI relay backend tool catalog initialized with {} tool(s): {}",
+				functions.size(), functions.keySet().stream().sorted().toList());
 	}
 
 	private void register(TServerAiFunction fn) {
