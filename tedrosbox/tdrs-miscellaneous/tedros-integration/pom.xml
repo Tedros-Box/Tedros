@@ -1,0 +1,68 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.tedros</groupId>
+    <artifactId>tdrs-miscellaneous</artifactId>
+    <version>17-0.0.1</version>
+  </parent>
+  <artifactId>tedros-integration</artifactId>
+  
+  
+  <dependencies>
+  
+  	<dependency>
+  		<groupId>org.tedros</groupId>
+  		<artifactId>tedros-common-model</artifactId>
+		<version>17-0.0.1</version>
+  	</dependency>
+  	<dependency>
+  		<groupId>org.tedros</groupId>
+  		<artifactId>tedros-util</artifactId>
+		<version>17-0.0.1</version>
+  	</dependency>
+  	<dependency>
+			<groupId>com.taskadapter</groupId>
+			<artifactId>redmine-java-api</artifactId>
+			<version>3.1.3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.gitlab4j</groupId>
+			<artifactId>gitlab4j-models</artifactId>
+			<version>6.2.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-gson</artifactId>
+			<version>13.6</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-core</artifactId>
+			<version>13.6</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-okhttp</artifactId>
+			<version>13.6</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.squareup.okhttp3</groupId>
+			<artifactId>okhttp</artifactId>
+			<version>4.12.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.42</version>
+			<scope>compile</scope>
+		</dependency>
+  
+  </dependencies>
+  
+</project>

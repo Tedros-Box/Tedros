@@ -7,6 +7,11 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.tedros.chat.domain.DomainSchema;
+import org.tedros.chat.domain.DomainTables;
+import org.tedros.common.model.TFileEntity;
+import org.tedros.server.entity.TEntity;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,11 +23,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
-
-import org.tedros.chat.domain.DomainSchema;
-import org.tedros.chat.domain.DomainTables;
-import org.tedros.common.model.TFileEntity;
-import org.tedros.server.entity.TEntity;
 
 /**
  * @author Davis Gordon

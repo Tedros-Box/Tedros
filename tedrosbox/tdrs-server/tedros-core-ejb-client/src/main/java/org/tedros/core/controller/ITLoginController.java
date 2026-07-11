@@ -2,14 +2,14 @@ package org.tedros.core.controller;
 
 import java.util.List;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.core.security.model.TAuthorization;
 import org.tedros.core.security.model.TProfile;
 import org.tedros.core.security.model.TUser;
 import org.tedros.server.controller.ITBaseController;
 import org.tedros.server.result.TResult;
 import org.tedros.server.security.TAccessToken;
+
+import jakarta.ejb.Remote;
 
 @Remote
 public interface ITLoginController extends ITBaseController{

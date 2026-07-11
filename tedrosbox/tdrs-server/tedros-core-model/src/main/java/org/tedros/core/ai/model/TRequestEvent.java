@@ -5,16 +5,16 @@ package org.tedros.core.ai.model;
 
 import java.util.Date;
 
+import org.tedros.core.domain.DomainSchema;
+import org.tedros.core.domain.DomainTables;
+import org.tedros.server.entity.TEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
-
-import org.tedros.core.domain.DomainSchema;
-import org.tedros.core.domain.DomainTables;
-import org.tedros.server.entity.TEntity;
 
 /**
  * @author Davis Gordon

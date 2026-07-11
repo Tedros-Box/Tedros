@@ -3,6 +3,12 @@
  */
 package org.tedros.common.model;
 
+import org.tedros.common.domain.DomainSchema;
+import org.tedros.common.domain.DomainTables;
+import org.tedros.server.entity.TEntity;
+import org.tedros.server.model.ITBarcode;
+import org.tedros.server.model.ITFileBaseModel;
+
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -12,12 +18,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-
-import org.tedros.common.domain.DomainSchema;
-import org.tedros.common.domain.DomainTables;
-import org.tedros.server.entity.TEntity;
-import org.tedros.server.model.ITBarcode;
-import org.tedros.server.model.ITFileBaseModel;
 
 /**
  * @author Davis Gordon

@@ -2,7 +2,6 @@ package org.tedros.fx.annotation.parser;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.tedros.core.TLanguage;
-import org.tedros.core.context.TedrosContext;
 import org.tedros.fx.annotation.chart.TData;
 import org.tedros.fx.annotation.chart.TSerie;
 import org.tedros.fx.annotation.chart.TXYChart;

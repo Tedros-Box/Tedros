@@ -2,13 +2,13 @@ package org.tedros.server.ejb.service;
 
 import java.util.List;
 
-import jakarta.ejb.TransactionAttribute;
-import jakarta.ejb.TransactionAttributeType;
-
 import org.tedros.server.cdi.bo.ITGenericBO;
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.query.TSelect;
 import org.tedros.server.service.ITEjbService;
+
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 
 /**
  * Abstract base implementation of {@link ITEjbService}.

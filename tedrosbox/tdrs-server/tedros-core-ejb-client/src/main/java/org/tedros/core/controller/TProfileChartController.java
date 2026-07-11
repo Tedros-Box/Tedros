@@ -1,8 +1,8 @@
 package org.tedros.core.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.server.controller.ITEjbChartController;
+
+import jakarta.ejb.Remote;
 
 @Remote
 public interface TProfileChartController extends ITEjbChartController{

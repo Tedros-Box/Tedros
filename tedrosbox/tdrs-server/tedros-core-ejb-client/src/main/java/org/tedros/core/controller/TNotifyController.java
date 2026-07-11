@@ -1,9 +1,9 @@
 package org.tedros.core.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.core.notify.model.TNotify;
 import org.tedros.server.controller.ITSecureEjbController;
+
+import jakarta.ejb.Remote;
 
 @Remote
 public interface TNotifyController extends ITSecureEjbController<TNotify>{

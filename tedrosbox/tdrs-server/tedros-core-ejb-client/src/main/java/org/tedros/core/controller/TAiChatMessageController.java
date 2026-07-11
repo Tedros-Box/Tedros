@@ -3,10 +3,10 @@
  */
 package org.tedros.core.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.core.ai.model.TAiChatMessage;
 import org.tedros.server.controller.ITSecureEjbController;
+
+import jakarta.ejb.Remote;
 
 /**
  * @author Davis Gordon

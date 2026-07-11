@@ -1,11 +1,11 @@
 package org.tedros.core.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.common.model.TFileEntity;
 import org.tedros.server.controller.ITBaseController;
 import org.tedros.server.result.TResult;
 import org.tedros.server.security.TAccessToken;
+
+import jakarta.ejb.Remote;
 
 @Remote
 public interface ITEmailController extends ITBaseController{

@@ -3,10 +3,10 @@
  */
 package org.tedros.chat.ejb.controller;
 
-import jakarta.ejb.Remote;
-
 import org.tedros.chat.entity.ChatUser;
 import org.tedros.server.controller.ITSecureEjbController;
+
+import jakarta.ejb.Remote;
 
 /**
  * @author Davis Dun

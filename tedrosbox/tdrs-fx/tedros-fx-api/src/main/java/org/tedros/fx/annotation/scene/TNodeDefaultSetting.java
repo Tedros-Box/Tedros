@@ -5,8 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.tedros.fx.annotation.TDefaultValue;
 import org.tedros.fx.annotation.TCursor;
+import org.tedros.fx.annotation.TDefaultValue;
 import org.tedros.fx.annotation.TDepthTest;
 import org.tedros.fx.annotation.TEventHandler;
 import org.tedros.fx.annotation.effect.TBlend;

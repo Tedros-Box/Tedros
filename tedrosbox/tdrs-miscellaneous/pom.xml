@@ -35,6 +35,7 @@
  	<!-- MODULES -->
 	<modules>
 		<module>tedros-util</module>
+		<module>tedros-integration</module>
 	</modules>
   
 </project>

@@ -3,15 +3,15 @@
  */
 package org.tedros.core.security.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.tedros.core.domain.DomainSchema;
 import org.tedros.core.domain.DomainTables;
 import org.tedros.server.entity.TVersionEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * @author Davis Gordon

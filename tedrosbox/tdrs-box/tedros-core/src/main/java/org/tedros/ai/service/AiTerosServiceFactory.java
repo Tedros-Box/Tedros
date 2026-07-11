@@ -5,6 +5,7 @@ import org.tedros.ai.service.langchain.LangChainGeminiTerosService;
 import org.tedros.ai.service.langchain.LangChainGrokTerosService;
 import org.tedros.ai.service.langchain.LangChainOpenAITerosService;
 import org.tedros.ai.service.openai.reasoning.OpenAIReasoningTerosService;
+import org.tedros.ai.toolrelay.ToolRelayTerosService;
 
 public class AiTerosServiceFactory {
 	
@@ -14,6 +15,19 @@ public class AiTerosServiceFactory {
 		
 	}
 	
+	/**
+	 * Cria o servico no modo Tool Relay: a conversa, o loop de tool calling,
+	 * a API key, o modelo e o prompt vivem no backend (EAR tdrs-ai). Ativado
+	 * pela property de sistema {@code sys.ai.toolrelay.enabled}.
+	 */
+	public static IAiTerosService createToolRelay() {
+		return ToolRelayTerosService.create();
+	}
+
+	public static IAiTerosService newInstanceToolRelay() {
+		return ToolRelayTerosService.newInstance();
+	}
+
 	public static IAiTerosService createWithLangChain4jAdapters(String apiKey, String aiModel, String assistantPrompt, AiServiceProvider provider) {
 		switch (provider) {
 		case GROK:

@@ -6,7 +6,6 @@
  */
 package org.tedros.fx.control;
 
-import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;

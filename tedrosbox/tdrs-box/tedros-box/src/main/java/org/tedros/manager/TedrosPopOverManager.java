@@ -12,7 +12,6 @@ import org.tedros.core.control.PopOver.ArrowLocation;
 import org.tedros.core.message.TMessage;
 import org.tedros.core.message.TMessageType;
 import org.tedros.fx.modal.TMessageBox;
-
 import org.tedros.fx.presenter.dynamic.TDynaPresenter;
 import org.tedros.fx.presenter.dynamic.view.TDynaView;
 import org.tedros.tools.ai.pane.TerosPane;
