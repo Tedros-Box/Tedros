@@ -19,6 +19,7 @@
 	<properties>
 		<app.ext>17-1.0.0</app.ext>
 		<app.person>17-1.0.0</app.person>
+		<app.samples>17-1.0.0</app.samples>
 		<app.services>17-1.0.0</app.services>
 		<app.stock>17-1.0.0</app.stock>
 		<app.itsupport>1.0-SNAPSHOT</app.itsupport>

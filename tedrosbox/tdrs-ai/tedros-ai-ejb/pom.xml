@@ -88,6 +88,13 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.tedros</groupId>
+			<artifactId>app-samples-ejb-client</artifactId>
+			<version>${app.samples}</version>
+			<scope>compile</scope>
+		</dependency>
+
 		
 
 		<dependency>
