@@ -3,6 +3,7 @@ package org.tedros.ai.ejb.service;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -14,6 +15,9 @@ import org.tedros.ai.model.TAiTurnRequest;
 import org.tedros.ai.model.TAiTurnRequestType;
 import org.tedros.ai.model.TAiTurnResponse;
 import org.tedros.ai.model.TAiTurnResponseType;
+import org.tedros.ai.observability.TAiMetrics;
+import org.tedros.ai.observability.TAiUsageEventSink;
+import org.tedros.ai.observability.entity.TAiUsageEvent;
 import org.tedros.ai.toolrelay.ITAiConversationStore;
 import org.tedros.ai.toolrelay.TAiConversation;
 import org.tedros.ai.toolrelay.TAiRelayConfig;
@@ -27,6 +31,8 @@ import org.tedros.server.ejb.controller.ITSecurityController;
 import org.tedros.server.entity.ITUser;
 import org.tedros.server.security.TAccessToken;
 import org.tedros.server.util.TLoggerUtil;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -91,15 +97,27 @@ public class TAiToolRelayService {
 	@Inject
 	TAiRelayLoop loop;
 
+	@Inject
+	TAiMetrics metrics;
+
+	@EJB
+	TAiUsageEventSink usageSink;
+
+	// serializa a lista de tool calls do turno para o evento de consumo por usuario
+	private static final ObjectMapper USAGE_MAPPER = new ObjectMapper();
+
 	public TAiTurnResponse interact(TAccessToken token, TAiTurnRequest request) {
 		long start = System.currentTimeMillis();
-		TAiTurnResponse resp;
+		TAiTurnResponse resp = null;
 		String conversationId = request != null ? request.getConversationId() : null;
 		Long userId = null;
+		String userName = null;
 		TAiTokenUsage usage = null;
+		TAiRelayConfigSnapshot cfg = null;
+		TAiToolContext ctx = null;
 		try {
 			if (request == null || request.getType() == null)
-				return error(null, ERROR_INVALID_REQUEST, "Request or request type is null");
+				return resp = error(null, ERROR_INVALID_REQUEST, "Request or request type is null");
 
 			if (request.getType() == TAiTurnRequestType.CLOSE) {
 				store.remove(conversationId);
@@ -109,17 +127,18 @@ public class TAiToolRelayService {
 				return resp;
 			}
 
-			TAiRelayConfigSnapshot cfg = config.snapshot();
+			cfg = config.snapshot();
 			if (!cfg.isAiEnabled())
-				return error(conversationId, ERROR_AI_DISABLED, "Artificial intelligence is disabled");
+				return resp = error(conversationId, ERROR_AI_DISABLED, "Artificial intelligence is disabled");
 
 			TUser user = resolveUser(token);
 			if (user == null)
-				return error(conversationId, ERROR_ACCESS_DENIED, "User not found for the given token");
+				return resp = error(conversationId, ERROR_ACCESS_DENIED, "User not found for the given token");
 			userId = user.getId();
+			userName = user.getName();
 
 			// token do request CORRENTE — tokens podem expirar entre turnos
-			TAiToolContext ctx = new TAiToolContext(user, token);
+			ctx = new TAiToolContext(user, token);
 
 			resp = switch (request.getType()) {
 			case MESSAGE -> onMessage(request, ctx, cfg);
@@ -131,14 +150,108 @@ public class TAiToolRelayService {
 			return resp;
 		} catch (Exception e) {
 			LOGGER.error("Unexpected error on AI relay interact", e);
-			return error(conversationId, ERROR_INTERNAL, e.getMessage());
+			return resp = error(conversationId, ERROR_INTERNAL, e.getMessage());
 		} finally {
+			long elapsedMs = System.currentTimeMillis() - start;
 			LOGGER.info("AI relay turn | user {} | conversation {} | tokens in {} out {} total {} | {} ms",
 					userId, conversationId,
 					usage != null ? usage.getInput() : null,
 					usage != null ? usage.getOutput() : null,
 					usage != null ? usage.getTotal() : null,
-					System.currentTimeMillis() - start);
+					elapsedMs);
+			recordTurnMetrics(request, resp, conversationId, elapsedMs);
+			emitUsageEvent(request, resp, conversationId, userId, userName, cfg, usage, ctx, elapsedMs);
+		}
+	}
+
+	/**
+	 * Emite (assincrono, fire-and-forget) o evento de consumo por usuario deste
+	 * turno. Nunca lanca: uma falha de telemetria nao pode afetar a resposta ao
+	 * cliente. {@code CLOSE} e requests sem usuario resolvido nao geram evento.
+	 */
+	private void emitUsageEvent(TAiTurnRequest request, TAiTurnResponse resp, String conversationId,
+			Long userId, String userName, TAiRelayConfigSnapshot cfg, TAiTokenUsage usage,
+			TAiToolContext ctx, long elapsedMs) {
+		if (usageSink == null)
+			return;
+		try {
+			TAiTurnRequestType reqType = request != null ? request.getType() : null;
+			if (reqType == null || reqType == TAiTurnRequestType.CLOSE || userId == null)
+				return;
+
+			TAiUsageEvent ev = new TAiUsageEvent();
+			ev.setTs(new Date());
+			ev.setUserId(userId);
+			ev.setUserName(userName);
+			ev.setConversationId(conversationId);
+			ev.setTurnType(reqType.name());
+			if (cfg != null) {
+				ev.setProvider(providerLabel(cfg));
+				ev.setModel(cfg.getModel());
+			}
+			if (usage != null) {
+				ev.setInputTokens(usage.getInput());
+				ev.setOutputTokens(usage.getOutput());
+				ev.setTotalTokens(usage.getTotal());
+			}
+			ev.setTurnMs((int) Math.min(Integer.MAX_VALUE, elapsedMs));
+
+			TAiConversation conv = conversationId != null ? store.get(conversationId) : null;
+			if (conv != null)
+				ev.setTurnDepth(conv.getTurnDepth());
+
+			TAiTurnResponseType respType = resp != null ? resp.getType() : TAiTurnResponseType.ERROR;
+			ev.setOutcome(respType != null ? respType.name() : TAiTurnResponseType.ERROR.name());
+			if (respType == TAiTurnResponseType.ERROR)
+				ev.setErrorCode(resp != null ? resp.getErrorCode() : ERROR_INTERNAL);
+
+			ev.setToolCalls(toolCallsJson(ctx));
+			usageSink.emit(ev);
+		} catch (Exception e) {
+			LOGGER.warn("Failed to build/emit AI usage event: {}", e.getMessage());
+		}
+	}
+
+	/** JSON {@code [{name,outcome,ms}]} das tools do turno, ou null se vazio/grande demais. */
+	private String toolCallsJson(TAiToolContext ctx) {
+		if (ctx == null || ctx.getToolCalls().isEmpty())
+			return null;
+		try {
+			String json = USAGE_MAPPER.writeValueAsString(ctx.getToolCalls());
+			// nunca truncar (invalidaria o JSON): acima do limite da coluna, descarta
+			return json.length() <= TAiUsageEvent.TOOL_CALLS_MAX ? json : null;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Telemetria numerica do turno (choke point). Nunca lanca: observabilidade
+	 * jamais pode quebrar o turno. {@code CLOSE} nao e um turno de IA e nao e
+	 * instrumentado.
+	 */
+	private void recordTurnMetrics(TAiTurnRequest request, TAiTurnResponse resp, String conversationId,
+			long elapsedMs) {
+		if (metrics == null)
+			return;
+		try {
+			TAiTurnRequestType reqType = request != null ? request.getType() : null;
+			if (reqType == TAiTurnRequestType.CLOSE)
+				return;
+			TAiTurnResponseType respType = resp != null ? resp.getType() : TAiTurnResponseType.ERROR;
+			String type = reqType != null ? reqType.name() : "UNKNOWN";
+			String outcome = respType != null ? respType.name() : TAiTurnResponseType.ERROR.name();
+
+			int depth = 0;
+			TAiConversation conv = conversationId != null ? store.get(conversationId) : null;
+			if (conv != null)
+				depth = conv.getTurnDepth();
+
+			metrics.recordTurn(type, outcome, elapsedMs, depth);
+			if (respType == TAiTurnResponseType.ERROR)
+				metrics.recordError(resp != null ? resp.getErrorCode() : ERROR_INTERNAL);
+		} catch (Exception e) {
+			LOGGER.warn("Failed to record AI relay turn metrics: {}", e.getMessage());
 		}
 	}
 
@@ -179,7 +292,7 @@ public class TAiToolRelayService {
 			conv.getMemory().add(UserMessage.from(request.getUserMessage()));
 
 			ChatModel model = modelAdapter.modelFor(cfg);
-			TAiTurnResponse resp = loop.run(conv, model, catalog, ctx);
+			TAiTurnResponse resp = loop.run(conv, model, catalog, ctx, providerLabel(cfg), cfg.getModel());
 			return finish(resp, conv);
 		} finally {
 			conv.getLock().unlock();
@@ -209,7 +322,8 @@ public class TAiToolRelayService {
 						"Tool results do not match the pending tool calls");
 
 			ChatModel model = modelAdapter.modelFor(cfg);
-			TAiTurnResponse resp = loop.resume(conv, model, catalog, request.getToolResults(), ctx);
+			TAiTurnResponse resp = loop.resume(conv, model, catalog, request.getToolResults(), ctx,
+					providerLabel(cfg), cfg.getModel());
 			return finish(resp, conv);
 		} finally {
 			conv.getLock().unlock();
@@ -234,6 +348,10 @@ public class TAiToolRelayService {
 		if (conv == null || conv.getUserId() == null || !conv.getUserId().equals(user.getId()))
 			return null;
 		return conv;
+	}
+
+	private static String providerLabel(TAiRelayConfigSnapshot cfg) {
+		return cfg.getProvider() != null ? cfg.getProvider().name() : null;
 	}
 
 	private TUser resolveUser(TAccessToken token) {

@@ -91,7 +91,10 @@
 		<class>org.tedros.it.tools.entity.ServiceGroup</class>
 		<class>org.tedros.it.tools.entity.CatalogService</class>
 		<class>org.tedros.it.tools.entity.ServiceVariant</class>
-		
+
+		<!-- Observabilidade: consumo por usuario do Tool Relay -->
+		<class>org.tedros.ai.observability.entity.TAiUsageEvent</class>
+
 	    <properties>
 
 		    <!-- Desabilita o shared cache (L2) do EclipseLink -->

@@ -14,9 +14,12 @@
 		<module>tedros-ai-model</module>
 		<module>tedros-ai-ejb</module>
 		<module>tedros-ai-ejb-client</module>
+		<module>tedros-ai-metrics</module>
 		<module>tedros-ai-ejb-ear</module>
 	</modules>
 	<properties>
+		<micrometer.version>1.14.2</micrometer.version>
+		<war.plugin>3.4.0</war.plugin>
 		<app.ext>17-1.0.0</app.ext>
 		<app.person>17-1.0.0</app.person>
 		<app.samples>17-1.0.0</app.samples>

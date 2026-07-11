@@ -173,6 +173,19 @@
 			<version>${jackson.version}</version>
 		</dependency>
 
+		<!-- Observabilidade: Micrometer + registro Prometheus.
+		     Escopo compile => empacotados em lib/ do EAR (defaultLibBundleDir). -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
+			<version>${micrometer.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<version>${micrometer.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

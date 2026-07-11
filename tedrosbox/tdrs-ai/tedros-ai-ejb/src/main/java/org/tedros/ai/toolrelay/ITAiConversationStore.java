@@ -26,4 +26,7 @@ public interface ITAiConversationStore {
 	void remove(String id);
 
 	int size();
+
+	/** Numero de conversas com um turno suspenso aguardando o cliente. */
+	int pendingTurnsCount();
 }
