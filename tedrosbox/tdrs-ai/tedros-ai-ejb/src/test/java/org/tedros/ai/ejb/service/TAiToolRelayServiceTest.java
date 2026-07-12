@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -30,7 +31,9 @@ import org.tedros.ai.toolrelay.TAiRelayConfig;
 import org.tedros.ai.toolrelay.TAiRelayConfigSnapshot;
 import org.tedros.ai.observability.TAiMetrics;
 import org.tedros.ai.observability.TAiUsageEventSink;
+import org.tedros.ai.observability.entity.TAiLlmCall;
 import org.tedros.ai.observability.entity.TAiUsageEvent;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
 import org.tedros.ai.toolrelay.TAiRelayLoop;
 import org.tedros.ai.toolrelay.TRelayModelAdapter;
 import org.tedros.ai.toolrelay.function.TAiToolContext;
@@ -151,13 +154,51 @@ public class TAiToolRelayServiceTest {
 		}
 	}
 
-	/** Captura os eventos de consumo sem tocar o banco. */
+	/** Captura os eventos de consumo e o ledger sem tocar o banco. */
 	static class FakeUsageSink extends TAiUsageEventSink {
 		final List<TAiUsageEvent> events = new ArrayList<>();
+		final List<TAiLlmCall> calls = new ArrayList<>();
 
 		@Override
 		public void emit(TAiUsageEvent event) {
 			events.add(event);
+		}
+
+		@Override
+		public void emitCalls(List<TAiLlmCall> ledger) {
+			calls.addAll(ledger);
+		}
+	}
+
+	/** Loop fake que popula o billing do turno na conversa (sem chamar LLM real). */
+	static class LedgerLoop extends TAiRelayLoop {
+		@Override
+		public TAiTurnResponse run(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog,
+				TAiToolContext ctx, String provider, String modelName) {
+			conv.addCallUsage(callUsage(0, provider, modelName, "standard", 100, 20, 50, new BigDecimal("0.001000")));
+			conv.addCallUsage(callUsage(1, provider, modelName, "standard", 30, 10, 40, new BigDecimal("0.002000")));
+			conv.accumulateTokenUsage(new TokenUsage(130, 90));
+			TAiTurnResponse r = new TAiTurnResponse();
+			r.setType(TAiTurnResponseType.FINAL);
+			r.setText("done");
+			return r;
+		}
+
+		static TAiCallUsage callUsage(int idx, String provider, String model, String tier,
+				long uncached, long cached, long output, BigDecimal cost) {
+			TAiCallUsage c = new TAiCallUsage();
+			c.setCallIndex(idx);
+			c.setProvider(provider);
+			c.setModel(model);
+			c.setTier(tier);
+			c.setInputUncached(uncached);
+			c.setInputCached(cached);
+			c.setOutput(output);
+			c.setReasoning(0);
+			c.setLlmMs(123);
+			c.setCostUsd(cost);
+			c.setPriceVersion("2026-07");
+			return c;
 		}
 	}
 
@@ -659,6 +700,36 @@ public class TAiToolRelayServiceTest {
 		assertTrue("tool_calls deve conter o nome da tool de BE: " + ev.getToolCalls(),
 				ev.getToolCalls().contains(BE_TOOL));
 		assertTrue(ev.getToolCalls().contains("success"));
+	}
+
+	@Test
+	public void ledgerRowsAndUsageEventShareTurnIdAndTotals() {
+		TAiToolRelayService s = service(new FakeChatModel(), 5);
+		s.loop = new LedgerLoop(); // turno multi-call: 2 chamadas com custo conhecido
+
+		s.interact(token, message(null, "oi", null));
+
+		// 1 evento operacional com turnId, cache e custo agregados
+		assertEquals(1, usageSink.events.size());
+		TAiUsageEvent ev = usageSink.events.get(0);
+		assertNotNull(ev.getTurnId());
+		assertEquals(Long.valueOf(30L), ev.getTokensInCache()); // 20 + 10
+		assertEquals(0, new BigDecimal("0.003000").compareTo(ev.getTotalCostUsd())); // 0.001 + 0.002
+
+		// N=2 linhas no ledger, mesmo turnId; SUM(cost) == TOTAL_COST_USD do evento
+		assertEquals(2, usageSink.calls.size());
+		BigDecimal ledgerSum = BigDecimal.ZERO;
+		for (TAiLlmCall c : usageSink.calls) {
+			assertEquals(ev.getTurnId(), c.getTurnId());
+			assertEquals(Long.valueOf(1L), c.getUserId());
+			assertEquals(ev.getConversationId(), c.getConversationId());
+			assertEquals("2026-07", c.getPriceVersion());
+			ledgerSum = ledgerSum.add(c.getCostUsd());
+		}
+		assertEquals(0, ev.getTotalCostUsd().compareTo(ledgerSum));
+		// call indices 0 e 1 preservados
+		assertEquals(Integer.valueOf(0), usageSink.calls.get(0).getCallIndex());
+		assertEquals(Integer.valueOf(1), usageSink.calls.get(1).getCallIndex());
 	}
 
 	@Test

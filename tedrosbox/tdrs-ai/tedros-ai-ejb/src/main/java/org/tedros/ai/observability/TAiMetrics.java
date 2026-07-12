@@ -3,6 +3,8 @@ package org.tedros.ai.observability;
 import java.time.Duration;
 import java.util.function.IntSupplier;
 
+import org.tedros.ai.observability.pricing.TAiCallUsage;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -38,6 +40,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class TAiMetrics {
 
 	static final String METRIC_TOKENS = "tedros_ai_tokens_total";
+	static final String METRIC_COST = "tedros_ai_cost_usd_total";
+	static final String METRIC_PRICING_MISSING = "tedros_ai_pricing_missing_total";
 	static final String METRIC_LLM_SECONDS = "tedros_ai_llm_request_seconds";
 	static final String METRIC_TOOL_CALLS = "tedros_ai_tool_calls_total";
 	static final String METRIC_TOOL_SECONDS = "tedros_ai_tool_execution_seconds";
@@ -83,20 +87,57 @@ public class TAiMetrics {
 		TAiMetricsHolder.register(prometheusRegistry);
 	}
 
-	// ---------------------------------------------------------------- tokens
+	// ------------------------------------------------------------- tokens/custo
 
-	/** Tokens creditados por resposta do LLM (chamado no loop, por iteracao). */
-	public void recordTokens(String provider, String model, Long input, Long output) {
+	/**
+	 * Credita os tokens de UMA chamada ao LLM por tipo
+	 * ({@code input_uncached | input_cached | output}), com o tier da chamada.
+	 * Os tres tipos sao sempre registrados: cache 0 vira uma serie 0 (util para
+	 * o cache-hit rate). {@code userId}/{@code conversationId} nunca viram label.
+	 */
+	public void recordTokens(TAiCallUsage call) {
+		if (registry == null || call == null)
+			return;
+		String p = safe(call.getProvider());
+		String m = safe(call.getModel());
+		String tier = safe(call.getTier());
+		tokenCounter(p, m, tier, "input_uncached").increment(call.getInputUncached());
+		tokenCounter(p, m, tier, "input_cached").increment(call.getInputCached());
+		tokenCounter(p, m, tier, "output").increment(call.getOutput());
+	}
+
+	private Counter tokenCounter(String provider, String model, String tier, String type) {
+		return Counter.builder(METRIC_TOKENS)
+				.tag("provider", provider).tag("model", model).tag("tier", tier).tag("type", type)
+				.register(registry);
+	}
+
+	/**
+	 * Credita o custo (USD) de UMA chamada ao LLM em
+	 * {@code tedros_ai_cost_usd_total{provider,model,tier}}. Preco ausente
+	 * ({@code costUsd == null}) nao gera serie — a ausencia ja foi contada por
+	 * {@link #recordPricingMissing}.
+	 */
+	public void recordCost(TAiCallUsage call) {
+		if (registry == null || call == null || call.getCostUsd() == null)
+			return;
+		Counter.builder(METRIC_COST)
+				.tag("provider", safe(call.getProvider()))
+				.tag("model", safe(call.getModel()))
+				.tag("tier", safe(call.getTier()))
+				.register(registry).increment(call.getCostUsd().doubleValue());
+	}
+
+	/**
+	 * Preco ausente para {@code (provider, model, tier)} no {@code TAI_PRICE} —
+	 * a chamada ficou sem custo. Baixa cardinalidade (mesmos labels dos tokens).
+	 */
+	public void recordPricingMissing(String provider, String model, String tier) {
 		if (registry == null)
 			return;
-		String p = safe(provider);
-		String m = safe(model);
-		if (input != null && input > 0)
-			Counter.builder(METRIC_TOKENS).tag("provider", p).tag("model", m).tag("type", "input")
-					.register(registry).increment(input);
-		if (output != null && output > 0)
-			Counter.builder(METRIC_TOKENS).tag("provider", p).tag("model", m).tag("type", "output")
-					.register(registry).increment(output);
+		Counter.builder(METRIC_PRICING_MISSING)
+				.tag("provider", safe(provider)).tag("model", safe(model)).tag("tier", safe(tier))
+				.register(registry).increment();
 	}
 
 	// ------------------------------------------------------------------- llm

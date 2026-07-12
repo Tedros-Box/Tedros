@@ -1,6 +1,7 @@
 package org.tedros.ai.observability.entity;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 import org.tedros.core.domain.DomainSchema;
@@ -91,6 +92,17 @@ public class TAiUsageEvent implements Serializable {
 
 	@Column(name = "CONVERSATION_ID", length = 120)
 	private String conversationId;
+
+	// Custo de tokens (Parte 4): detalhe por chamada/tier vive no ledger TAI_LLM_CALL.
+	// Nullable — turnos sem billing (erros precoces, telemetria desligada) ficam null.
+	@Column(name = "TURN_ID", length = 60)
+	private String turnId;
+
+	@Column(name = "TOKENS_IN_CACHE")
+	private Long tokensInCache;
+
+	@Column(name = "TOTAL_COST_USD", precision = 12, scale = 6)
+	private BigDecimal totalCostUsd;
 
 	public Long getId() {
 		return id;
@@ -218,5 +230,29 @@ public class TAiUsageEvent implements Serializable {
 
 	public void setConversationId(String conversationId) {
 		this.conversationId = conversationId;
+	}
+
+	public String getTurnId() {
+		return turnId;
+	}
+
+	public void setTurnId(String turnId) {
+		this.turnId = turnId;
+	}
+
+	public Long getTokensInCache() {
+		return tokensInCache;
+	}
+
+	public void setTokensInCache(Long tokensInCache) {
+		this.tokensInCache = tokensInCache;
+	}
+
+	public BigDecimal getTotalCostUsd() {
+		return totalCostUsd;
+	}
+
+	public void setTotalCostUsd(BigDecimal totalCostUsd) {
+		this.totalCostUsd = totalCostUsd;
 	}
 }

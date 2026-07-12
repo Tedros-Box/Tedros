@@ -1,5 +1,8 @@
 package org.tedros.ai.observability;
 
+import java.util.List;
+
+import org.tedros.ai.observability.entity.TAiLlmCall;
 import org.tedros.ai.observability.entity.TAiUsageEvent;
 import org.tedros.server.util.TLoggerUtil;
 
@@ -38,6 +41,24 @@ public class TAiUsageEventSink {
 			em.persist(event);
 		} catch (Exception e) {
 			LOGGER.error("Failed to persist AI usage event (user " + event.getUserId() + ")", e);
+		}
+	}
+
+	/**
+	 * Persiste o ledger de custo do turno — uma linha por chamada ao LLM.
+	 * Assincrono, transacao propria, nunca propaga excecao (billing/telemetria
+	 * jamais quebra o turno, que ja respondeu ao cliente).
+	 */
+	@Asynchronous
+	@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+	public void emitCalls(List<TAiLlmCall> calls) {
+		if (calls == null || calls.isEmpty())
+			return;
+		try {
+			for (TAiLlmCall call : calls)
+				em.persist(call);
+		} catch (Exception e) {
+			LOGGER.error("Failed to persist AI LLM call ledger (" + calls.size() + " rows)", e);
 		}
 	}
 }

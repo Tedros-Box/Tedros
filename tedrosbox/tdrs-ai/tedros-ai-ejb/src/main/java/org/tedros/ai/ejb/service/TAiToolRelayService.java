@@ -1,10 +1,13 @@
 package org.tedros.ai.ejb.service;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -17,7 +20,9 @@ import org.tedros.ai.model.TAiTurnResponse;
 import org.tedros.ai.model.TAiTurnResponseType;
 import org.tedros.ai.observability.TAiMetrics;
 import org.tedros.ai.observability.TAiUsageEventSink;
+import org.tedros.ai.observability.entity.TAiLlmCall;
 import org.tedros.ai.observability.entity.TAiUsageEvent;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
 import org.tedros.ai.toolrelay.ITAiConversationStore;
 import org.tedros.ai.toolrelay.TAiConversation;
 import org.tedros.ai.toolrelay.TAiRelayConfig;
@@ -184,6 +189,7 @@ public class TAiToolRelayService {
 			ev.setUserId(userId);
 			ev.setUserName(userName);
 			ev.setConversationId(conversationId);
+			ev.setTurnId(ctx != null ? ctx.getTurnId() : null);
 			ev.setTurnType(reqType.name());
 			if (cfg != null) {
 				ev.setProvider(providerLabel(cfg));
@@ -205,11 +211,68 @@ public class TAiToolRelayService {
 			if (respType == TAiTurnResponseType.ERROR)
 				ev.setErrorCode(resp != null ? resp.getErrorCode() : ERROR_INTERNAL);
 
+			// billing por chamada deste interact (snapshot tirado sob o lock em finish)
+			List<TAiCallUsage> calls = ctx != null ? ctx.getBilledCalls() : List.of();
+			applyBilling(ev, calls);
+
 			ev.setToolCalls(toolCallsJson(ctx));
 			usageSink.emit(ev);
+
+			// ledger: uma linha por chamada (fonte de verdade do custo — Parte 4)
+			List<TAiLlmCall> ledger = buildLedger(ev, calls);
+			if (!ledger.isEmpty())
+				usageSink.emitCalls(ledger);
 		} catch (Exception e) {
 			LOGGER.warn("Failed to build/emit AI usage event: {}", e.getMessage());
 		}
+	}
+
+	/**
+	 * Soma o cache e o custo (USD) das chamadas do turno no evento operacional.
+	 * {@code totalCostUsd} fica nulo se nenhuma chamada teve preco resolvido.
+	 */
+	private void applyBilling(TAiUsageEvent ev, List<TAiCallUsage> calls) {
+		if (calls.isEmpty())
+			return;
+		long cacheSum = 0;
+		BigDecimal costSum = null;
+		for (TAiCallUsage c : calls) {
+			cacheSum += c.getInputCached();
+			if (c.getCostUsd() != null)
+				costSum = (costSum == null) ? c.getCostUsd() : costSum.add(c.getCostUsd());
+		}
+		ev.setTokensInCache(cacheSum);
+		ev.setTotalCostUsd(costSum);
+	}
+
+	/**
+	 * Monta o ledger (uma linha por chamada) compartilhando {@code ts}/{@code turnId}/
+	 * usuario/conversa do evento — garante {@code SUM(COST_USD)} do ledger igual a
+	 * {@code TOTAL_COST_USD} do evento.
+	 */
+	private List<TAiLlmCall> buildLedger(TAiUsageEvent ev, List<TAiCallUsage> calls) {
+		List<TAiLlmCall> ledger = new ArrayList<>(calls.size());
+		for (TAiCallUsage c : calls) {
+			TAiLlmCall row = new TAiLlmCall();
+			row.setTs(ev.getTs());
+			row.setUserId(ev.getUserId());
+			row.setUserName(ev.getUserName());
+			row.setConversationId(ev.getConversationId());
+			row.setTurnId(ev.getTurnId());
+			row.setCallIndex(c.getCallIndex());
+			row.setProvider(c.getProvider());
+			row.setModel(c.getModel());
+			row.setContextTier(c.getTier());
+			row.setTokensInFull(c.getInputUncached());
+			row.setTokensInCache(c.getInputCached());
+			row.setTokensOut(c.getOutput());
+			row.setTokensReasoning(c.getReasoning());
+			row.setLlmMs((int) Math.min(Integer.MAX_VALUE, c.getLlmMs()));
+			row.setCostUsd(c.getCostUsd());
+			row.setPriceVersion(c.getPriceVersion());
+			ledger.add(row);
+		}
+		return ledger;
 	}
 
 	/** JSON {@code [{name,outcome,ms}]} das tools do turno, ou null se vazio/grande demais. */
@@ -289,11 +352,15 @@ public class TAiToolRelayService {
 				conv.getMemory().add(SystemMessage.from(systemPrompt(user, cfg, request.getSysPrompt())));
 
 			conv.resetTurn();
+			// novo turno: gera a identidade (UUID) e propaga a conversa e ao ctx
+			String turnId = UUID.randomUUID().toString();
+			conv.setTurnId(turnId);
+			ctx.setTurnId(turnId);
 			conv.getMemory().add(UserMessage.from(request.getUserMessage()));
 
 			ChatModel model = modelAdapter.modelFor(cfg);
 			TAiTurnResponse resp = loop.run(conv, model, catalog, ctx, providerLabel(cfg), cfg.getModel());
-			return finish(resp, conv);
+			return finish(resp, conv, ctx);
 		} finally {
 			conv.getLock().unlock();
 		}
@@ -321,10 +388,13 @@ public class TAiToolRelayService {
 				return error(conv.getId(), ERROR_INVALID_TOOL_RESULTS,
 						"Tool results do not match the pending tool calls");
 
+			// retomada do MESMO turno: reaproveita a identidade e propaga ao ctx
+			ctx.setTurnId(conv.getTurnId());
+
 			ChatModel model = modelAdapter.modelFor(cfg);
 			TAiTurnResponse resp = loop.resume(conv, model, catalog, request.getToolResults(), ctx,
 					providerLabel(cfg), cfg.getModel());
-			return finish(resp, conv);
+			return finish(resp, conv, ctx);
 		} finally {
 			conv.getLock().unlock();
 		}
@@ -377,9 +447,19 @@ public class TAiToolRelayService {
 		return prompt;
 	}
 
-	private TAiTurnResponse finish(TAiTurnResponse resp, TAiConversation conv) {
+	/**
+	 * Fecha a resposta ao cliente (ainda sob o lock da conversa) e tira o
+	 * snapshot do billing deste interact para o {@code ctx}: as chamadas ja
+	 * faturadas sao copiadas e removidas da conversa, de modo que uma retomada
+	 * ({@code TOOL_RESULTS}) so contabilize as chamadas novas — sem dupla
+	 * contagem no ledger. Lido depois no {@code emitUsageEvent} (fora do lock),
+	 * do proprio {@code ctx} (local ao request), portanto sem corrida.
+	 */
+	private TAiTurnResponse finish(TAiTurnResponse resp, TAiConversation conv, TAiToolContext ctx) {
 		resp.setConversationId(conv.getId());
 		resp.setTokenUsage(toTokenUsage(conv.getTurnTokenUsage()));
+		ctx.setBilledCalls(new ArrayList<>(conv.getTurnCalls()));
+		conv.getTurnCalls().clear();
 		conv.touch();
 		return resp;
 	}

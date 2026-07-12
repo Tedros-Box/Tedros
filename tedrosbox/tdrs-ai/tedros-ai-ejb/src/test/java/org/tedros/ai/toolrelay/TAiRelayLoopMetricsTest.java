@@ -3,6 +3,7 @@ package org.tedros.ai.toolrelay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -12,6 +13,9 @@ import org.junit.Test;
 import org.tedros.ai.model.TAiTurnResponse;
 import org.tedros.ai.model.TAiTurnResponseType;
 import org.tedros.ai.observability.TAiMetrics;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
+import org.tedros.ai.observability.pricing.TAiPriceBook;
+import org.tedros.ai.observability.pricing.TAiUsageExtractor;
 import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
@@ -98,10 +102,21 @@ public class TAiRelayLoopMetricsTest {
 	private TAiConversation conv;
 	private TAiToolContext ctx;
 
+	/** Custo fake por chamada (preco > 0) para exercitar {@code recordCost}. */
+	private static final BigDecimal FAKE_COST = new BigDecimal("0.0001");
+
 	private TServerFunctionCatalog setup(TServerAiFunction... fns) {
 		reg = new SimpleMeterRegistry();
 		loop = new TAiRelayLoop();
 		loop.metrics = new TAiMetrics(reg); // campo package-private acessivel neste pacote
+		loop.extractor = new TAiUsageExtractor();
+		// PriceBook fake: custo fixo > 0 por chamada, sem tocar no banco
+		loop.priceBook = new TAiPriceBook() {
+			@Override
+			public BigDecimal cost(TAiCallUsage call) {
+				return FAKE_COST;
+			}
+		};
 		TUser user = new TUser("Davis");
 		user.setId(1L);
 		conv = new TAiConversation("c1", user);
@@ -125,12 +140,19 @@ public class TAiRelayLoopMetricsTest {
 		TAiTurnResponse resp = loop.run(conv, model, catalog, ctx, "OPENAI", "gpt-x");
 		assertEquals(TAiTurnResponseType.FINAL, resp.getType());
 
+		// TokenUsage(10,5) generico → uncached 10, cached 0, output 5, tier standard
 		assertEquals(10.0, reg.get("tedros_ai_tokens_total")
-				.tag("provider", "OPENAI").tag("model", "gpt-x").tag("type", "input").counter().count(), 0.0001);
+				.tag("provider", "OPENAI").tag("model", "gpt-x").tag("tier", "standard")
+				.tag("type", "input_uncached").counter().count(), 0.0001);
+		assertEquals(0.0, reg.get("tedros_ai_tokens_total")
+				.tag("type", "input_cached").counter().count(), 0.0001);
 		assertEquals(5.0, reg.get("tedros_ai_tokens_total")
-				.tag("provider", "OPENAI").tag("model", "gpt-x").tag("type", "output").counter().count(), 0.0001);
+				.tag("type", "output").counter().count(), 0.0001);
 		assertEquals(1L, reg.get("tedros_ai_llm_request_seconds")
 				.tag("provider", "OPENAI").tag("outcome", "success").timer().count());
+		// custo creditado por chamada (preco fake > 0)
+		assertEquals(FAKE_COST.doubleValue(), reg.get("tedros_ai_cost_usd_total")
+				.tag("provider", "OPENAI").tag("model", "gpt-x").tag("tier", "standard").counter().count(), 1e-9);
 		assertNoHighCardinalityTags();
 	}
 
@@ -147,9 +169,11 @@ public class TAiRelayLoopMetricsTest {
 
 		assertEquals(1.0, reg.get("tedros_ai_tool_calls_total")
 				.tag("tool", "be_tool").tag("outcome", "success").counter().count(), 0.0001);
-		// duas idas ao LLM => tokens creditados duas vezes (20 input)
+		// duas idas ao LLM => tokens e custo creditados duas vezes (20 uncached, 2x custo)
 		assertEquals(20.0, reg.get("tedros_ai_tokens_total")
-				.tag("type", "input").counter().count(), 0.0001);
+				.tag("type", "input_uncached").counter().count(), 0.0001);
+		assertEquals(2 * FAKE_COST.doubleValue(), reg.get("tedros_ai_cost_usd_total")
+				.counter().count(), 1e-9);
 		assertNoHighCardinalityTags();
 	}
 

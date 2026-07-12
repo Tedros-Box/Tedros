@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.tedros.ai.model.TAiClientToolSpec;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
 import org.tedros.ai.toolrelay.function.TJsonSchemaConverter;
 import org.tedros.core.security.model.TUser;
 
@@ -94,6 +95,10 @@ public class TAiConversation {
 	private int turnDepth;
 	private TokenUsage turnTokenUsage;
 	private String lastAiText;
+	// identidade do turno (UUID) — a mesma atravessa suspensao/retomada; grava no ledger
+	private String turnId;
+	// uso/custo por chamada ao LLM do turno (grao de billing → ledger na Parte 4)
+	private final List<TAiCallUsage> turnCalls = new ArrayList<>();
 
 	public TAiConversation(String id, TUser user) {
 		this.id = id;
@@ -191,6 +196,26 @@ public class TAiConversation {
 		this.turnDepth = 0;
 		this.turnTokenUsage = null;
 		this.lastAiText = null;
+		this.turnCalls.clear();
+	}
+
+	/** Acumula o uso/custo de UMA chamada ao LLM do turno (sob o lock da conversa). */
+	public void addCallUsage(TAiCallUsage call) {
+		if (call != null)
+			this.turnCalls.add(call);
+	}
+
+	/** Chamadas ao LLM do turno corrente (uma por ida ao modelo) — fonte do ledger. */
+	public List<TAiCallUsage> getTurnCalls() {
+		return turnCalls;
+	}
+
+	public String getTurnId() {
+		return turnId;
+	}
+
+	public void setTurnId(String turnId) {
+		this.turnId = turnId;
 	}
 
 	public TokenUsage getTurnTokenUsage() {

@@ -13,6 +13,9 @@ import org.tedros.ai.model.TAiPendingToolCall;
 import org.tedros.ai.model.TAiTurnResponse;
 import org.tedros.ai.model.TAiTurnResponseType;
 import org.tedros.ai.observability.TAiMetrics;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
+import org.tedros.ai.observability.pricing.TAiPriceBook;
+import org.tedros.ai.observability.pricing.TAiUsageExtractor;
 import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
@@ -70,6 +73,12 @@ public class TAiRelayLoop {
 	@Inject
 	TAiMetrics metrics;
 
+	@Inject
+	TAiUsageExtractor extractor;
+
+	@Inject
+	TAiPriceBook priceBook;
+
 	/**
 	 * Roda o loop ate resposta final, suspensao por tools de frontend, limite
 	 * de profundidade ou erro do LLM. O {@code ctx} carrega o token do request
@@ -92,6 +101,7 @@ public class TAiRelayLoop {
 
 			ChatResponse response;
 			Timer.Sample llmSample = metrics != null ? metrics.startLlm() : null;
+			long llmStart = System.currentTimeMillis();
 			try {
 				response = model.chat(ChatRequest.builder()
 						.messages(conv.getMemory().messages())
@@ -103,10 +113,15 @@ public class TAiRelayLoop {
 				LOGGER.error("Error calling the LLM on conversation " + conv.getId(), e);
 				return error(ERROR_LLM, e.getMessage());
 			}
-			if (metrics != null) {
+			long llmMs = System.currentTimeMillis() - llmStart;
+			if (metrics != null)
 				metrics.stopLlm(llmSample, provider, modelName, "success");
-				recordTokens(provider, modelName, response.tokenUsage());
-			}
+
+			// uso/custo por chamada (grao de billing): credita metricas e acumula
+			// na conversa (fonte do ledger na Parte 4). callIndex = profundidade
+			// ANTES do incremento (0-based).
+			meterCall(conv, provider, modelName, response.tokenUsage(), llmMs);
+
 			conv.incrementTurnDepth();
 			conv.accumulateTokenUsage(response.tokenUsage());
 
@@ -277,13 +292,27 @@ public class TAiRelayLoop {
 		}
 	}
 
-	/** Credita os tokens de UMA resposta do LLM (por iteracao do loop). */
-	private void recordTokens(String provider, String modelName, TokenUsage usage) {
-		if (metrics == null || usage == null)
+	/**
+	 * Extrai o uso faturavel de UMA resposta, precifica, credita as metricas de
+	 * tokens/custo e acumula a chamada no turno (fonte do ledger). Nunca lanca:
+	 * telemetria/custo jamais pode quebrar o turno. {@code priceBook.cost} tambem
+	 * grava o {@code priceVersion} no {@code call}.
+	 */
+	private void meterCall(TAiConversation conv, String provider, String modelName, TokenUsage usage, long llmMs) {
+		if (extractor == null)
 			return;
-		Long input = usage.inputTokenCount() != null ? usage.inputTokenCount().longValue() : null;
-		Long output = usage.outputTokenCount() != null ? usage.outputTokenCount().longValue() : null;
-		metrics.recordTokens(provider, modelName, input, output);
+		try {
+			TAiCallUsage call = extractor.extract(conv.getTurnDepth(), provider, modelName, usage, llmMs);
+			if (priceBook != null)
+				call.setCostUsd(priceBook.cost(call));
+			if (metrics != null) {
+				metrics.recordTokens(call);
+				metrics.recordCost(call);
+			}
+			conv.addCallUsage(call);
+		} catch (Exception e) {
+			LOGGER.warn("Failed to meter LLM call usage on conversation {}: {}", conv.getId(), e.getMessage());
+		}
 	}
 
 	/** Uma chamada de tool; nunca lanca (observabilidade nao pode quebrar o loop). */
