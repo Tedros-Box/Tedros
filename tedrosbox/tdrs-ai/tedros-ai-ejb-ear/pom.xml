@@ -19,6 +19,14 @@
 			<type>ejb</type>
 		</dependency>
 
+		<!-- WAR fino de exposicao Prometheus (/ai/metrics). -->
+		<dependency>
+			<groupId>org.tedros</groupId>
+			<artifactId>tedros-ai-metrics</artifactId>
+			<version>${project.version}</version>
+			<type>war</type>
+		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -69,6 +77,11 @@
 	                        <groupId>org.tedros</groupId>
 	                        <artifactId>tedros-ai-ejb</artifactId>
 	                    </ejbModule>
+	                    <webModule>
+	                        <groupId>org.tedros</groupId>
+	                        <artifactId>tedros-ai-metrics</artifactId>
+	                        <contextRoot>/ai</contextRoot>
+	                    </webModule>
 	                </modules>
 	            </configuration>
 	        </plugin>

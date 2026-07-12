@@ -1,0 +1,63 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.tedros</groupId>
+		<artifactId>tdrs-ai</artifactId>
+		<version>17-0.0.1</version>
+	</parent>
+
+	<artifactId>tedros-ai-metrics</artifactId>
+	<packaging>war</packaging>
+	<name>WAR fino de exposicao Prometheus do Tool Relay (/ai/metrics)</name>
+
+	<!-- DEPENDENCIES -->
+	<dependencies>
+
+		<!-- API Jakarta EE fornecida pelo TomEE (JAX-RS/CDI). -->
+		<dependency>
+			<groupId>org.apache.tomee</groupId>
+			<artifactId>jakartaee-api</artifactId>
+			<version>${javaee.api.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- O EJB fornece TAiMetricsHolder no classloader do EAR (parent do WAR).
+		     provided => nao reempacotado no WAR; resolvido em runtime pelo EAR. -->
+		<dependency>
+			<groupId>org.tedros</groupId>
+			<artifactId>tedros-ai-ejb</artifactId>
+			<version>${project.version}</version>
+			<type>ejb</type>
+			<scope>provided</scope>
+		</dependency>
+
+	</dependencies>
+
+	<!-- BUILD -->
+	<build>
+		<finalName>${project.artifactId}</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>${war.plugin}</version>
+				<configuration>
+					<!-- Sem web.xml: a ativacao do JAX-RS vem da classe Application. -->
+					<failOnMissingWebXml>false</failOnMissingWebXml>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${compiler.plugin}</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

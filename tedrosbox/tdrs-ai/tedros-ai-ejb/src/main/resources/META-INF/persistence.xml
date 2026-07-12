@@ -91,7 +91,19 @@
 		<class>org.tedros.it.tools.entity.ServiceGroup</class>
 		<class>org.tedros.it.tools.entity.CatalogService</class>
 		<class>org.tedros.it.tools.entity.ServiceVariant</class>
-		
+
+		<!-- Observabilidade: consumo por usuario do Tool Relay -->
+		<class>org.tedros.ai.observability.entity.TAiUsageEvent</class>
+
+		<!-- Custo de tokens: tabela de precos editavel em runtime -->
+		<class>org.tedros.ai.observability.pricing.entity.TAiPrice</class>
+
+		<!-- Custo de tokens: ledger por chamada ao LLM (fonte de verdade) -->
+		<class>org.tedros.ai.observability.entity.TAiLlmCall</class>
+
+		<!-- Custo de tokens: rollup mensal (retencao longa) -->
+		<class>org.tedros.ai.observability.entity.TAiUsageMonthly</class>
+
 	    <properties>
 
 		    <!-- Desabilita o shared cache (L2) do EclipseLink -->

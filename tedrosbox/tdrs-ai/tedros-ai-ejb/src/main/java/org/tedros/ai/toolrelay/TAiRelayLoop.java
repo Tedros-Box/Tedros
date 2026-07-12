@@ -12,6 +12,10 @@ import org.tedros.ai.model.TAiClientToolResult;
 import org.tedros.ai.model.TAiPendingToolCall;
 import org.tedros.ai.model.TAiTurnResponse;
 import org.tedros.ai.model.TAiTurnResponseType;
+import org.tedros.ai.observability.TAiMetrics;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
+import org.tedros.ai.observability.pricing.TAiPriceBook;
+import org.tedros.ai.observability.pricing.TAiUsageExtractor;
 import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
@@ -27,7 +31,10 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.output.TokenUsage;
+import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * Loop de tool calling do relay — adaptacao server-side do
@@ -63,13 +70,24 @@ public class TAiRelayLoop {
 	// Instancia unica e thread-safe — nao criar um mapper por serializacao
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
+	@Inject
+	TAiMetrics metrics;
+
+	@Inject
+	TAiUsageExtractor extractor;
+
+	@Inject
+	TAiPriceBook priceBook;
+
 	/**
 	 * Roda o loop ate resposta final, suspensao por tools de frontend, limite
 	 * de profundidade ou erro do LLM. O {@code ctx} carrega o token do request
-	 * CORRENTE — repassado as tools de backend a cada turno.
+	 * CORRENTE — repassado as tools de backend a cada turno. {@code provider} e
+	 * {@code model} sao usados apenas como labels de baixa cardinalidade nas
+	 * metricas de LLM/tokens.
 	 */
 	public TAiTurnResponse run(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog,
-			TAiToolContext ctx) {
+			TAiToolContext ctx, String provider, String modelName) {
 
 		List<ToolSpecification> tools = unionSpecifications(conv, catalog);
 
@@ -82,15 +100,28 @@ public class TAiRelayLoop {
 			}
 
 			ChatResponse response;
+			Timer.Sample llmSample = metrics != null ? metrics.startLlm() : null;
+			long llmStart = System.currentTimeMillis();
 			try {
 				response = model.chat(ChatRequest.builder()
 						.messages(conv.getMemory().messages())
 						.toolSpecifications(tools)
 						.build());
 			} catch (Exception e) {
+				if (metrics != null)
+					metrics.stopLlm(llmSample, provider, modelName, "error");
 				LOGGER.error("Error calling the LLM on conversation " + conv.getId(), e);
 				return error(ERROR_LLM, e.getMessage());
 			}
+			long llmMs = System.currentTimeMillis() - llmStart;
+			if (metrics != null)
+				metrics.stopLlm(llmSample, provider, modelName, "success");
+
+			// uso/custo por chamada (grao de billing): credita metricas e acumula
+			// na conversa (fonte do ledger na Parte 4). callIndex = profundidade
+			// ANTES do incremento (0-based).
+			meterCall(conv, provider, modelName, response.tokenUsage(), llmMs);
+
 			conv.incrementTurnDepth();
 			conv.accumulateTokenUsage(response.tokenUsage());
 
@@ -127,9 +158,11 @@ public class TAiRelayLoop {
 					if (fn.get().revertToModel())
 						backendRevert = true;
 				} else if (conv.hasClientTool(req.name())) {
+					recordTool(ctx, req.name(), "client", -1);
 					frontendCalls.add(req);
 				} else {
 					// mesmo comportamento do FE: result "Function not found", sem reloop
+					recordTool(ctx, req.name(), "not_found", -1);
 					backendResults.put(req.id(), ToolExecutionResultMessage.from(req, FUNCTION_NOT_FOUND));
 				}
 			}
@@ -179,7 +212,7 @@ public class TAiRelayLoop {
 	 * O chamador ja validou que os callIds conferem com os pendentes.
 	 */
 	public TAiTurnResponse resume(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog,
-			List<TAiClientToolResult> results, TAiToolContext ctx) {
+			List<TAiClientToolResult> results, TAiToolContext ctx, String provider, String modelName) {
 
 		TAiConversation.PendingTurn pending = conv.getPendingTurn();
 
@@ -201,7 +234,7 @@ public class TAiRelayLoop {
 		conv.setPendingTurn(null);
 
 		if (revert)
-			return run(conv, model, catalog, ctx);
+			return run(conv, model, catalog, ctx, provider, modelName);
 
 		TAiTurnResponse resp = new TAiTurnResponse();
 		resp.setType(TAiTurnResponseType.FINAL);
@@ -242,17 +275,52 @@ public class TAiRelayLoop {
 	private ToolExecutionResultMessage executeBackend(TServerAiFunction fn, ToolExecutionRequest req,
 			TAiToolContext ctx) {
 		LOGGER.info("AI relay backend tool call: {} args: {}", req.name(), req.arguments());
+		long start = System.currentTimeMillis();
 		try {
 			String args = (req.arguments() == null || req.arguments().isBlank()) ? "{}"
 					: JsonSanitizer.sanitize(req.arguments());
 			Object arg = MAPPER.readValue(args, fn.getModel());
 			Object result = fn.execute(arg, ctx);
-			return ToolExecutionResultMessage.from(req, MAPPER.writeValueAsString(result));
+			ToolExecutionResultMessage msg = ToolExecutionResultMessage.from(req, MAPPER.writeValueAsString(result));
+			recordTool(ctx, req.name(), "success", System.currentTimeMillis() - start);
+			return msg;
 		} catch (Exception e) {
+			recordTool(ctx, req.name(), "error", System.currentTimeMillis() - start);
 			LOGGER.error("Error executing backend tool " + req.name(), e);
 			return ToolExecutionResultMessage.from(req,
 					"{\"status\":\"error\",\"error_message\":" + quote(e.getMessage()) + "}");
 		}
+	}
+
+	/**
+	 * Extrai o uso faturavel de UMA resposta, precifica, credita as metricas de
+	 * tokens/custo e acumula a chamada no turno (fonte do ledger). Nunca lanca:
+	 * telemetria/custo jamais pode quebrar o turno. {@code priceBook.cost} tambem
+	 * grava o {@code priceVersion} no {@code call}.
+	 */
+	private void meterCall(TAiConversation conv, String provider, String modelName, TokenUsage usage, long llmMs) {
+		if (extractor == null)
+			return;
+		try {
+			TAiCallUsage call = extractor.extract(conv.getTurnDepth(), provider, modelName, usage, llmMs);
+			if (priceBook != null)
+				call.setCostUsd(priceBook.cost(call));
+			if (metrics != null) {
+				metrics.recordTokens(call);
+				metrics.recordCost(call);
+			}
+			conv.addCallUsage(call);
+		} catch (Exception e) {
+			LOGGER.warn("Failed to meter LLM call usage on conversation {}: {}", conv.getId(), e.getMessage());
+		}
+	}
+
+	/** Uma chamada de tool; nunca lanca (observabilidade nao pode quebrar o loop). */
+	private void recordTool(TAiToolContext ctx, String tool, String outcome, long millis) {
+		if (metrics != null)
+			metrics.recordTool(tool, outcome, millis);
+		if (ctx != null)
+			ctx.addToolCall(tool, outcome, millis);
 	}
 
 	private static String quote(String value) {

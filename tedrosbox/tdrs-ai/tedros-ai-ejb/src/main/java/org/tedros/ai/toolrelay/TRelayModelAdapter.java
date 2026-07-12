@@ -4,12 +4,14 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.tedros.ai.observability.TAiMetrics;
 import org.tedros.server.util.TLoggerUtil;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * Adaptacao server-side do {@code LangChainServiceAdapter} do frontend:
@@ -33,6 +35,9 @@ public class TRelayModelAdapter {
 
 	private final Map<String, ChatModel> cache = new ConcurrentHashMap<>();
 
+	@Inject
+	TAiMetrics metrics;
+
 	/**
 	 * Retorna o ChatModel para a configuracao dada, criando-o na primeira
 	 * chamada. Configuracoes antigas sao descartadas quando a configuracao
@@ -43,10 +48,17 @@ public class TRelayModelAdapter {
 		return cache.computeIfAbsent(key, k -> {
 			if (cache.size() > 4) {
 				cache.clear();
+				if (metrics != null)
+					metrics.recordChatModelCacheClear();
 				LOGGER.info("AI relay ChatModel cache cleared after configuration change");
 			}
 			return build(cfg);
 		});
+	}
+
+	/** Tamanho atual do cache de ChatModel (para o gauge de observabilidade). */
+	public int cacheSize() {
+		return cache.size();
 	}
 
 	private String cacheKey(TAiRelayConfigSnapshot cfg) {

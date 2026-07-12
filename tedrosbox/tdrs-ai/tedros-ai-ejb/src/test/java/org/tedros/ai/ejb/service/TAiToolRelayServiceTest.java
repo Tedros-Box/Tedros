@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -28,6 +29,11 @@ import org.tedros.ai.toolrelay.TAiConversationStore;
 import org.tedros.ai.toolrelay.TAiProvider;
 import org.tedros.ai.toolrelay.TAiRelayConfig;
 import org.tedros.ai.toolrelay.TAiRelayConfigSnapshot;
+import org.tedros.ai.observability.TAiMetrics;
+import org.tedros.ai.observability.TAiUsageEventSink;
+import org.tedros.ai.observability.entity.TAiLlmCall;
+import org.tedros.ai.observability.entity.TAiUsageEvent;
+import org.tedros.ai.observability.pricing.TAiCallUsage;
 import org.tedros.ai.toolrelay.TAiRelayLoop;
 import org.tedros.ai.toolrelay.TRelayModelAdapter;
 import org.tedros.ai.toolrelay.function.TAiToolContext;
@@ -47,6 +53,8 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.TokenUsage;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 /**
  * Testes do protocolo do Tool Relay com ChatModel mockado (sem chamadas
@@ -146,6 +154,54 @@ public class TAiToolRelayServiceTest {
 		}
 	}
 
+	/** Captura os eventos de consumo e o ledger sem tocar o banco. */
+	static class FakeUsageSink extends TAiUsageEventSink {
+		final List<TAiUsageEvent> events = new ArrayList<>();
+		final List<TAiLlmCall> calls = new ArrayList<>();
+
+		@Override
+		public void emit(TAiUsageEvent event) {
+			events.add(event);
+		}
+
+		@Override
+		public void emitCalls(List<TAiLlmCall> ledger) {
+			calls.addAll(ledger);
+		}
+	}
+
+	/** Loop fake que popula o billing do turno na conversa (sem chamar LLM real). */
+	static class LedgerLoop extends TAiRelayLoop {
+		@Override
+		public TAiTurnResponse run(TAiConversation conv, ChatModel model, TServerFunctionCatalog catalog,
+				TAiToolContext ctx, String provider, String modelName) {
+			conv.addCallUsage(callUsage(0, provider, modelName, "standard", 100, 20, 50, new BigDecimal("0.001000")));
+			conv.addCallUsage(callUsage(1, provider, modelName, "standard", 30, 10, 40, new BigDecimal("0.002000")));
+			conv.accumulateTokenUsage(new TokenUsage(130, 90));
+			TAiTurnResponse r = new TAiTurnResponse();
+			r.setType(TAiTurnResponseType.FINAL);
+			r.setText("done");
+			return r;
+		}
+
+		static TAiCallUsage callUsage(int idx, String provider, String model, String tier,
+				long uncached, long cached, long output, BigDecimal cost) {
+			TAiCallUsage c = new TAiCallUsage();
+			c.setCallIndex(idx);
+			c.setProvider(provider);
+			c.setModel(model);
+			c.setTier(tier);
+			c.setInputUncached(uncached);
+			c.setInputCached(cached);
+			c.setOutput(output);
+			c.setReasoning(0);
+			c.setLlmMs(123);
+			c.setCostUsd(cost);
+			c.setPriceVersion("2026-07");
+			return c;
+		}
+	}
+
 	public static class EmptyModel {
 
 	}
@@ -194,6 +250,11 @@ public class TAiToolRelayServiceTest {
 	private final FakeSecurityController security = new FakeSecurityController();
 	private final TAccessToken token = new TAccessToken("token-1");
 
+	// registro de metricas do ultimo service() construido — inspecionado nos testes
+	private SimpleMeterRegistry meterRegistry;
+	// sink de eventos de consumo do ultimo service() construido
+	private FakeUsageSink usageSink;
+
 	private TAiToolRelayService service(ChatModel model, int pendingTurnTtlMin, TServerAiFunction... fns) {
 		TUser user = new TUser("Davis");
 		user.setId(1L);
@@ -210,6 +271,10 @@ public class TAiToolRelayServiceTest {
 		s.catalog = new TServerFunctionCatalog(List.of(fns));
 		s.store = new TAiConversationStore();
 		s.loop = new TAiRelayLoop();
+		meterRegistry = new SimpleMeterRegistry();
+		s.metrics = new TAiMetrics(meterRegistry);
+		usageSink = new FakeUsageSink();
+		s.usageSink = usageSink;
 		return s;
 	}
 
@@ -562,5 +627,124 @@ public class TAiToolRelayServiceTest {
 		long count = model.requests.get(0).toolSpecifications().stream()
 				.filter(ts -> ts.name().equals(BE_TOOL)).count();
 		assertEquals(1L, count);
+	}
+
+	// ------------------------------------------------------- observabilidade
+
+	/** Labels proibidos (alta cardinalidade) — nunca podem aparecer no Prometheus. */
+	private static final List<String> FORBIDDEN_TAGS = List.of(
+			"user", "userid", "user_id", "username", "user_name",
+			"conversation", "conversationid", "conversation_id", "apikey", "api_key", "token");
+
+	private void assertNoHighCardinalityTags() {
+		for (Meter meter : meterRegistry.getMeters())
+			for (io.micrometer.core.instrument.Tag tag : meter.getId().getTags())
+				assertFalse("Metrica " + meter.getId().getName() + " vazou label de alta cardinalidade: "
+						+ tag.getKey(), FORBIDDEN_TAGS.contains(tag.getKey().toLowerCase()));
+	}
+
+	@Test
+	public void turnMetricsRecordedWithoutUserLabel() {
+		FakeChatModel model = new FakeChatModel().enqueueText("Ola!");
+		TAiToolRelayService s = service(model, 5);
+
+		TAiTurnResponse resp = s.interact(token, message(null, "Oi", clientSpecs()));
+		assertEquals(TAiTurnResponseType.FINAL, resp.getType());
+
+		double turns = meterRegistry.get("tedros_ai_turns_total")
+				.tag("type", "MESSAGE").tag("outcome", "FINAL").counter().count();
+		assertEquals(1.0, turns, 0.0001);
+		// timer do turno registrado
+		assertEquals(1L, meterRegistry.get("tedros_ai_turn_seconds").tag("type", "MESSAGE").timer().count());
+		// nenhum label de usuario/conversa/chave vazou
+		assertNoHighCardinalityTags();
+	}
+
+	@Test
+	public void errorTurnIncrementsErrorsCounter() {
+		FakeChatModel model = new FakeChatModel().enqueueText("nunca");
+		TAiToolRelayService s = service(model, 5);
+		((FakeConfig) s.config).snap = new TAiRelayConfigSnapshot(false, null, null, null, null, 30, 5, 2000, false);
+
+		TAiTurnResponse resp = s.interact(token, message(null, "oi", null));
+		assertEquals(TAiTurnResponseType.ERROR, resp.getType());
+
+		double errors = meterRegistry.get("tedros_ai_errors_total")
+				.tag("code", TAiToolRelayService.ERROR_AI_DISABLED).counter().count();
+		assertEquals(1.0, errors, 0.0001);
+		double turnsErr = meterRegistry.get("tedros_ai_turns_total")
+				.tag("type", "MESSAGE").tag("outcome", "ERROR").counter().count();
+		assertEquals(1.0, turnsErr, 0.0001);
+		assertNoHighCardinalityTags();
+	}
+
+	@Test
+	public void usageEventEmittedWithUserAndToolCalls() {
+		FakeChatModel model = new FakeChatModel()
+				.enqueueToolCalls(beCall("c1"))
+				.enqueueText("done");
+		BackendTool tool = new BackendTool(true);
+		TAiToolRelayService s = service(model, 5, tool);
+
+		s.interact(token, message(null, "que horas sao?", null));
+
+		assertEquals(1, usageSink.events.size());
+		TAiUsageEvent ev = usageSink.events.get(0);
+		assertEquals(Long.valueOf(1L), ev.getUserId());
+		assertEquals("Davis", ev.getUserName());
+		assertEquals("OPENAI", ev.getProvider());
+		assertEquals("MESSAGE", ev.getTurnType());
+		assertEquals("FINAL", ev.getOutcome());
+		assertEquals(Long.valueOf(30L), ev.getTotalTokens());
+		assertNotNull(ev.getToolCalls());
+		assertTrue("tool_calls deve conter o nome da tool de BE: " + ev.getToolCalls(),
+				ev.getToolCalls().contains(BE_TOOL));
+		assertTrue(ev.getToolCalls().contains("success"));
+	}
+
+	@Test
+	public void ledgerRowsAndUsageEventShareTurnIdAndTotals() {
+		TAiToolRelayService s = service(new FakeChatModel(), 5);
+		s.loop = new LedgerLoop(); // turno multi-call: 2 chamadas com custo conhecido
+
+		s.interact(token, message(null, "oi", null));
+
+		// 1 evento operacional com turnId, cache e custo agregados
+		assertEquals(1, usageSink.events.size());
+		TAiUsageEvent ev = usageSink.events.get(0);
+		assertNotNull(ev.getTurnId());
+		assertEquals(Long.valueOf(30L), ev.getTokensInCache()); // 20 + 10
+		assertEquals(0, new BigDecimal("0.003000").compareTo(ev.getTotalCostUsd())); // 0.001 + 0.002
+
+		// N=2 linhas no ledger, mesmo turnId; SUM(cost) == TOTAL_COST_USD do evento
+		assertEquals(2, usageSink.calls.size());
+		BigDecimal ledgerSum = BigDecimal.ZERO;
+		for (TAiLlmCall c : usageSink.calls) {
+			assertEquals(ev.getTurnId(), c.getTurnId());
+			assertEquals(Long.valueOf(1L), c.getUserId());
+			assertEquals(ev.getConversationId(), c.getConversationId());
+			assertEquals("2026-07", c.getPriceVersion());
+			ledgerSum = ledgerSum.add(c.getCostUsd());
+		}
+		assertEquals(0, ev.getTotalCostUsd().compareTo(ledgerSum));
+		// call indices 0 e 1 preservados
+		assertEquals(Integer.valueOf(0), usageSink.calls.get(0).getCallIndex());
+		assertEquals(Integer.valueOf(1), usageSink.calls.get(1).getCallIndex());
+	}
+
+	@Test
+	public void closeEmitsNoUsageEvent() {
+		FakeChatModel model = new FakeChatModel().enqueueText("Ola!");
+		TAiToolRelayService s = service(model, 5);
+
+		TAiTurnResponse r1 = s.interact(token, message(null, "oi", null));
+		usageSink.events.clear();
+
+		TAiTurnRequest close = new TAiTurnRequest();
+		close.setType(TAiTurnRequestType.CLOSE);
+		close.setConversationId(r1.getConversationId());
+		s.interact(token, close);
+
+		assertTrue(usageSink.events.isEmpty());
 	}
 }

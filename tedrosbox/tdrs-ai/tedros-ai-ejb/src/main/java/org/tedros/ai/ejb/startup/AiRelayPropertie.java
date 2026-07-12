@@ -21,7 +21,9 @@ public enum AiRelayPropertie {
 	MAX_CONVERSATIONS("sys.ai.toolrelay.max.conversations",
 			"Global cap of relay conversations kept in memory (default 2000)"),
 	DEBUG("sys.ai.toolrelay.debug",
-			"Enable LLM request/response logging for the relay. Set true or false (default false)");
+			"Enable LLM request/response logging for the relay. Set true or false (default false)"),
+	USAGE_RETENTION_MONTHS("sys.ai.usage.retention.months",
+			"Months of detailed AI usage kept (TAI_LLM_CALL/TAI_USAGE_EVENT) before nightly rollup+purge (default 4)");
 
 	private String value;
 	private String description;
