@@ -22,19 +22,23 @@ import org.tedros.fx.annotation.layout.TPane;
 import org.tedros.fx.annotation.layout.TPriority;
 import org.tedros.fx.annotation.layout.TVBox;
 import org.tedros.fx.annotation.layout.TVGrow;
+import org.tedros.fx.annotation.page.TPage;
 import org.tedros.fx.annotation.presenter.TBehavior;
 import org.tedros.fx.annotation.presenter.TDecorator;
+import org.tedros.fx.annotation.presenter.TListViewPresenter;
 import org.tedros.fx.annotation.presenter.TPresenter;
 import org.tedros.fx.annotation.process.TEjbService;
+import org.tedros.fx.annotation.query.TCondition;
+import org.tedros.fx.annotation.query.TOrder;
+import org.tedros.fx.annotation.query.TQuery;
 import org.tedros.fx.annotation.reader.TFormReaderHtml;
 import org.tedros.fx.annotation.reader.TReaderHtml;
 import org.tedros.fx.domain.TFileExtension;
 import org.tedros.fx.domain.TFileModelType;
 import org.tedros.fx.model.TEntityModelView;
-import org.tedros.fx.presenter.dynamic.TDynaPresenter;
 import org.tedros.fx.presenter.entity.behavior.TMasterCrudViewBehavior;
-import org.tedros.fx.presenter.entity.decorator.TMasterCrudViewDecorator;
 import org.tedros.fx.property.TSimpleFileProperty;
+import org.tedros.server.query.TCompareOp;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.module.preferences.action.ReloadPropertiesAction;
 
@@ -48,11 +52,17 @@ import javafx.scene.layout.Priority;
 @TFormReaderHtml
 @TForm(header="",  editCssId="")
 @TEjbService(serviceName = TPropertieController.JNDI_NAME, model=TPropertie.class)
-@TPresenter(type=TDynaPresenter.class, 
-			decorator=@TDecorator(type = TMasterCrudViewDecorator.class, 
-			viewTitle=ToolsKey.VIEW_SYSTEM_PROPERTIES),
-			behavior=@TBehavior(type=TMasterCrudViewBehavior.class, 
-			action=ReloadPropertiesAction.class))
+@TListViewPresenter(
+		page=@TPage(serviceName = TPropertieController.JNDI_NAME,
+			query = @TQuery(entity=TPropertie.class, condition= {
+					@TCondition(field = "name", operator=TCompareOp.LIKE, label=TUsualKey.NAME)},
+				orderBy= {@TOrder(label = TUsualKey.NAME, field = "name")}
+			),showSearch=true, showOrderBy=true),
+		presenter=@TPresenter(decorator = @TDecorator(viewTitle=ToolsKey.VIEW_SYSTEM_PROPERTIES,
+			buildModesRadioButton=false),
+		behavior=@TBehavior(runNewActionAfterSave=false, saveAllModels=false, 
+		saveOnlyChangedModels=true, type=TMasterCrudViewBehavior.class, 
+		action=ReloadPropertiesAction.class)))
 @TSecurity(	id=DomainApp.PROPERTIE_FORM_ID, 
 			appName=ToolsKey.APP_TOOLS, 
 			moduleName=ToolsKey.MODULE_PREFERENCES, 
