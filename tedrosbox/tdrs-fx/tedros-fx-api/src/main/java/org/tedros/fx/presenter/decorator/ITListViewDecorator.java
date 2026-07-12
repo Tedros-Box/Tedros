@@ -2,7 +2,6 @@ package org.tedros.fx.presenter.decorator;
 
 import org.tedros.core.control.TProgressIndicator;
 import org.tedros.fx.model.TEntityModelView;
-import org.tedros.fx.presenter.assistant.TAiAssistant;
 import org.tedros.fx.presenter.page.TPager;
 import org.tedros.server.entity.ITEntity;
 
@@ -100,19 +99,6 @@ public interface ITListViewDecorator<M extends TEntityModelView<? extends ITEnti
 	 * @return the tPaginator
 	 */
 	TPager gettPaginator();
-	
-	/**
-	 * Get the assistant
-	 * @return tAiAssistant
-	 * */
-	TAiAssistant gettAiAssistant();
-	
-	
-	/**
-	 * Set the tAiAssistant
-	 * @param tAiAssistant the tAiAssistant to set
-	 * */
-	void settAiAssistant(TAiAssistant tAiAssistant);
 
 	/**
 	 * Set the paginator

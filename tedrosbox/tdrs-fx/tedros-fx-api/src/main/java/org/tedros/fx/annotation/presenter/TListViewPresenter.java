@@ -5,15 +5,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.tedros.fx.annotation.assistant.TAiAssistant;
 import org.tedros.fx.annotation.page.TPage;
 import org.tedros.fx.annotation.query.TQuery;
-import org.tedros.fx.model.TModelView;
 import org.tedros.fx.presenter.dynamic.TDynaPresenter;
 import org.tedros.fx.presenter.entity.behavior.TMasterCrudViewBehavior;
 import org.tedros.fx.presenter.entity.decorator.TMasterCrudViewDecorator;
 import org.tedros.server.entity.ITEntity;
-import org.tedros.server.model.TJsonModel;
 
 /**
  * <pre>
@@ -46,10 +43,6 @@ public @interface TListViewPresenter {
 	 */
 	TPage page() default @TPage(show = false, serviceName = "", 
 			query = @TQuery(entity = ITEntity.class));
-	
-	TAiAssistant aiAssistant() default @TAiAssistant(
-			jsonModel = TJsonModel.class, 
-			modelViewClass = TModelView.class);
 	
 	TPresenter presenter() default @TPresenter(	
 			behavior = @TBehavior(type = TMasterCrudViewBehavior.class), 

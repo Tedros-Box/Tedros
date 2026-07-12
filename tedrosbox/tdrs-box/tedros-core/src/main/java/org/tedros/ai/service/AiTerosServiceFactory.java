@@ -1,10 +1,8 @@
 package org.tedros.ai.service;
 
-import org.tedros.ai.service.grok.GrokAiTerosService;
 import org.tedros.ai.service.langchain.LangChainGeminiTerosService;
 import org.tedros.ai.service.langchain.LangChainGrokTerosService;
 import org.tedros.ai.service.langchain.LangChainOpenAITerosService;
-import org.tedros.ai.service.openai.reasoning.OpenAIReasoningTerosService;
 import org.tedros.ai.toolrelay.ToolRelayTerosService;
 
 public class AiTerosServiceFactory {
@@ -49,28 +47,6 @@ public class AiTerosServiceFactory {
 			return LangChainOpenAITerosService.newInstance(apiKey, aiModel, assistantPrompt);
 		case GEMINI:
 			return LangChainGeminiTerosService.newInstance(apiKey, aiModel, assistantPrompt);
-		default:
-			throw new IllegalArgumentException(PROVIDER_NOT_SUPPORTED + provider);
-		}
-	}
-	
-	public static IAiTerosService createWithOpenaiJavaAdapters(String apiKey, String aiModel, String assistantPrompt, AiServiceProvider provider) {
-		switch (provider) {
-		case GROK:
-			return GrokAiTerosService.create(apiKey, aiModel, assistantPrompt);
-		case OPENAI:
-			return OpenAIReasoningTerosService.create(apiKey, aiModel, assistantPrompt);
-		default:
-			throw new IllegalArgumentException(PROVIDER_NOT_SUPPORTED + provider);
-		}
-	}
-	
-	public static IAiTerosService newInstanceWithOpenaiJavaAdapters(String apiKey, String aiModel, String assistantPrompt, AiServiceProvider provider) {
-		switch (provider) {
-		case GROK:
-			return GrokAiTerosService.newInstance(apiKey, aiModel, assistantPrompt);
-		case OPENAI:
-			return OpenAIReasoningTerosService.newInstance(apiKey, aiModel, assistantPrompt);
 		default:
 			throw new IllegalArgumentException(PROVIDER_NOT_SUPPORTED + provider);
 		}

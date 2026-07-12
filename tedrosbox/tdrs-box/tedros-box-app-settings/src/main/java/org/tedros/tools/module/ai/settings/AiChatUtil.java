@@ -8,18 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.core.TLanguage;
-import org.tedros.core.ai.model.TAiChatCompletion;
-import org.tedros.core.ai.model.TAiChatMessage;
-import org.tedros.core.ai.model.completion.chat.TChatRole;
 import org.tedros.core.context.TedrosContext;
-import org.tedros.core.controller.TAiChatCompletionController;
-import org.tedros.core.controller.TAiChatMessageController;
-import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.fx.TFxKey;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.control.THyperlink;
@@ -27,9 +20,6 @@ import org.tedros.fx.control.TText;
 import org.tedros.fx.control.TText.TTextStyle;
 import org.tedros.fx.property.TBytesLoader;
 import org.tedros.server.entity.ITFileEntity;
-import org.tedros.server.result.TResult;
-import org.tedros.server.result.TResult.TState;
-import org.tedros.server.security.TAccessToken;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
@@ -62,67 +52,6 @@ public class AiChatUtil {
 	
 	private TLanguage iEngine = TLanguage.getInstance();
 	
-	public TAiChatCompletion saveChat(TAccessToken token, TAiChatCompletion chat) throws Exception {
-		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
-		try {
-			TAiChatCompletionController serv = loc.lookup(TAiChatCompletionController.JNDI_NAME);
-			TResult<TAiChatCompletion> res = serv.save(token, chat);
-			return res.getValue();
-		}finally {
-			loc.close();
-		}
-	}
-	
-	public TAiChatMessage saveMessage(TAccessToken token, TAiChatMessage msg) throws Exception {
-		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
-		try {
-			TAiChatMessageController serv = loc.lookup(TAiChatMessageController.JNDI_NAME);
-			TResult<TAiChatMessage> res = serv.save(token, msg);
-			return res.getValue();
-		}finally {
-			loc.close();
-		}
-	}
-	
-
-	@SuppressWarnings("rawtypes")
-	public boolean deleteMessage(TAccessToken token, TAiChatMessage msg) throws Exception {
-		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
-		try {
-			TAiChatMessageController serv = loc.lookup(TAiChatMessageController.JNDI_NAME);
-			TResult res = serv.remove(token, msg);
-			return res.getState().equals(TState.SUCCESS);
-		}finally {
-			loc.close();
-		}
-	}
-
-
-	public List<TAiChatMessage> findMessages(TAccessToken token, Long chatId) throws Exception {
-		TEjbServiceLocator loc = TEjbServiceLocator.getInstance();
-		try {
-			TAiChatCompletion c = new TAiChatCompletion();
-			c.setId(chatId);
-			TAiChatMessage m = new TAiChatMessage();
-			m.setChat(c);
-			
-			TAiChatMessageController serv = loc.lookup(TAiChatMessageController.JNDI_NAME);
-			TResult<List<TAiChatMessage>> res = serv.findAll(token, m);
-			return res.getValue();
-		}finally {
-			loc.close();
-		}
-	}
-	
-	
-	public StackPane buildTextPane(TAiChatMessage msg) {
-		String user = msg.getRole().equals(TChatRole.ASSISTANT) 
-				? "Teros"
-						: TedrosContext.getLoggedUser().getName();
-		String txt = msg.getContent();
-		Date dt =  msg.getInsertDate();
-		return buildMsgPane(user, txt, dt, 800, true);
-	}
 
 	public StackPane buildMsgPane(String user, String txt, Date dt, int wrapAt, boolean showHeader) {
 		String dtf = dt!=null 

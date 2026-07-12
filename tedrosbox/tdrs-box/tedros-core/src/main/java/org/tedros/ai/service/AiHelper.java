@@ -10,8 +10,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.tedros.ai.function.TRequiredProperty;
 
-import com.openai.core.JsonValue;
-
 public class AiHelper {
 	
 	private static final Logger LOGGER = org.tedros.util.TLoggerUtil.getLogger(AiHelper.class);
@@ -136,23 +134,6 @@ public class AiHelper {
         return false;
     } 
 
-    public static JsonValue toJsonValue(Object value) {
-        if (value == null) {
-            return JsonValue.from(null);
-        } else if (value instanceof Map) {
-            Map<String, JsonValue> jsonMap = new HashMap<>();
-            ((Map<?, ?>) value).forEach((k, v) -> jsonMap.put(k.toString(), toJsonValue(v)));
-            return JsonValue.from(jsonMap);
-        } else if (value instanceof List) {
-            List<JsonValue> jsonList = new ArrayList<>();
-            ((List<?>) value).forEach(item -> jsonList.add(toJsonValue(item)));
-            return JsonValue.from(jsonList);
-        } else if (value instanceof String || value instanceof Number || value instanceof Boolean) {
-            return JsonValue.from(value);
-        } else {
-            throw new IllegalArgumentException("Unsupported type: " + value.getClass());
-        }
-    }
 	
 	public static Map<String, Integer> buildModelContextLengths(){
 	
