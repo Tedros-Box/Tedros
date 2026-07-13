@@ -74,10 +74,19 @@ public class TRelayModelAdapter {
 		case GROK:
 			return openAi(cfg, GROK_BASE_URL);
 		case GEMINI:
+			// returnThinking/sendThinking sao DESABILITADOS por padrao no langchain4j:
+			// sem eles a assinatura de raciocinio (thoughtSignature) dos modelos Gemini
+			// 2.5+ nao e armazenada em AiMessage.attributes() nem reenviada nos turnos
+			// seguintes. Como o loop faz tool calling multi-turno, a ausencia da
+			// assinatura faz a API rejeitar o proximo turno com
+			// "function call turn must come immediately after a user turn or after a
+			// function response turn". OpenAI/GROK nao usam esse mecanismo.
 			return GoogleAiGeminiChatModel.builder()
 					.apiKey(cfg.getApiKey())
 					.modelName(cfg.getModel())
 					.timeout(TIMEOUT)
+					.returnThinking(true)
+					.sendThinking(true)
 					.logRequestsAndResponses(cfg.isDebug())
 					.build();
 		default:

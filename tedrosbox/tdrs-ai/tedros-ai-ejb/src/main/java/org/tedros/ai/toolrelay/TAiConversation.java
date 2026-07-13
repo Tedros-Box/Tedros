@@ -37,27 +37,33 @@ public class TAiConversation {
 
 	/**
 	 * Estado do turno suspenso aguardando resultados de tools do frontend.
+	 * <p>
+	 * Os requests sao indexados pelo callId do PROTOCOLO do relay (nao pelo id
+	 * do provider): Gemini nao gera id nas function calls, entao o loop cria um
+	 * callId sintetico por chamada — o mapa preserva a ordem original das calls
+	 * e os {@link ToolExecutionRequest}s originais (com o id do provider, ou
+	 * null) usados para montar os results na memoria.
 	 */
 	public static class PendingTurn {
 
-		private final List<ToolExecutionRequest> requests;
+		private final Map<String, ToolExecutionRequest> requestsByCallId;
 		private final Map<String, ToolExecutionResultMessage> backendResults;
 		private final boolean backendRevert;
 		private final Set<String> pendingCallIds;
 		private final long createdAt;
 
-		public PendingTurn(List<ToolExecutionRequest> requests,
+		public PendingTurn(Map<String, ToolExecutionRequest> requestsByCallId,
 				Map<String, ToolExecutionResultMessage> backendResults,
 				boolean backendRevert, Set<String> pendingCallIds) {
-			this.requests = List.copyOf(requests);
+			this.requestsByCallId = new LinkedHashMap<>(requestsByCallId);
 			this.backendResults = new LinkedHashMap<>(backendResults);
 			this.backendRevert = backendRevert;
 			this.pendingCallIds = new LinkedHashSet<>(pendingCallIds);
 			this.createdAt = System.currentTimeMillis();
 		}
 
-		public List<ToolExecutionRequest> getRequests() {
-			return requests;
+		public Map<String, ToolExecutionRequest> getRequestsByCallId() {
+			return requestsByCallId;
 		}
 
 		public Map<String, ToolExecutionResultMessage> getBackendResults() {
