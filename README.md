@@ -981,20 +981,20 @@ Atualmente, o site público da ONG está **completamente integrado via API aos s
 
 ### Telas diversas
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-menu.png" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-menu.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" width="100%">
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-exemplo-importar-dados.png" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-multi-telas-abertas.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-exemplo-importar-dados.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-multi-telas-abertas.png" width="100%">
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-propriedades-sistema.png" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-codigo-barras-produto.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-propriedades-sistema.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-codigo-barras-produto.png" width="100%">
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-captura-evidencias-trabalho-em-background.png" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-tela-user-productivity.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-captura-evidencias-trabalho-em-background.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-tela-user-productivity.png" width="100%">
 </p>
 
 ### Agente Teros em ação
@@ -1017,12 +1017,12 @@ Atualmente, o site público da ONG está **completamente integrado via API aos s
 ### Customização do sistema
 
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-customizacao-logo-empresa.png" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado.png" width="45%">  
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-customizacao-logo-empresa.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado.png" width="100%">  
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado-menu.png" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado-tela.png" width="45%">  
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado-menu.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado-tela.png" width="100%">  
 </p>
 
 
