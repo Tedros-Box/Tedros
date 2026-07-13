@@ -18,6 +18,7 @@
 - [Mostre-me o Código](#-mostre-me-o-código)
   - [UI Declarativa](#1-ui-declarativa)
   - [Integração com IA (Teros)](#2-criação-de-funções-para-a-ia-teros)
+  - [IA Centralizada no Backend (Tool Relay) e Observabilidade](#4-ia-centralizada-no-backend-tool-relay-e-observabilidade)
 - [Quick Start](#-quick-start)
 - [Módulos Base Disponíveis](#-módulos-base-disponíveis)
 - [Caso de Sucesso: ONG Somos Social](#-caso-de-sucesso-ong-somos-social)
@@ -29,19 +30,20 @@
 
 **Tedros** é um framework completo para o desenvolvimento de aplicações desktop corporativas. Construído sobre **JavaFX 17** no lado cliente e **Apache TomEE (Jakarta EE 9)** no lado servidor, ele oferece uma plataforma robusta, escalável e internacionalizada.
 
-O Tedros permite que você crie interfaces ricas de forma declarativa (usando anotações Java) e gerencie integrações complexas rapidamente. Seu maior diferencial é a integração nativa com o **Teros**, um agente interno do sistema que pode ser integrado com modelos avançados de IA (como OpenAI, Grok ou Gemini) através de chaves de API, permitindo interações naturais com os dados da sua aplicação. O objetivo é que você foque apenas no núcleo do seu negócio (core business) e deixe a infraestrutura pesada por conta do Tedros.
+O Tedros permite que você crie interfaces ricas de forma declarativa (usando anotações Java) e gerencie integrações complexas rapidamente. Seu maior diferencial é a integração nativa com o **Teros**, um agente interno do sistema que pode ser integrado com modelos avançados de IA (como OpenAI, Grok ou Gemini), permitindo interações naturais com os dados da sua aplicação. Desde a arquitetura **Tool Relay**, essa integração passou a ser **centralizada e orquestrada no backend** (EJB/TomEE): a chave de API nunca sai do servidor, e cada conversa é medida — em tokens, custo em dólares e latência — via um stack de observabilidade Prometheus/Grafana pronto para uso. O objetivo é que você foque apenas no núcleo do seu negócio (core business) e deixe a infraestrutura pesada por conta do Tedros.
 
 ---
 
 ## ✨ Por que usar o Tedros?
 
 - **Desenvolvimento Declarativo:** Crie telas complexas, tabelas e formulários apenas anotando suas entidades e *ModelViews*. O framework cuida de todo o *binding* bidirecional entre Model e View.
-- **Agente de Inteligência Artificial Integrado (Teros):** O Teros atua como o agente interno do sistema, conectando-se nativamente a LLMs avançados (OpenAI, Grok, Gemini). Através de uma arquitetura modular baseada na classe `TFunction`, o Tedros já vem equipado com **mais de 30 funções de IA (Skills) prontas para uso**, permitindo que o agente atue ativamente sobre os módulos de negócios e de infraestrutura:
+- **Agente de Inteligência Artificial Integrado (Teros):** O Teros atua como o agente interno do sistema, conectando-se nativamente a LLMs avançados (OpenAI, Grok, Gemini) via langchain4j. Através de uma arquitetura modular baseada na classe `TFunction` (e, no modo centralizado, sua equivalente de servidor `TServerAiFunction`), o Tedros já vem equipado com **mais de 30 funções de IA (Skills) prontas para uso**, permitindo que o agente atue ativamente sobre os módulos de negócios e de infraestrutura:
   - **Integração Profunda com a UI (Core):** A IA possui "superpoderes" injetados na raiz do framework! Ela pode **navegar dinamicamente pela interface do usuário** abrindo telas automagicamente (`call_view`), ler os dados que o usuário está digitando no momento no formulário (`get_edited_model`), descobrir todas as permissões/módulos instalados no sistema (`lists_all_applications`) e até gerar ou exportar arquivos (PDF, XLSX, ZIP) em tempo real direto no servidor (`create_file`).
   - **Suporte de TI e DevOps:** O agente consegue buscar projetos, ler diffs de *commits* e *Merge Requests* do GitLab, consultar *issues* e horas trabalhadas no Redmine (inclusive baixando anexos), e pesquisar status de GMUDs em tempo real.
   - **Gestão de Pessoas (`app-person`):** Funções nativas para pesquisa de funcionários e clientes, listagem de cargos/status e automação na criação de entidades organizacionais.
   - **Estoque, Serviços e Documentos:** Capacidade da IA de pesquisar produtos e preços no inventário (`app-stock`), listar serviços (`app-services`), e fazer buscas avançadas ou downloads de documentos corporativos (`app-extensions`).
   - **Extensibilidade Infinita:** Além de todo este arsenal embutido, você estende o agente facilmente criando suas próprias funções para ler dados específicos ou executar ações automatizadas exclusivas do seu *core business*.
+- **Tool Relay — IA Centralizada no Backend, com Custo e Uso sob Controle:** a orquestração do agente pode rodar inteiramente no servidor (EJB isolado `tdrs-ai`), mantendo a chave de API fora do cliente e adicionando **observabilidade de verdade**: dashboards Grafana de tokens, custo em USD por provider/modelo/usuário, latência do LLM e saúde do serviço, além de alertas Prometheus (erro de LLM, gasto diário acima do teto, saturação de conversas). Veja a seção [IA Centralizada no Backend (Tool Relay)](#4-ia-centralizada-no-backend-tool-relay-e-observabilidade) abaixo.
 - **Arquitetura Cliente/Servidor Transparente:** Comunicação segura e direta via JNDI e EJB remoto usando `tomee/ejb` sobre HTTP/HTTPS.
 - **Segurança Robusta:** Autenticação via token de acesso e autorização baseada em perfis e políticas totalmente gerenciáveis, protegendo cada chamada de método EJB.
 - **Pronto para o Uso:** Módulos base de gestão de usuários, notificações, relatórios, temas e internacionalização integrados out-of-the-box.
@@ -56,7 +58,7 @@ O ecossistema é dividido em repositórios especializados para garantir uma arqu
 | :--- | :--- |
 | **`Tedros/`** | **Núcleo do Framework:** Contém as APIs do lado cliente (`tedros-fx`, `tedros-core`), lado servidor (`tedros-server`), persistência e segurança. |
 | **[`tedros-apps/`](https://github.com/Tedros-Box/tedros-apps)** | **Aplicações e Módulos Base:** Módulos corporativos prontos para extensão (Gestão de Pessoas, Extensões Geográficas, Estoque, Serviços, TI, Pedidos, Chat e Templates). O repositório também inclui manuais e *skills* prontos para serem consumidos por agentes de IA, auxiliando ativamente o desenvolvedor na criação de novos aplicativos. |
-| **[`tedros-environment/`](https://github.com/Tedros-Box/tedros-environment)** | **Infraestrutura e Deploy:** Contém a orquestração `docker-compose` do ambiente completo (TomEE, Nginx com SSL, MongoDB, Redis e Postgres ou H2) com suporte a *Remote Debug*. O ambiente é otimizado com um fluxo de build integrado (o Maven injeta os `.ear` recém-compilados diretamente nos contêineres para deploy imediato) e inclui scripts baseados em JPackage/Inno Setup para empacotar e gerar instaladores nativos (.exe) do cliente Desktop. |
+| **[`tedros-environment/`](https://github.com/Tedros-Box/tedros-environment)** | **Infraestrutura e Deploy:** Contém a orquestração `docker-compose` do ambiente completo (TomEE, Nginx com SSL, MongoDB, Redis e Postgres ou H2) com suporte a *Remote Debug*, além de um stack **separado** de observabilidade (Prometheus + Grafana + Alertmanager) com dashboards prontos para o consumo de IA (tokens, custo em USD, tools, latência do LLM, saúde do relay). O ambiente é otimizado com um fluxo de build integrado (o Maven injeta os `.ear` recém-compilados diretamente nos contêineres para deploy imediato) e inclui scripts baseados em JPackage/Inno Setup para empacotar e gerar instaladores nativos (.exe) do cliente Desktop. |
 
 ---
 
@@ -756,6 +758,54 @@ public class StockEventEAO extends TGenericEAO<StockEvent> {
 ```
 </details>
 
+### 4. IA Centralizada no Backend (Tool Relay) e Observabilidade
+
+Até aqui, cada função de IA (`TFunction`) roda dentro do próprio JavaFX, e é o cliente quem conversa diretamente com o provedor LLM. O padrão **Tool Relay** oferece um segundo modo, aditivo e opcional: o backend (EJB isolado `tdrs-ai`) passa a orquestrar toda a conversa, e o frontend vira só um executor de tools de UI e um renderizador de texto.
+
+**A mágica primeiro:** para ligar o modo relay, basta uma property de sistema — `sys.ai.toolrelay.enabled=true`. Nenhuma tela, nenhuma `TFunction` e nenhum código do chatbot precisam mudar. A partir daí, a chave de API do provedor (OpenAI/Grok/Gemini) só existe no servidor, e cada turno de conversa passa a ser medido automaticamente: tokens, custo em dólares, latência e tools usadas aparecem prontos em dashboards Grafana.
+
+```
+[FE] pergunta do usuário ───────────────────► [BE: tdrs-ai]
+[BE] chama o LLM com as tools de FE + BE ───► [LLM]
+[LLM] pediu uma tool de BACKEND?  → BE executa e re-chama o LLM sozinho
+[LLM] pediu uma tool de FRONTEND? → BE devolve a chamada pendente ao FE
+[FE] executa a tool local (ex: abrir uma tela) e reenvia o resultado
+[BE] retoma o loop com o LLM ──────────────► [LLM]
+[LLM] resposta final ──────────────────────► [FE] (texto exibido no chat)
+```
+
+**Por debaixo dos panos:** o backend usa a API de baixo nível do langchain4j (`ChatModel.chat(ChatRequest)`, nunca `AiServices`) porque é isso que permite pausar o loop no meio, devolver a chamada pendente ao cliente e retomar depois — sem esse controle fino, uma tool de frontend (como abrir uma tela) não teria como ser executada pelo lado certo. Uma tool de backend é só uma classe CDI:
+
+```java
+@ApplicationScoped
+public class ServerDateTimeFunction implements TServerAiFunction {
+
+    public static class Empty { }
+
+    @Override public String getName() { return "get_server_datetime"; }
+    @Override public String getDescription() {
+        return "Returns the current date and time on the Tedros server, with the server time zone.";
+    }
+    @Override public Class<?> getModel() { return Empty.class; }
+
+    @Override
+    public Object execute(Object arg, TAiToolContext ctx) {
+        // ctx traz o TUser e o TAccessToken do turno — tools respeitam autorização
+        ZonedDateTime now = ZonedDateTime.now();
+        return Map.of("datetime", now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                "zone", ZoneId.systemDefault().getId());
+    }
+}
+```
+
+O `TServerFunctionCatalog` descobre essa classe via CDI e a soma ao catálogo de tools do turno. Se uma tool de backend tiver o **mesmo nome** de uma spec enviada pelo cliente, a de backend sempre vence — é assim que 27 `TFunction`s de consulta (pessoas, estoque, serviços, Redmine, GitLab) já foram portadas para o servidor sem alterar uma linha do frontend.
+
+> **Nota:** o modo legado (chave de API no cliente) continua funcionando sem nenhuma mudança — o Tool Relay é uma segunda opção de arquitetura, não uma substituição obrigatória.
+
+> **Dica Pro — observabilidade pronta:** o EAR `tdrs-ai` expõe métricas Prometheus (`GET /ai/prometheus`) e health-check (`GET /ai/status`), nunca acessíveis pela internet (bloqueados no Nginx, raspados só dentro da rede Docker). O repositório `tedros-environment` já traz um `docker-compose` separado com Prometheus + Grafana + Alertmanager e 6 dashboards provisionados: **Tokens & Custo**, **Tools**, **Latência LLM**, **Saúde do Relay**, **Consumo por Usuário** e **Custo LLM** (com o gasto em USD por provider, modelo e usuário, calculado por uma tabela de preços versionada no banco).
+
+> **Atenção:** nenhuma métrica exportada ao Prometheus carrega `userId` ou `conversationId` como label (evita explosão de cardinalidade). O consumo por usuário — "quem gastou quanto" — fica em uma tabela Postgres (`TAI_LLM_CALL`), consultada diretamente pelo Grafana.
+
 ---
 
 ## ⚡ Quick Start
@@ -932,9 +982,12 @@ Atualmente, o site público da ONG está **completamente integrado via API aos s
 <p align="center">
   <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
   <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" alt="Tela principal" width="45%">
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" alt="IA Teros" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-1.png" alt="Teros em ação" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-2.png" alt="Teros em ação" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-3.png" alt="Teros em ação" width="45%">
 </p>
 
 
