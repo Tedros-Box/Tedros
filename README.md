@@ -979,16 +979,52 @@ Atualmente, o site público da ONG está **completamente integrado via API aos s
 
 ## Visão do Sistema
 
+### Telas diversas
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-login.png" alt="Tela de Login" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-menu.png" alt="Menu Lateral" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" alt="Tela principal" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-menu.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-apps.png" width="45%">
 </p>
 <p align="center">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-1.png" alt="Teros em ação" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-2.png" alt="Teros em ação" width="45%">
-  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-3.png" alt="Teros em ação" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-exemplo-importar-dados.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-multi-telas-abertas.png" width="45%">
 </p>
+<p align="center">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-propriedades-sistema.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-codigo-barras-produto.png" width="45%">
+</p>
+<p align="center">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-captura-evidencias-trabalho-em-background.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-tela-user-productivity.png" width="45%">
+</p>
+
+### Agente Teros em ação
+
+<p align="center">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-1.png" alt="Teros em ação" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-2.png" alt="Teros em ação" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-3.png" alt="Teros em ação" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-teros-in-action-4.png" alt="Teros em ação" width="100%">
+</p>
+
+### Observabilidade 
+
+<p align="center">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-dashboard-tokens-custo.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-dashboard-consumo-por-usuario.png" width="100%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-dashboard-saude-relay.png" width="100%">
+</p>
+
+### Customização do sistema
+
+<p align="center">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-customizacao-logo-empresa.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado.png" width="45%">  
+</p>
+<p align="center">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado-menu.png" width="45%">
+  <img src="https://github.com/Tedros-Box/Tedros/blob/master/printscreen/t-sistema-customizado-tela.png" width="45%">  
+</p>
+
 
 
 ---
