@@ -84,7 +84,6 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 	/**
 	 * Initialize the behavior
 	 */
-	@SuppressWarnings("unchecked")
 	public void initialize() {
 		
 		if(getModels()==null)
@@ -141,22 +140,6 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 		
 		if(tAnnotation!=null && tAnnotation.page().show())
 			tPagAnn = tAnnotation.page();
-		
-		if(this.decorator.gettAiAssistant()!=null) {
-			this.decorator.gettAiAssistant().settView(getView());
-			this.decorator.gettAiAssistant().settTargetModel(super.modelViewProperty());
-			this.decorator.gettAiAssistant().settModels(getModels());
-			
-			ChangeListener<M> outChl = (a,o,n)->{
-				if(n!=null) {
-					this.processNewEntityBeforeBuildForm(n);
-					super.setModelView(n);
-				}
-			};
-			super.getListenerRepository().add("tOutChl", outChl);
-			this.decorator.gettAiAssistant()
-			.tOutModelProperty().addListener(new WeakChangeListener<>(outChl));
-		}
 		
 		if(!isUserNotAuthorized(TAuthorizationType.VIEW_ACCESS))
 			loadModels();
@@ -703,8 +686,6 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 	public boolean invalidate() {
 		if(this.decorator!=null && this.decorator.gettPaginator()!=null)
 			this.decorator.gettPaginator().tDispose();
-		if(this.decorator!=null && this.decorator.gettAiAssistant()!=null)
-			this.decorator.gettAiAssistant().tInvalidate();;
 		return super.invalidate();
 	}
 		

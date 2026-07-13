@@ -6,7 +6,6 @@ package org.tedros.fx.presenter.decorator;
 import java.util.Arrays;
 
 import org.tedros.core.TLanguage;
-import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.TProgressIndicator;
 import org.tedros.fx.TFxKey;
 import org.tedros.fx.annotation.TDefaultValue;
@@ -15,7 +14,6 @@ import org.tedros.fx.annotation.presenter.TListViewPresenter;
 import org.tedros.fx.annotation.query.TCondition;
 import org.tedros.fx.annotation.query.TOrder;
 import org.tedros.fx.model.TEntityModelView;
-import org.tedros.fx.presenter.assistant.TAiAssistant;
 import org.tedros.fx.presenter.page.TPager;
 import org.tedros.server.entity.ITEntity;
 
@@ -46,20 +44,11 @@ public class TListViewHelper<M extends TEntityModelView<? extends ITEntity>>{
     private Accordion tPaginatorAccordion;
     private TPager tPaginator;
     
-    private TAiAssistant<M> tAiAssistat;
-    
     private SimpleDoubleProperty listViewMaxWidth = new SimpleDoubleProperty(TListViewPresenter.WIDTH);
     private SimpleDoubleProperty listViewMinWidth = new SimpleDoubleProperty(TListViewPresenter.WIDTH);
     
 
-	public TListViewHelper(String title, double maxWidth, double minWidth, 
-			TPage paginator ) {
-		this(title,maxWidth,minWidth, paginator, null );
-	}
-    
-	public TListViewHelper(String title, double maxWidth, double minWidth, 
-			TPage paginator, 
-			org.tedros.fx.annotation.assistant.TAiAssistant aiAssistant ) {
+	public TListViewHelper(String title, double maxWidth, double minWidth, TPage paginator ) {
 		
 		// build the list view
 		tListView = new ListView<>();
@@ -110,18 +99,6 @@ public class TListViewHelper<M extends TEntityModelView<? extends ITEntity>>{
 			tPaginatorAccordion.getPanes().add(tp);
 			tPaginator.maxWidthProperty().bind(listViewMaxWidth);
 			tPaginator.minWidthProperty().bind(listViewMinWidth);
-		}
-		Boolean artificialIntelligenceEnabled = TedrosContext.getArtificialIntelligenceEnabled();
-		if(artificialIntelligenceEnabled!=null && artificialIntelligenceEnabled && aiAssistant!=null && aiAssistant.show()) {
-			this.tAiAssistat = new  TAiAssistant<>(aiAssistant.modelViewClass(), aiAssistant.jsonModel());
-			if(tPaginatorAccordion==null) {
-				tPaginatorAccordion = new Accordion();
-				tPaginatorAccordion.autosize();
-			}
-			TitledPane tp = new TitledPane("Teros", this.tAiAssistat);
-			tPaginatorAccordion.getPanes().add(tp);
-			tAiAssistat.maxWidthProperty().bind(listViewMaxWidth);
-			tAiAssistat.minWidthProperty().bind(listViewMinWidth);
 		}
 		
 		if(tPaginatorAccordion==null) 
@@ -258,20 +235,6 @@ public class TListViewHelper<M extends TEntityModelView<? extends ITEntity>>{
 	 */
 	public void setListViewMinWidth(SimpleDoubleProperty listViewMinWidth) {
 		this.listViewMinWidth = listViewMinWidth;
-	}
-
-	/**
-	 * @return the tAiAssistat
-	 */
-	public TAiAssistant<M> gettAiAssistat() {
-		return tAiAssistat;
-	}
-
-	/**
-	 * @param tAiAssistat the tAiAssistat to set
-	 */
-	public void settAiAssistat(TAiAssistant<M> tAiAssistat) {
-		this.tAiAssistat = tAiAssistat;
 	}
 
 }

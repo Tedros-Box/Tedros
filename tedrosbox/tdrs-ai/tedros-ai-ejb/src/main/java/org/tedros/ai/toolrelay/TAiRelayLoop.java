@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import org.tedros.ai.model.TAiClientToolResult;
 import org.tedros.ai.model.TAiPendingToolCall;
@@ -90,6 +91,9 @@ public class TAiRelayLoop {
 			TAiToolContext ctx, String provider, String modelName) {
 
 		List<ToolSpecification> tools = unionSpecifications(conv, catalog);
+		// Gemini exige preservar a AiMessage original quando ha tool calls: uma nova
+		// instancia descarta o attributes com a thoughtSignature (ver bloco abaixo).
+		boolean isGemini = "GEMINI".equalsIgnoreCase(provider);
 
 		while (true) {
 
@@ -126,14 +130,24 @@ public class TAiRelayLoop {
 			conv.accumulateTokenUsage(response.tokenUsage());
 
 			AiMessage aiMessage = response.aiMessage();
-			// FIX (mesmo do FE): a API OpenAI rejeita content null no historico
+			// Normalizacao de content null no historico — diverge por provider:
+			//  - OpenAI/GROK rejeitam content null mesmo com tool calls, entao
+			//    reconstroi com texto vazio (igual ao LangChainOpenAITerosService do FE);
+			//  - Gemini NAO pode ser reconstruido quando ha tool calls: uma nova
+			//    AiMessage descarta o attributes onde fica a thoughtSignature do Gemini
+			//    2.5+, e sem a assinatura o proximo turno quebra com "function call turn
+			//    must come immediately after a user turn or after a function response
+			//    turn". Preserva o objeto original (igual ao LangChainGeminiTerosService
+			//    do FE). O reenvio da assinatura depende de sendThinking(true) no adapter.
 			if (aiMessage.text() == null) {
-				aiMessage = aiMessage.hasToolExecutionRequests()
-						? new AiMessage("", aiMessage.toolExecutionRequests())
-						: new AiMessage("");
+				if (!aiMessage.hasToolExecutionRequests())
+					aiMessage = new AiMessage("");
+				else if (!isGemini)
+					aiMessage = new AiMessage("", aiMessage.toolExecutionRequests());
 			}
 			conv.getMemory().add(aiMessage);
-			conv.setLastAiText(aiMessage.text());
+			// texto do turno nunca nulo: a AiMessage do Gemini preservada pode ter text null
+			conv.setLastAiText(aiMessage.text() != null ? aiMessage.text() : "");
 
 			if (!aiMessage.hasToolExecutionRequests()) {
 				TAiTurnResponse resp = new TAiTurnResponse();
@@ -142,34 +156,45 @@ public class TAiRelayLoop {
 				return resp;
 			}
 
-			List<ToolExecutionRequest> requests = aiMessage.toolExecutionRequests();
+			// Indexa as calls pelo callId do PROTOCOLO do relay: Gemini nao gera id
+			// nas function calls (req.id() null), o que colidia nos mapas e quebrava
+			// a validacao de TOOL_RESULTS no cliente. O callId sintetico circula so
+			// entre relay e cliente — a memoria guarda a AiMessage e os results com
+			// os requests ORIGINAIS (functionResponse volta ao Gemini sem id, como
+			// no FE). Para OpenAI/GROK o callId e o proprio id do provider.
+			Map<String, ToolExecutionRequest> callsById = new LinkedHashMap<>();
+			for (ToolExecutionRequest req : aiMessage.toolExecutionRequests())
+				callsById.put(protocolCallId(req), req);
+
 			Map<String, ToolExecutionResultMessage> backendResults = new LinkedHashMap<>();
-			List<ToolExecutionRequest> frontendCalls = new ArrayList<>();
+			Map<String, ToolExecutionRequest> frontendCalls = new LinkedHashMap<>();
 			boolean backendRevert = false;
 
-			for (ToolExecutionRequest req : requests) {
+			for (Map.Entry<String, ToolExecutionRequest> entry : callsById.entrySet()) {
+				String callId = entry.getKey();
+				ToolExecutionRequest req = entry.getValue();
 				if (catalog.contains(req.name())) {
 					// colisao de nome com spec do cliente: BE vence
 					if (conv.hasClientTool(req.name()))
 						LOGGER.warn("Tool name '{}' exists on both backend and client — backend wins",
 								req.name());
 					Optional<TServerAiFunction> fn = catalog.byName(req.name());
-					backendResults.put(req.id(), executeBackend(fn.get(), req, ctx));
+					backendResults.put(callId, executeBackend(fn.get(), req, ctx));
 					if (fn.get().revertToModel())
 						backendRevert = true;
 				} else if (conv.hasClientTool(req.name())) {
 					recordTool(ctx, req.name(), "client", -1);
-					frontendCalls.add(req);
+					frontendCalls.put(callId, req);
 				} else {
 					// mesmo comportamento do FE: result "Function not found", sem reloop
 					recordTool(ctx, req.name(), "not_found", -1);
-					backendResults.put(req.id(), ToolExecutionResultMessage.from(req, FUNCTION_NOT_FOUND));
+					backendResults.put(callId, ToolExecutionResultMessage.from(req, FUNCTION_NOT_FOUND));
 				}
 			}
 
 			if (frontendCalls.isEmpty()) {
 				// so tools de BE: anexa os results na ordem original e decide reloop
-				requests.forEach(req -> conv.getMemory().add(backendResults.get(req.id())));
+				callsById.keySet().forEach(callId -> conv.getMemory().add(backendResults.get(callId)));
 				if (backendRevert)
 					continue;
 				TAiTurnResponse resp = new TAiTurnResponse();
@@ -180,20 +205,20 @@ public class TAiRelayLoop {
 
 			// ha tools de frontend: suspende o turno (o estado fica na conversa,
 			// nenhuma thread bloqueada) e devolve as calls pendentes ao cliente
-			Set<String> pendingIds = new LinkedHashSet<>();
-			frontendCalls.forEach(req -> pendingIds.add(req.id()));
-			conv.setPendingTurn(new TAiConversation.PendingTurn(requests, backendResults,
+			Set<String> pendingIds = new LinkedHashSet<>(frontendCalls.keySet());
+			conv.setPendingTurn(new TAiConversation.PendingTurn(callsById, backendResults,
 					backendRevert, pendingIds));
 
 			TAiTurnResponse resp = new TAiTurnResponse();
 			resp.setType(TAiTurnResponseType.CLIENT_TOOL_CALLS);
-			resp.setText(aiMessage.text());
+			// lastAiText ja normalizado (nunca nulo) a partir desta mesma AiMessage
+			resp.setText(conv.getLastAiText());
 			List<TAiPendingToolCall> calls = new ArrayList<>();
-			for (ToolExecutionRequest req : frontendCalls) {
+			for (Map.Entry<String, ToolExecutionRequest> entry : frontendCalls.entrySet()) {
 				TAiPendingToolCall call = new TAiPendingToolCall();
-				call.setCallId(req.id());
-				call.setName(req.name());
-				call.setArgumentsJson(req.arguments());
+				call.setCallId(entry.getKey());
+				call.setName(entry.getValue().name());
+				call.setArgumentsJson(entry.getValue().arguments());
 				calls.add(call);
 			}
 			resp.setPendingCalls(calls);
@@ -220,12 +245,14 @@ public class TAiRelayLoop {
 		results.forEach(r -> byCallId.put(r.getCallId(), r));
 
 		boolean revert = pending.isBackendRevert();
-		for (ToolExecutionRequest req : pending.getRequests()) {
-			ToolExecutionResultMessage msg = pending.getBackendResults().get(req.id());
+		for (Map.Entry<String, ToolExecutionRequest> entry : pending.getRequestsByCallId().entrySet()) {
+			ToolExecutionResultMessage msg = pending.getBackendResults().get(entry.getKey());
 			if (msg == null) {
-				TAiClientToolResult result = byCallId.get(req.id());
+				TAiClientToolResult result = byCallId.get(entry.getKey());
 				String json = result.getResultJson() != null ? result.getResultJson() : "{}";
-				msg = ToolExecutionResultMessage.from(req, json);
+				// result montado do request ORIGINAL: mantem o id do provider (null
+				// no Gemini), nunca o callId sintetico do protocolo
+				msg = ToolExecutionResultMessage.from(entry.getValue(), json);
 				if (result.isRevertToModel())
 					revert = true;
 			}
@@ -252,12 +279,24 @@ public class TAiRelayLoop {
 		if (pending == null)
 			return;
 		LOGGER.warn("Discarding expired pending turn on conversation {}", conv.getId());
-		for (ToolExecutionRequest req : pending.getRequests()) {
-			ToolExecutionResultMessage msg = pending.getBackendResults().get(req.id());
+		for (Map.Entry<String, ToolExecutionRequest> entry : pending.getRequestsByCallId().entrySet()) {
+			ToolExecutionResultMessage msg = pending.getBackendResults().get(entry.getKey());
 			conv.getMemory().add(msg != null ? msg
-					: ToolExecutionResultMessage.from(req, CANCELLED_RESULT_JSON));
+					: ToolExecutionResultMessage.from(entry.getValue(), CANCELLED_RESULT_JSON));
 		}
 		conv.setPendingTurn(null);
+	}
+
+	/**
+	 * Identidade da tool call no protocolo do relay: o id do provider quando
+	 * existe (OpenAI/GROK), ou um id sintetico quando o provider nao gera id
+	 * (Gemini). Circula apenas nos mapas internos e no round-trip com o cliente
+	 * — jamais entra na memoria da conversa.
+	 */
+	private static String protocolCallId(ToolExecutionRequest req) {
+		return (req.id() == null || req.id().isBlank())
+				? "relay_" + UUID.randomUUID()
+				: req.id();
 	}
 
 	private List<ToolSpecification> unionSpecifications(TAiConversation conv, TServerFunctionCatalog catalog) {

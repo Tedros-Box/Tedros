@@ -8,7 +8,6 @@ import org.tedros.fx.annotation.presenter.TDecorator;
 import org.tedros.fx.annotation.presenter.TListViewPresenter;
 import org.tedros.fx.annotation.presenter.TPresenter;
 import org.tedros.fx.model.TEntityModelView;
-import org.tedros.fx.presenter.assistant.TAiAssistant;
 import org.tedros.fx.presenter.decorator.ITListViewDecorator;
 import org.tedros.fx.presenter.decorator.TListViewHelper;
 import org.tedros.fx.presenter.dynamic.decorator.TDynaViewCrudBaseDecorator;
@@ -62,7 +61,7 @@ extends TDynaViewCrudBaseDecorator<M> implements ITListViewDecorator<M> {
 		TListViewPresenter tAnnotation = getPresenter().getModelViewClass().getAnnotation(TListViewPresenter.class);
 		if(tAnnotation!=null)
 			helper = new TListViewHelper<>(title, tAnnotation.listViewMaxWidth(), tAnnotation.listViewMinWidth(), 
-					tAnnotation.page(), tAnnotation.aiAssistant());
+					tAnnotation.page());
 		else
 			helper = new TListViewHelper<>(title, 250, 250, null);
 		
@@ -288,18 +287,6 @@ extends TDynaViewCrudBaseDecorator<M> implements ITListViewDecorator<M> {
 	@Override
 	public TProgressIndicator gettListViewProgressIndicator() {
 		return helper.gettListViewProgressIndicator();
-	}
-
-	@SuppressWarnings("rawtypes")
-	@Override
-	public TAiAssistant gettAiAssistant() {
-		return helper.gettAiAssistat();
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Override
-	public void settAiAssistant(TAiAssistant tAiAssistant) {
-		helper.settAiAssistat(tAiAssistant);
 	}
 
 }

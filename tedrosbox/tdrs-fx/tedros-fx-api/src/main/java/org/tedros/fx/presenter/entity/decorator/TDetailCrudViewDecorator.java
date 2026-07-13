@@ -7,7 +7,6 @@ import org.tedros.fx.annotation.form.TForm;
 import org.tedros.fx.annotation.presenter.TListViewPresenter;
 import org.tedros.fx.annotation.presenter.TPresenter;
 import org.tedros.fx.model.TEntityModelView;
-import org.tedros.fx.presenter.assistant.TAiAssistant;
 import org.tedros.fx.presenter.decorator.ITListViewDecorator;
 import org.tedros.fx.presenter.decorator.TListViewHelper;
 import org.tedros.fx.presenter.dynamic.decorator.TDynaViewCrudBaseDecorator;
@@ -223,16 +222,6 @@ extends TDynaViewCrudBaseDecorator<M> implements ITListViewDecorator<M>{
 	@Override
 	public TProgressIndicator gettListViewProgressIndicator() {
 		return helper.gettListViewProgressIndicator();
-	}
-
-	@Override
-	public TAiAssistant gettAiAssistant() {
-		return helper.gettAiAssistat();
-	}
-
-	@Override
-	public void settAiAssistant(TAiAssistant tAiAssistant) {
-		helper.settAiAssistat(tAiAssistant);
 	}
 
 }
