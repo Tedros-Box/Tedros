@@ -11,14 +11,11 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.ai.function.TFunction;
 import org.tedros.ai.function.TFunctionHelper;
-import org.tedros.ai.function.model.ViewPath;
 import org.tedros.ai.service.AiServiceProvider;
 import org.tedros.ai.service.AiTerosServiceFactory;
 import org.tedros.ai.service.IAiTerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.core.TLanguage;
-import org.tedros.core.context.TViewDescriptor;
-import org.tedros.core.context.TedrosAppManager;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.TMessageProgressIndicator;
 import org.tedros.core.controller.TPropertieController;
@@ -33,8 +30,7 @@ import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
-import org.tedros.tools.module.ai.model.HtmlMessageViewerMV;
-import org.tedros.tools.module.ai.model.HtmlMessageViewerModel;
+import org.tedros.tools.module.ai.function.ShowHtmlAiResponse;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
 import javafx.collections.ListChangeListener;
@@ -73,7 +69,7 @@ public class TerosSetting extends TSetting {
 	 */
 	public TerosSetting(ITComponentDescriptor descriptor) {
 		super(descriptor);
-		openHtmlMessageViewer();
+		//openHtmlMessageViewer();
 		util = new AiChatUtil();
 		repo = new TRepository();
 
@@ -145,16 +141,6 @@ public class TerosSetting extends TSetting {
 		}
 	}
 
-	private void openHtmlMessageViewer() {
-		TedrosAppManager manager = TedrosAppManager.getInstance();
-		TViewDescriptor vd = manager.getViewDescriptor(HtmlMessageViewerMV.class, HtmlMessageViewerModel.class);
-		
-		ViewPath path = new ViewPath();
-		path.setViewPath(vd.getPath());
-		
-		TFunctionHelper.callUpViewFunction().getCallback().apply(path);
-	}
-
 	@SuppressWarnings("rawtypes")
 	@Override
 	public void run() {
@@ -220,6 +206,7 @@ public class TerosSetting extends TSetting {
 		listenSendButton();
 		listenClearButton();
 		listenResetButton();
+		listenShowViewerButton();
 		
 		TextArea text = super.getControl("prompt");
 		text.setPromptText("[Enter] + [Shift] = "+TLanguage.getInstance().getString(TUsualKey.SEND));
@@ -241,55 +228,87 @@ public class TerosSetting extends TSetting {
 					scrollFlag = false;
 			}
 		});
+		
 	}
 
 	/**
 	 * @param mv
 	 */
 	private void listenClearButton() {
-		// Clear event
-		EventHandler<ActionEvent> ev1 = e->{
+		Runnable action = () -> {
 			TerosMV mv = getModelView();
 			mv.getPrompt().setValue(null);
+			TextArea text = super.getControl("prompt");
+			if(text != null) text.setText("");
 		};
-		repo.add("ev1", ev1);
+		EventHandler<ActionEvent> evAction = e -> action.run();
+		EventHandler<javafx.scene.input.MouseEvent> evMouse = e -> action.run();
+		
+		repo.add("evActionClear", evAction);
+		repo.add("evMouseClear", evMouse);
+		
 		TButton clearBtn = (TButton) getDescriptor()
 				.getFieldDescriptor("clearBtn").getComponent();
-		clearBtn.setOnAction(new WeakEventHandler<>(ev1));
+		clearBtn.setOnAction(new WeakEventHandler<>(evAction));
+		clearBtn.setOnMousePressed(new WeakEventHandler<>(evMouse));
 	}
 
 	private void listenResetButton() {
-		// Send event
-		EventHandler<ActionEvent> ev0 = e -> {
-			resetAction();
-		};
-		repo.add("resetEvent", ev0);
+		EventHandler<ActionEvent> evAction = e -> resetAction();
+		EventHandler<javafx.scene.input.MouseEvent> evMouse = e -> resetAction();
+		
+		repo.add("evActionReset", evAction);
+		repo.add("evMouseReset", evMouse);
+		
 		TButton resetBtn = (TButton) super.getDescriptor()
 				.getFieldDescriptor("resetBtn").getComponent();
-		resetBtn.setOnAction(new WeakEventHandler<>(ev0));
+		resetBtn.setOnAction(new WeakEventHandler<>(evAction));
+		resetBtn.setOnMousePressed(new WeakEventHandler<>(evMouse));
+	}
+	
+	private void listenShowViewerButton() {
+		EventHandler<ActionEvent> evAction = e -> ShowHtmlAiResponse.showViewer();
+		EventHandler<javafx.scene.input.MouseEvent> evMouse = e -> ShowHtmlAiResponse.showViewer();
+		
+		repo.add("evActionViewer", evAction);
+		repo.add("evMouseViewer", evMouse);
+		
+		TButton showViewerBtn = (TButton) getDescriptor()
+				.getFieldDescriptor("showViewerBtn").getComponent();
+		showViewerBtn.setOnAction(new WeakEventHandler<>(evAction));
+		showViewerBtn.setOnMousePressed(new WeakEventHandler<>(evMouse));
 	}
 	
 	private void listenSendButton() {
-		// Send event
-		EventHandler<ActionEvent> ev0 = e -> {
+		// Action event (Teclado - Enter/Espaço sobre o botão)
+		EventHandler<ActionEvent> evAction = e -> {
 			sendAction();
 		};
-		repo.add("ev0", ev0);
+		// Mouse event (Clique do mouse)
+		EventHandler<javafx.scene.input.MouseEvent> evMouse = e -> {
+			sendAction();
+		};
+		repo.add("evAction", evAction);
+		repo.add("evMouse", evMouse);
+		
 		TButton sendBtn = (TButton) getDescriptor()
 				.getFieldDescriptor("sendBtn").getComponent();
-		sendBtn.setOnAction(new WeakEventHandler<>(ev0));
+		sendBtn.setOnAction(new WeakEventHandler<>(evAction));
+		sendBtn.setOnMousePressed(new WeakEventHandler<>(evMouse));
 	}
 
 	private void sendAction() {
 		TerosMV mv = getModelView(); 
-
-		String prompt = mv.getPrompt().getValue();
+		TextArea text = super.getControl("prompt");
+		
+		String prompt = text.getText();
 		if(StringUtils.isBlank(prompt))
 			return;
 		
 		try {
 			showMsg(TedrosContext.getLoggedUser().getName(), prompt);
 			mv.getPrompt().setValue(null);
+			text.setText(""); // Garante a limpeza visual imediata
 			TerosProcess p = new TerosProcess();
 			p.stateProperty().addListener((a,o,n)->{
 				String msg = p.getValue();
