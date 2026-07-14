@@ -1,34 +1,39 @@
 package org.tedros.tools.module.ai.function;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.tedros.ai.function.TFunction;
-import org.tedros.ai.function.TFunctionHelper;
 import org.tedros.ai.function.ToolCallResult;
-import org.tedros.ai.function.model.ViewPath;
 import org.tedros.ai.web.TerosWebViewBridge;
-import org.tedros.api.form.ITFieldBox;
-import org.tedros.api.form.ITModelForm;
-import org.tedros.api.presenter.view.ITView;
-import org.tedros.core.context.TViewDescriptor;
-import org.tedros.core.context.TedrosAppManager;
-import org.tedros.fx.presenter.dynamic.TDynaPresenter;
-import org.tedros.fx.presenter.model.behavior.TViewBehavior;
-import org.tedros.tools.module.ai.model.HtmlMessageViewerMV;
-import org.tedros.tools.module.ai.model.HtmlMessageViewerModel;
+import org.tedros.core.TLanguage;
+import org.tedros.core.context.TedrosContext;
+import org.tedros.tools.ToolsKey;
+import org.tedros.tools.start.TConstant;
 import org.tedros.util.TLoggerUtil;
+import org.tedros.util.TedrosFolder;
 
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.WeakChangeListener;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.DialogPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.web.WebView;
+import javafx.stage.Stage;
 
 public class ShowHtmlAiResponse extends TFunction<HtmlContent> {
 	
 	private static final Logger LOGGER = TLoggerUtil.getLogger(ShowHtmlAiResponse.class);
+	
+	private static Alert currentAlert = null;
+	private static WebView terosHtmlViewer = new WebView();
+	private static TerosWebViewBridge webViewBridge = new TerosWebViewBridge(terosHtmlViewer);
 	
 	public static final String NAME = "show_html_content";
 	public static final String DESCRIPTION = """
@@ -46,7 +51,7 @@ public class ShowHtmlAiResponse extends TFunction<HtmlContent> {
 		    2. **NO ESCAPING**: Do NOT escape HTML tags. For example, return "<div>" (CORRECT), never "&lt;div&gt;" (WRONG).
 		    3. **NO MARKDOWN**: Do NOT wrap the output in Markdown code blocks (e.g., ```html ... ```). Do NOT use backticks.
 		    4. **NO DOCUMENT TAGS**: Do NOT include <html>, <head>, <body>, or <script>.
-		    5. **MERMAID DIAGRAMS**: To insert diagrams, use exactly: <div class="mermaid">...syntax...</div>.
+		    5. **MERMAID DIAGRAMS**: To insert diagrams, use exactly: <div class="mermaid">...syntax...</div>. Use ONLY stable and widely supported diagram types (e.g., graph, sequenceDiagram, pie, gantt). Do NOT use experimental or beta charts like 'xychart-beta'.
 
 		    Content Guidelines:
 		    - Use standard HTML5 tags (div, h3, p, ul, table, strong, span).
@@ -64,6 +69,13 @@ public class ShowHtmlAiResponse extends TFunction<HtmlContent> {
             - Once executed, assume the user is seeing the content.
 		    """;
 	
+	static {		
+		String path = TedrosFolder.MODULE_FOLDER.getFullPath() + "/" + TConstant.UUI + "/teros_ia_response.html";
+		String url = new java.io.File(path).toURI().toString();
+		terosHtmlViewer.getEngine().load(url);
+	}
+	
+	
 	public ShowHtmlAiResponse() {
 		super(NAME, DESCRIPTION, HtmlContent.class, 
 				v->{
@@ -72,85 +84,88 @@ public class ShowHtmlAiResponse extends TFunction<HtmlContent> {
 				});
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static ToolCallResult run(HtmlContent v) {
 		
 		String renderId = UUID.randomUUID().toString().substring(0, 8);
+		showMessage(v);
 		
-		TedrosAppManager manager = TedrosAppManager.getInstance();
-		
-		ITView<TDynaPresenter> vw = manager.getCurrentView();
-		
-		if(vw==null || vw.gettPresenter().getModelViewClass()!=HtmlMessageViewerMV.class) {
-			
-			TViewDescriptor vd = manager.getViewDescriptor(HtmlMessageViewerMV.class, HtmlMessageViewerModel.class);
-			
-			ViewPath path = new ViewPath();
-			path.setViewPath(vd.getPath());
-			
-			LOGGER.info("Trying to open the view: {}", path.getViewPath());
-			
-			Consumer<ITView> c = m->{
-				run(v);
-			};
-			
-			manager.listenWhenViewIsLoaded(c, path.getViewPath());
-			
-			TFunctionHelper.callUpViewFunction().getCallback().apply(path);
-			
-			return ToolCallResult.builder()
-					.message("HTML content rendered successfully.")
-					.result(Map.of(
-		                    STATUS, SUCCESS,
-		                    "render_batch_id", renderId,
-		                    ACTION, "html_rendered",
-		                    SYSTEM_INSTRUCTION, "### Html content rendered successfully. \n"
-		                    		+ "VERY IMPORTANT: Do not retry again. Inform the user to check the opened view."
-		                ))
-					.build();
-		} else {
-		
-			TDynaPresenter p = vw.gettPresenter();
-			 
-			Platform.runLater(()->{				
-				ITModelForm form = ((TViewBehavior) p.getBehavior()).getForm();
-				if(form.isLoaded()) {
-					callTerosWebViewBridge(v, form);
-				} else {
-					ChangeListener<Boolean> loadListener = (a, ov, nv)->{
-						callTerosWebViewBridge(v, form);
-					};					
-					form.gettObjectRepository().add("show_html_load_listener", loadListener);				
-					form.tLoadedProperty().addListener(new WeakChangeListener<>(loadListener));
-				}
-			});
-			
-			return ToolCallResult.builder()
-					.message("HTML content rendered successfully.")
-					.result(Map.of(
-		                    STATUS, SUCCESS,
-		                    "render_batch_id", renderId,
-		                    ACTION, "html_rendered",
-		                    SYSTEM_INSTRUCTION, String.format(
-		                            "RENDER COMPLETE (Batch ID: %s). The HTML is now visible to the user. " +
-		                            "WARNING: Do NOT call 'show_html_content' again with this content, as it causes severe screen flickering. " +
-		                            "Proceed immediately to the next task or wait for user input.", renderId)
-		                ))
-					.build();
-		}
-	}
+		return ToolCallResult.builder()
+				.message("HTML content rendered successfully.")
+				.result(Map.of(
+	                    STATUS, SUCCESS,
+	                    "render_batch_id", renderId,
+	                    ACTION, "html_rendered",
+	                    SYSTEM_INSTRUCTION, String.format(
+	                            "RENDER COMPLETE (Batch ID: %s). The HTML is now visible to the user. " +
+	                            "WARNING: Do NOT call 'show_html_content' again with this content, as it causes severe screen flickering. " +
+	                            "Proceed immediately to the next task or wait for user input.", renderId)
+	                ))
+				.build();
+	}	
 
-	@SuppressWarnings("rawtypes")
-	private static void callTerosWebViewBridge(HtmlContent v, ITModelForm form) {
-		TerosWebViewBridge webViewBridge = form.gettObjectRepository().get("webviewbridge");
+	private static void showMessage(HtmlContent v) {
+		Platform.runLater(()->{				
+			// Adiciona o conteúdo na webview
+			webViewBridge.run(v.htmlContent());
+		});
 		
-		if(webViewBridge==null) {	
-			ITFieldBox fdbox = form.gettFieldBox("webContent");
-			WebView wv = (WebView) fdbox.gettControl();
-			webViewBridge = new TerosWebViewBridge(wv);
-			form.gettObjectRepository().add("webviewbridge", webViewBridge);
-		}
-		
-		webViewBridge.run(v.htmlContent());
+		// Exibe a janela se não estiver aberta
+		showViewer();
+	}	
+
+	public static void showViewer() {
+		Platform.runLater(()->{				
+			
+			if (currentAlert != null && currentAlert.isShowing()) {
+			    return; // Se o alerta já estiver aberto, não abre outro
+			}
+			
+			Alert alert = new Alert(AlertType.INFORMATION);
+			currentAlert = alert;
+			alert.setTitle("Teros");
+			alert.setHeaderText(TLanguage.getInstance().getString(ToolsKey.VIEW_AI_CHAT_MESSAGE_VIEWER));
+			
+			String logoFileName = "logo-tedros-small.png";
+            String logoPath = TedrosFolder.MODULE_FOLDER.getFullPath()+TConstant.UUI+File.separator+logoFileName;
+            try (InputStream is = new FileInputStream(new File(logoPath))) {
+                Image logo = new Image(is);
+                
+                // Define o ícone da janela (title bar e taskbar)
+                Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+                stage.getIcons().add(logo);
+                
+            } catch (IOException e1) {
+            	LOGGER.error(e1.getMessage(),e1);
+            }
+            
+            String terosIcon = "menu_art_int.png";
+            String terosIconPath = TedrosFolder.IMAGES_FOLDER.getFullPath()+terosIcon;
+            try (InputStream is = new FileInputStream(new File(terosIconPath))) {
+                Image logo = new Image(is);
+                alert.setGraphic(new ImageView(logo));
+            } catch (IOException e1) {
+            	LOGGER.error(e1.getMessage(),e1);
+            }
+			
+			// 2. Define o tamanho desejado (Largura, Altura) no DialogPane proporcionalmente
+			Stage mainStage = TedrosContext.getStage();
+			double targetWidth = mainStage.getWidth() * 0.8;
+			double targetHeight = mainStage.getHeight() * 0.8;
+			
+			// Define a janela principal do Tedros como dona do Alerta, 
+			// garantindo que ele abra no mesmo monitor e centralizado em relação a ela.
+			alert.initOwner(mainStage);
+			
+			DialogPane dialogPane = alert.getDialogPane();
+			dialogPane.setPrefWidth(targetWidth);
+			dialogPane.setPrefHeight(targetHeight);
+			dialogPane.setContent(terosHtmlViewer);
+			// Exibe o alerta e espera o usuário fechar
+			alert.showAndWait();
+			
+			// Quando o usuário fecha o alerta, limpamos a referência estática
+			currentAlert = null;
+			
+		});
 	}
 }

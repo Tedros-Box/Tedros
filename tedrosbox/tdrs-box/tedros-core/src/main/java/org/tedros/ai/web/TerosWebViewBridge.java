@@ -59,7 +59,23 @@ public class TerosWebViewBridge {
 	public void run(String content) {
 		String cleanContent = sanitizeAiOutput(content);
 		TLoggerUtil.info(this.getClass(), "Enviando conteúdo para WebView: " + cleanContent);
-		getWebEngine().executeScript("appendAIResponse(" + toJSString(cleanContent) + ")");
+		
+		if (getWebEngine().getLoadWorker().getState() == Worker.State.SUCCEEDED) {
+			getWebEngine().executeScript("appendAIResponse(" + toJSString(cleanContent) + ")");
+		} else {
+			getWebEngine().getLoadWorker().stateProperty().addListener(new javafx.beans.value.ChangeListener<Worker.State>() {
+				@Override
+				public void changed(javafx.beans.value.ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) {
+					if (newValue == Worker.State.SUCCEEDED) {
+						getWebEngine().getLoadWorker().stateProperty().removeListener(this);
+						getWebEngine().executeScript("appendAIResponse(" + toJSString(cleanContent) + ")");
+					} else if (newValue == Worker.State.FAILED || newValue == Worker.State.CANCELLED) {
+						getWebEngine().getLoadWorker().stateProperty().removeListener(this);
+						TLoggerUtil.warn(TerosWebViewBridge.this.getClass(), "Falha ao carregar WebView, estado: " + newValue);
+					}
+				}
+			});
+		}
 	}
 
 	private String toJSString(String content) {

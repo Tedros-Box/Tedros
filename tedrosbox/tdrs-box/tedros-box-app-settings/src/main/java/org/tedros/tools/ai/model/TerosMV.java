@@ -73,13 +73,21 @@ public class TerosMV extends TModelView<Teros> {
 					@TPriority(field = TPane.REGION, priority = Priority.ALWAYS),
 					@TPriority(field = "resetBtn", priority = Priority.NEVER)
 	}))
+	private SimpleStringProperty hboxpane;
+	
+	@TToolBar(items = { "resetBtn", "showViewerBtn" })
 	@TButtonField(labeled = @TLabeled(parse = true, text=TFxKey.BUTTON_RESET),
 			node = @TNode(style = TStyle.FONT_SIZE_095em, parse = true))
 	private SimpleStringProperty resetBtn;
 	
+	
+	@TButtonField(labeled = @TLabeled(parse = true, text="Visualizador"),
+			node = @TNode(style = TStyle.FONT_SIZE_095em, parse = true))
+	private SimpleStringProperty showViewerBtn;
+	
 	@TToolBar(items = { "sendBtn", "clearBtn" })
 	@TButtonField(labeled = @TLabeled(parse = true, text=TFxKey.BUTTON_SEND),
-			node = @TNode(style = "-fx-font-size: 0.8em;", parse = true))
+			node = @TNode(style = TStyle.FONT_SIZE_095em, parse = true))
 	private SimpleStringProperty sendBtn;
 
 	@TButtonField(labeled = @TLabeled(parse = true, text=TFxKey.BUTTON_CLEAN),
