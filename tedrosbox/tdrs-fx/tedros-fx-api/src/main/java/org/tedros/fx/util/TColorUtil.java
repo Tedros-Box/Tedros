@@ -1,4 +1,4 @@
-package org.tedros.util;
+package org.tedros.fx.util;
 
 import javafx.scene.paint.Color;
 

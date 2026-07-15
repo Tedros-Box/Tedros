@@ -14,10 +14,10 @@ import org.tedros.fx.layout.TFieldSet;
 import org.tedros.fx.presenter.dynamic.behavior.TDynaViewCrudBaseBehavior;
 import org.tedros.fx.presenter.dynamic.view.TDynaView;
 import org.tedros.fx.reader.TTextReader;
+import org.tedros.fx.util.TColorUtil;
 import org.tedros.tools.module.scheme.decorator.ExampleDecorator;
 import org.tedros.tools.module.scheme.model.Example;
 import org.tedros.tools.module.scheme.model.ExampleMV;
-import org.tedros.util.TColorUtil;
 
 import javafx.scene.Node;
 import javafx.scene.paint.Color;

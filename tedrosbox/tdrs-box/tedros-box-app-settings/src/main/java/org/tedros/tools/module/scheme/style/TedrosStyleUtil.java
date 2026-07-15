@@ -9,7 +9,7 @@ import org.tedros.core.context.TedrosContext;
 import org.tedros.core.style.TStyleResourceName;
 import org.tedros.core.style.TStyleResourceValue;
 import org.tedros.core.style.TThemeUtil;
-import org.tedros.util.TColorUtil;
+import org.tedros.fx.util.TColorUtil;
 import org.tedros.util.TFileUtil;
 import org.tedros.util.TedrosFolder;
 
