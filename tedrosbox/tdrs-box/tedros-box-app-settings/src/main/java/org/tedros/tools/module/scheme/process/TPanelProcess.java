@@ -11,10 +11,10 @@ import org.tedros.core.style.TStyleResourceValue;
 import org.tedros.core.style.TThemeUtil;
 import org.tedros.fx.TFxKey;
 import org.tedros.fx.process.TModelProcess;
+import org.tedros.fx.util.TColorUtil;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
 import org.tedros.tools.module.scheme.model.TPanel;
-import org.tedros.util.TColorUtil;
 
 import javafx.scene.paint.Color;
 

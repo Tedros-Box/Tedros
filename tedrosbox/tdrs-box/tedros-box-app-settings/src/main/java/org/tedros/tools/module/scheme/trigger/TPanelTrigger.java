@@ -17,9 +17,9 @@ import org.tedros.fx.control.TColorPickerField;
 import org.tedros.fx.control.TSlider;
 import org.tedros.fx.control.trigger.TTrigger;
 import org.tedros.fx.form.TFieldBox;
+import org.tedros.fx.util.TColorUtil;
 import org.tedros.tools.module.scheme.behaviour.ExampleBehavior;
 import org.tedros.tools.module.scheme.model.ExampleMV;
-import org.tedros.util.TColorUtil;
 
 import javafx.scene.paint.Color;
 

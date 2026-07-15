@@ -1,13 +1,13 @@
 package org.tedros.integration.redmine.gateway;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.tedros.common.model.TFileContentInfo;
 import org.tedros.integration.redmine.ai.model.CustomFieldMetadata;
@@ -21,7 +21,6 @@ import org.tedros.integration.redmine.api.model.TMembership;
 import org.tedros.integration.redmine.api.model.TProject;
 import org.tedros.integration.redmine.api.model.TRedmineUser;
 import org.tedros.integration.redmine.api.model.TTimeEntry;
-import org.tedros.util.TedrosFolder;
 
 import com.taskadapter.redmineapi.Include;
 import com.taskadapter.redmineapi.Params;
@@ -31,10 +30,12 @@ import com.taskadapter.redmineapi.RedmineManagerFactory;
 import com.taskadapter.redmineapi.bean.Attachment;
 import com.taskadapter.redmineapi.bean.CustomFieldDefinition;
 import com.taskadapter.redmineapi.bean.Issue;
+import com.taskadapter.redmineapi.bean.IssueFactory;
 import com.taskadapter.redmineapi.bean.IssueStatus;
 import com.taskadapter.redmineapi.bean.Membership;
 import com.taskadapter.redmineapi.bean.Project;
 import com.taskadapter.redmineapi.bean.TimeEntry;
+import com.taskadapter.redmineapi.bean.TimeEntryFactory;
 import com.taskadapter.redmineapi.bean.User;
 import com.taskadapter.redmineapi.internal.ResultsWrapper;
 
@@ -334,7 +335,9 @@ public class RedmineApiGateway {
 		}
 	}
 
-	public List<String> getAttachments(Collection<Attachment> attachments) {
+	//TODO: Comentado porque não identifiquei sua real utilização usando a pasta TedrosFolder.EXPORT_FOLDER.getFullPath();
+	
+	/*public List<String> getAttachments(Collection<Attachment> attachments) {
 		return attachments.stream()
 				.map(this::getAttachment)
 				.toList();
@@ -351,7 +354,7 @@ public class RedmineApiGateway {
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
-	}
+	}*/
 
 	public List<TFileContentInfo> dowloadAttachments(Collection<Attachment> attachments) {
 		return attachments.stream()
@@ -378,6 +381,142 @@ public class RedmineApiGateway {
 			return new TFileContentInfo(fileName, contentType, bytes);
 		} catch (RedmineException e) {
 			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Uploads a file and attaches it to the given issue.
+	 */
+	public TAttachment uploadIssueAttachment(Integer issueId, byte[] content, String fileName, String contentType) {
+		try {
+			Attachment uploaded = manager.getAttachmentManager().uploadAttachment(fileName, contentType, content);
+			Issue issue = IssueFactory.create(issueId);
+			issue.addAttachment(uploaded);
+			manager.getIssueManager().update(issue);
+			Issue refreshed = manager.getIssueManager().getIssueById(issueId, Include.attachments);
+			if (refreshed.getAttachments() != null) {
+				for (Attachment a : refreshed.getAttachments()) {
+					if (fileName.equals(a.getFileName())) {
+						return RedmineMapper.convert(a);
+					}
+				}
+			}
+			return RedmineMapper.convert(uploaded);
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Creates a time entry on the issue.
+	 */
+	public TTimeEntry createTimeEntry(Integer issueId, Integer userId, Integer activityId, Float hours, Date spentOn,
+			String comment) {
+		try {
+			TimeEntry entry = TimeEntryFactory.create();
+			entry.setIssueId(issueId);
+			if (userId != null) {
+				entry.setUserId(userId);
+			}
+			entry.setActivityId(activityId);
+			entry.setHours(hours);
+			entry.setSpentOn(spentOn);
+			entry.setComment(comment);
+			TimeEntry created = manager.getTimeEntryManager().createTimeEntry(entry);
+			return RedmineMapper.convert(created);
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Idempotent meeting-minutes update: skips attachment/time entry when already
+	 * present (by stored ids or matching filename/comment/spent_on/activity/hours).
+	 */
+	public MeetingMinutesRedmineUpdateResult updateIssueWithMeetingMinutes(Integer issueId, Integer userId,
+			Integer activityId, byte[] pdfContent, String fileName, String contentType, Float hours, Date spentOn,
+			String comment, String existingAttachmentId, String existingTimeEntryId) {
+		MeetingMinutesRedmineUpdateResult result = new MeetingMinutesRedmineUpdateResult();
+		try {
+			Integer attachmentId = parseIntOrNull(existingAttachmentId);
+			boolean attachmentExists = attachmentId != null;
+			if (!attachmentExists) {
+				Collection<Attachment> attachments = findIssueAttachments(issueId);
+				if (attachments != null) {
+					for (Attachment a : attachments) {
+						if (fileName != null && fileName.equals(a.getFileName())) {
+							attachmentId = a.getId();
+							attachmentExists = true;
+							break;
+						}
+					}
+				}
+			}
+			if (attachmentExists) {
+				result.setAttachmentId(attachmentId);
+				result.setAttachmentSkipped(true);
+			} else {
+				TAttachment uploaded = uploadIssueAttachment(issueId, pdfContent, fileName, contentType);
+				result.setAttachmentId(uploaded != null ? uploaded.getId() : null);
+				result.setAttachmentSkipped(false);
+			}
+
+			Integer timeEntryId = parseIntOrNull(existingTimeEntryId);
+			boolean timeExists = timeEntryId != null;
+			List<TTimeEntry> entries = getTimeEntriesForIssue(issueId);
+			SimpleDateFormat day = new SimpleDateFormat("yyyy-MM-dd");
+			String spentKey = spentOn != null ? day.format(spentOn) : null;
+			if (!timeExists) {
+				for (TTimeEntry te : entries) {
+					boolean sameComment = Objects.equals(comment, te.getComment());
+					boolean sameActivity = Objects.equals(activityId, te.getActivityId());
+					boolean sameHours = te.getHours() != null && hours != null
+							&& Math.abs(te.getHours() - hours) < 0.01f;
+					boolean sameDay = te.getSpentOn() != null && spentKey != null
+							&& spentKey.equals(day.format(te.getSpentOn()));
+					boolean sameUser = userId == null || Objects.equals(userId, te.getUserId());
+					if (sameComment && sameActivity && sameHours && sameDay && sameUser) {
+						timeEntryId = te.getId();
+						timeExists = true;
+						break;
+					}
+				}
+			}
+			if (timeExists) {
+				result.setTimeEntryId(timeEntryId);
+				result.setTimeEntrySkipped(true);
+			} else {
+				Integer effectiveUserId = userId != null ? userId : resolveCurrentRedmineUserId();
+				TTimeEntry created = createTimeEntry(issueId, effectiveUserId, activityId, hours, spentOn, comment);
+				result.setTimeEntryId(created != null ? created.getId() : null);
+				result.setTimeEntrySkipped(false);
+			}
+			return result;
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+
+	/** Hook for unit tests / subclasses. */
+	protected Collection<Attachment> findIssueAttachments(Integer issueId) throws RedmineException {
+		Issue issue = manager.getIssueManager().getIssueById(issueId, Include.attachments);
+		return issue != null ? issue.getAttachments() : List.of();
+	}
+
+	/** Hook for unit tests / subclasses. */
+	protected Integer resolveCurrentRedmineUserId() throws RedmineException {
+		User current = manager.getUserManager().getCurrentUser();
+		return current != null ? current.getId() : null;
+	}
+
+	static Integer parseIntOrNull(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		try {
+			return Integer.valueOf(value.trim());
+		} catch (NumberFormatException e) {
+			return null;
 		}
 	}
 
