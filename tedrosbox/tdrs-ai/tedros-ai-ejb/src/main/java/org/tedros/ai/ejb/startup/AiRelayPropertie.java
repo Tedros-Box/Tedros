@@ -23,7 +23,9 @@ public enum AiRelayPropertie {
 	DEBUG("sys.ai.toolrelay.debug",
 			"Enable LLM request/response logging for the relay. Set true or false (default false)"),
 	USAGE_RETENTION_MONTHS("sys.ai.usage.retention.months",
-			"Months of detailed AI usage kept (TAI_LLM_CALL/TAI_USAGE_EVENT) before nightly rollup+purge (default 4)");
+			"Months of detailed AI usage kept (TAI_LLM_CALL/TAI_USAGE_EVENT) before nightly rollup+purge (default 4)"),
+	AI_EMBEDDING_PROVIDER ("sys.ai.embedding.provider", "The embedding provider to be called. This is optional only when "
+			+ "the AI provider is set to GEMINI or OPENAI, as Grok does not support embeddings.");
 
 	private String value;
 	private String description;
