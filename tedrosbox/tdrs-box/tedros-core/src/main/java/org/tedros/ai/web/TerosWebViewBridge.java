@@ -44,6 +44,7 @@ public class TerosWebViewBridge {
         if (we.getLoadWorker().getState() == Worker.State.SUCCEEDED) {
              JSObject window = (JSObject) we.executeScript("window");
              window.setMember("app", this);
+             TLoggerUtil.info(this.getClass(), "Bridge 'app' injetada com sucesso no JS.");
         }
 
         we.onErrorProperty().set(event -> {

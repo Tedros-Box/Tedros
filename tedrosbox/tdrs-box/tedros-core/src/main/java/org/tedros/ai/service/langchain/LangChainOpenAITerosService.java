@@ -133,6 +133,9 @@ public class LangChainOpenAITerosService extends AiServiceBase implements IAiTer
         ChatResponse response = adapter.generate(messages, tools);
         AiMessage aiMessage = response.aiMessage();
 
+        // DEBUG LOGGING
+        LOGGER.info("Openai Response - Text: {}", aiMessage.text());
+        
         // FIX: OpenAI API rejects 'content: null' in history even for Tool Calls in
         // some contexts.
         // Enforce empty string if text is null.
