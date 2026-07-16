@@ -92,6 +92,15 @@ public class RedmineApiGatewayMeetingMinutesTest {
 	}
 
 	@Test
+	public void isEmptyHttpEntityErrorDetectsNestedIllegalArgument() {
+		assertFalse(RedmineApiGateway.isEmptyHttpEntityError(null));
+		assertFalse(RedmineApiGateway.isEmptyHttpEntityError(new RuntimeException("other")));
+		IllegalArgumentException cause = new IllegalArgumentException("Entity may not be null");
+		assertTrue(RedmineApiGateway.isEmptyHttpEntityError(cause));
+		assertTrue(RedmineApiGateway.isEmptyHttpEntityError(new RuntimeException("wrap", cause)));
+	}
+
+	@Test
 	public void skipsUploadAndTimeWhenExistingIdsPresent() {
 		FakeGateway g = new FakeGateway();
 		MeetingMinutesRedmineUpdateResult r = g.updateIssueWithMeetingMinutes(10, 77, 19, new byte[] { 1 },

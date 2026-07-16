@@ -386,25 +386,63 @@ public class RedmineApiGateway {
 
 	/**
 	 * Uploads a file and attaches it to the given issue.
+	 * <p>
+	 * Some Redmine servers answer {@code 204 No Content} on issue update. The
+	 * redmine-java-api 3.x stack then fails with {@code Entity may not be null}
+	 * while decoding an empty body even when the attach succeeded — we tolerate
+	 * that and confirm via a fresh issue read.
 	 */
 	public TAttachment uploadIssueAttachment(Integer issueId, byte[] content, String fileName, String contentType) {
 		try {
 			Attachment uploaded = manager.getAttachmentManager().uploadAttachment(fileName, contentType, content);
 			Issue issue = IssueFactory.create(issueId);
 			issue.addAttachment(uploaded);
-			manager.getIssueManager().update(issue);
-			Issue refreshed = manager.getIssueManager().getIssueById(issueId, Include.attachments);
-			if (refreshed.getAttachments() != null) {
-				for (Attachment a : refreshed.getAttachments()) {
-					if (fileName.equals(a.getFileName())) {
-						return RedmineMapper.convert(a);
-					}
+			try {
+				manager.getIssueManager().update(issue);
+			} catch (Exception updateEx) {
+				if (!isEmptyHttpEntityError(updateEx)) {
+					throw updateEx;
 				}
 			}
+			TAttachment attached = findIssueAttachmentByFileName(issueId, fileName);
+			if (attached != null) {
+				return attached;
+			}
+			// Token was uploaded but issue link could not be confirmed
 			return RedmineMapper.convert(uploaded);
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
+	}
+
+	/** Hook for unit tests / subclasses. */
+	protected TAttachment findIssueAttachmentByFileName(Integer issueId, String fileName) throws RedmineException {
+		Issue refreshed = manager.getIssueManager().getIssueById(issueId, Include.attachments);
+		if (refreshed == null || refreshed.getAttachments() == null || fileName == null) {
+			return null;
+		}
+		for (Attachment a : refreshed.getAttachments()) {
+			if (fileName.equals(a.getFileName())) {
+				return RedmineMapper.convert(a);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * True when redmine-java-api fails because Redmine returned an empty HTTP
+	 * entity (typical for 204 No Content on PUT /issues/:id.json).
+	 */
+	static boolean isEmptyHttpEntityError(Throwable error) {
+		Throwable t = error;
+		while (t != null) {
+			if (t instanceof IllegalArgumentException
+					&& "Entity may not be null".equals(t.getMessage())) {
+				return true;
+			}
+			t = t.getCause();
+		}
+		return false;
 	}
 
 	/**
