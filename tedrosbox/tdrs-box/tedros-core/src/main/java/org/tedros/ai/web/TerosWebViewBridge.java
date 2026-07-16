@@ -37,6 +37,9 @@ public class TerosWebViewBridge {
                 JSObject window = (JSObject) we.executeScript("window");
                 window.setMember("app", this);
                 TLoggerUtil.info(this.getClass(), "Bridge 'app' injetada com sucesso no JS.");
+            } else if (newState == Worker.State.FAILED || newState == Worker.State.CANCELLED) {
+                TLoggerUtil.warn(this.getClass(), "Falha ao carregar WebView (estado: " + newState
+                		+ "), bridge 'app' não injetada.");
             }
         });
         
@@ -60,10 +63,16 @@ public class TerosWebViewBridge {
 	public void run(String content) {
 		String cleanContent = sanitizeAiOutput(content);
 		TLoggerUtil.info(this.getClass(), "Enviando conteúdo para WebView: " + cleanContent);
-		
-		if (getWebEngine().getLoadWorker().getState() == Worker.State.SUCCEEDED) {
+
+		Worker.State state = getWebEngine().getLoadWorker().getState();
+		if (state == Worker.State.SUCCEEDED) {
 			getWebEngine().executeScript("appendAIResponse(" + toJSString(cleanContent) + ")");
+		} else if (state == Worker.State.FAILED || state == Worker.State.CANCELLED) {
+			TLoggerUtil.warn(this.getClass(), "WebView não carregou (estado: " + state
+					+ "), conteúdo descartado.");
 		} else {
+			TLoggerUtil.info(this.getClass(), "WebView ainda carregando (estado: " + state
+					+ "), conteúdo será enviado quando o load concluir.");
 			getWebEngine().getLoadWorker().stateProperty().addListener(new javafx.beans.value.ChangeListener<Worker.State>() {
 				@Override
 				public void changed(javafx.beans.value.ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) {
