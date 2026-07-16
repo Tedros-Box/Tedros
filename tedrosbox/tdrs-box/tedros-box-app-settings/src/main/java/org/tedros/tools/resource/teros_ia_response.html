@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <style>
       body {
         border: 0; margin: 0;
@@ -96,8 +95,36 @@
     </div>
 
     <script type="text/javascript">
-      mermaid.initialize({ startOnLoad: false });
-     
+      // O mermaid é carregado dinamicamente APÓS o evento load da página, para que o
+      // Worker do WebEngine chegue em SUCCEEDED sem depender do CDN (offline/proxy/lento).
+      var mermaidReady = false;
+      function renderMermaidIn(root) {
+        if (!mermaidReady || !window.mermaid) return;
+        const divs = root.querySelectorAll('.mermaid:not([data-processed="true"])');
+        divs.forEach(el => {
+          try {
+            if (mermaid.run) { mermaid.run({ nodes: [el] }); }
+            else { mermaid.init(undefined, el); }
+          } catch(e) {}
+        });
+      }
+      window.addEventListener('load', function() {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+        s.async = true;
+        s.onload = function() {
+          try {
+            mermaid.initialize({ startOnLoad: false });
+            mermaidReady = true;
+            renderMermaidIn(document);
+          } catch(e) { console.warn('Falha ao inicializar o mermaid: ' + e); }
+        };
+        s.onerror = function() {
+          console.warn('CDN do mermaid indisponível; diagramas não serão renderizados.');
+        };
+        document.head.appendChild(s);
+      });
+
       function openExternalLink(url) {
           if (window.app && window.app.openExternalLink) {
               window.app.openExternalLink(url);
@@ -200,7 +227,9 @@
         
         container.appendChild(msgDiv);
         container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-        const mermaidDivs = msgDiv.querySelectorAll('.mermaid'); mermaidDivs.forEach(el => { try { mermaid.init(undefined, el); } catch(e) {} });
+        // Se o mermaid ainda não carregou, os divs .mermaid ficam pendentes e são
+        // renderizados pelo renderMermaidIn(document) no onload do script do CDN.
+        renderMermaidIn(msgDiv);
       }
     </script>
   </body>

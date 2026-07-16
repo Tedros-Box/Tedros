@@ -3,23 +3,19 @@ package org.tedros.tools.module.ai.component;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.tedros.ai.function.TFunction;
 import org.tedros.ai.function.TFunctionHelper;
+import org.tedros.ai.service.AiProviderPreference;
 import org.tedros.ai.service.AiServiceProvider;
-import org.tedros.ai.service.AiTerosServiceFactory;
+import org.tedros.ai.service.AiTerosContext;
 import org.tedros.ai.service.IAiTerosService;
 import org.tedros.ai.web.TerosWebViewBridge;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.api.presenter.view.ITView;
 import org.tedros.core.TLanguage;
-import org.tedros.core.context.TedrosContext;
 import org.tedros.core.control.ITProgressIndicator;
 import org.tedros.core.control.TProgressIndicator;
-import org.tedros.core.controller.TPropertieController;
-import org.tedros.core.domain.TSystemPropertie;
-import org.tedros.core.service.remote.TEjbServiceLocator;
-import org.tedros.core.setting.model.TPropertie;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.component.ITComponent;
 import org.tedros.fx.control.TButton;
@@ -30,10 +26,6 @@ import org.tedros.fx.layout.TToolBar;
 import org.tedros.fx.modal.TMessageBox;
 import org.tedros.fx.process.TProcess;
 import org.tedros.fx.process.TTaskImpl;
-import org.tedros.server.query.TCompareOp;
-import org.tedros.server.query.TSelect;
-import org.tedros.server.result.TResult;
-import org.tedros.server.result.TResult.TState;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.module.ai.function.ShowHtmlAiResponse;
 import org.tedros.util.TLoggerUtil;
@@ -54,10 +46,10 @@ import javafx.scene.web.WebView;
 
 public class AiProviderComparisonComponent extends VBox implements ITComponent {
 	
+	private static final Logger LOGGER = TLoggerUtil.getLogger(AiProviderComparisonComponent.class);
+	
 	private static final String GEMINI = "Gemini";
-
 	private static final String GROK = "Grok";
-
 	private static final String OPEN_AI = "OpenAI";
 
 	private static final String AI_PROVIDER_PROPERTIE_MISSING = "<div style='color:red'>%s configuration is missing. Please set API Key and Model in system properties.</div>";
@@ -130,17 +122,9 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
     
     private SimpleBooleanProperty loadingProperty = new SimpleBooleanProperty(false);
         
-    private String openaiKey;
-    private String openaiModel;
-    private boolean openaiConfigured;
-
-    private String grokKey;
-    private String grokModel;
-    private boolean grokConfigured;
-
-    private String geminiKey;
-    private String geminiModel;
-    private boolean geminiConfigured;
+    private AiProviderPreference openAiPref;
+    private AiProviderPreference grokPref;
+    private AiProviderPreference geminiPref;
     
     @SuppressWarnings("rawtypes")
 	private ITView view;
@@ -170,7 +154,7 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
         try {
             // OpenAI Service
             openaiService = new TerosService();
-            openaiService.buildIaTerosService(openaiKey, openaiModel, SYSTEM_PROMPT, AiServiceProvider.OPENAI);
+            openaiService.buildIaTerosService(SYSTEM_PROMPT, AiServiceProvider.OPENAI);
             openaiProgressIndicator.bind(openaiService.runningProperty());
             
             openaiService.onFailedProperty().addListener((obs, oldVal, newVal) -> 
@@ -178,12 +162,12 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
         	
             openaiService.setOnSucceeded(e -> {
             	String htmlMessage = openaiService.getValue();
-            	updateWebViewContent(openaiBridge, htmlMessage);
+            	updateWebViewContent(AiServiceProvider.OPENAI, openaiBridge, htmlMessage);
         	});
             
             // Grok Service
             grokService = new TerosService();
-            grokService.buildIaTerosService(grokKey, grokModel, SYSTEM_PROMPT, AiServiceProvider.GROK);
+            grokService.buildIaTerosService(SYSTEM_PROMPT, AiServiceProvider.GROK);
             grokProgressIndicator.bind(grokService.runningProperty());
             
             grokService.onFailedProperty().addListener((obs, oldVal, newVal) -> 
@@ -191,12 +175,12 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
         	
             grokService.setOnSucceeded(e -> {
             	String htmlMessage = grokService.getValue();
-            	updateWebViewContent(grokBridge, htmlMessage);
+            	updateWebViewContent(AiServiceProvider.GROK, grokBridge, htmlMessage);
         	});
         	
             // Gemini Service
             geminiService = new TerosService();
-            geminiService.buildIaTerosService(geminiKey, geminiModel, SYSTEM_PROMPT, AiServiceProvider.GEMINI);
+            geminiService.buildIaTerosService(SYSTEM_PROMPT, AiServiceProvider.GEMINI);
             geminiProgressIndicator.bind(geminiService.runningProperty());
             
             geminiService.onFailedProperty().addListener((obs, oldVal, newVal) ->
@@ -204,7 +188,7 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
         	
             geminiService.setOnSucceeded(e -> {
             	String htmlMessage = geminiService.getValue();
-            	updateWebViewContent(geminiBridge, htmlMessage);
+            	updateWebViewContent(AiServiceProvider.GEMINI, geminiBridge, htmlMessage);
         	});
             
             loadingProperty.bind(openaiService.runningProperty()
@@ -223,23 +207,29 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
 		
 		openaiWebView.getEngine().documentProperty().addListener((a, o, n)->{
 			if(n==null) return;
+			LOGGER.info("Creating TerosWebViewBridge for {}", AiServiceProvider.OPENAI.name());
 			openaiBridge = new TerosWebViewBridge(openaiWebView);
-		    if (StringUtils.isBlank(openaiModel) || StringUtils.isBlank(openaiKey))
-	        	updateWebViewContent(openaiBridge, AI_PROVIDER_PROPERTIE_MISSING.formatted(OPEN_AI));
+			LOGGER.info("The TerosWebViewBridge created for {}", AiServiceProvider.OPENAI.name());
+		    if(!openAiPref.hasApyKeyAndModel())
+	        	updateWebViewContent(AiServiceProvider.OPENAI, openaiBridge, AI_PROVIDER_PROPERTIE_MISSING.formatted(OPEN_AI));
 		});
 		
 		grokWebView.getEngine().documentProperty().addListener((a, o, n)->{
 			if(n==null) return;
+			LOGGER.info("Creating TerosWebViewBridge for {}", AiServiceProvider.GROK.name());
         	grokBridge = new TerosWebViewBridge(grokWebView);
-		    if (StringUtils.isBlank(grokModel) || StringUtils.isBlank(grokKey))
-	        	updateWebViewContent(grokBridge, AI_PROVIDER_PROPERTIE_MISSING.formatted(GROK));
+        	LOGGER.info("The TerosWebViewBridge created for {}", AiServiceProvider.GROK.name());
+		    if (!grokPref.hasApyKeyAndModel())
+	        	updateWebViewContent(AiServiceProvider.GROK, grokBridge, AI_PROVIDER_PROPERTIE_MISSING.formatted(GROK));
 		});
 
 		geminiWebView.getEngine().documentProperty().addListener((a, o, n)->{
 			if(n==null) return;
+			LOGGER.info("Creating TerosWebViewBridge for {}", AiServiceProvider.GEMINI.name());
 			geminiBridge = new TerosWebViewBridge(geminiWebView);
-		    if (StringUtils.isBlank(geminiModel) || StringUtils.isBlank(geminiKey))
-	        	updateWebViewContent(geminiBridge, AI_PROVIDER_PROPERTIE_MISSING.formatted(GEMINI));
+			LOGGER.info("The TerosWebViewBridge created for {}", AiServiceProvider.GEMINI.name());
+		    if (!geminiPref.hasApyKeyAndModel())
+	        	updateWebViewContent(AiServiceProvider.GEMINI, geminiBridge, AI_PROVIDER_PROPERTIE_MISSING.formatted(GEMINI));
 		});
 		
 		String templateUrl = "file:" + TedrosFolder.MODULE_FOLDER.getFullPath() + "TCORE_19780222"
@@ -252,36 +242,9 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
 	}
 
 	private void getProviderProperties() {
-		try (TEjbServiceLocator loc = TEjbServiceLocator.getInstance()) {
-		    TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
-
-		    TSelect<TPropertie> select = new TSelect<>(TPropertie.class);
-		    select.addAndCondition("key", TCompareOp.LIKE, "sys.grok");
-		    select.addOrCondition("key", TCompareOp.LIKE, "sys.openai");
-		    select.addOrCondition("key", TCompareOp.LIKE, "sys.gemini");
-
-		    TResult<List<TPropertie>> res = serv.search(TedrosContext.getLoggedUser().getAccessToken(), select);
-
-		    if (res.getState().equals(TState.SUCCESS) && res.getValue() != null && !res.getValue().isEmpty()) {
-		        openaiKey = getValue(res.getValue(), TSystemPropertie.OPENAI_KEY.getValue());
-		        openaiModel = getValue(res.getValue(), TSystemPropertie.OPENAI_MODEL.getValue());		        
-		        if(StringUtils.isNotBlank(openaiModel) && StringUtils.isNotBlank(openaiKey))
-		        	openaiConfigured = true;
-
-		        grokKey = getValue(res.getValue(), TSystemPropertie.GROK_KEY.getValue());
-		        grokModel = getValue(res.getValue(), TSystemPropertie.GROK_MODEL.getValue());
-		        if(StringUtils.isNotBlank(grokModel) && StringUtils.isNotBlank(grokKey))
-		        	grokConfigured = true;
-
-		        geminiKey = getValue(res.getValue(), TSystemPropertie.GEMINI_KEY.getValue());
-		        geminiModel = getValue(res.getValue(), TSystemPropertie.GEMINI_MODEL.getValue());
-		        if(StringUtils.isNotBlank(geminiModel) && StringUtils.isNotBlank(geminiKey))
-		        	geminiConfigured = true;
-		    }
-		    
-		} catch (Exception e) {
-		    TLoggerUtil.error(AiProviderComparisonComponent.class, e.toString(), e);
-		}
+		openAiPref = AiTerosContext.getAiProviderPreference(AiServiceProvider.OPENAI);
+        grokPref = AiTerosContext.getAiProviderPreference(AiServiceProvider.GROK);
+        geminiPref = AiTerosContext.getAiProviderPreference(AiServiceProvider.GEMINI);
 	}
 
     private void initializeUI() {
@@ -363,43 +326,38 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
 
     private void executeComparison(String prompt) {    	
     	
-    	if(!openaiConfigured && !grokConfigured && !geminiConfigured) {
+    	if(!openAiPref.hasApyKeyAndModel() && !grokPref.hasApyKeyAndModel() && !geminiPref.hasApyKeyAndModel()) {
 			showAlert(TLanguage.getInstance()
 					.getString(ToolsKey.MESSAGE_NO_AI_PROVIDER_CONFIGURED));
 			return;
 		}
                 
-    	if(openaiConfigured) {
+    	if(openAiPref.hasApyKeyAndModel()) {
 	        openaiService.prompt = prompt;
 	        openaiService.systemPrompt = SYSTEM_PROMPT;
     	}
         
-    	if(grokConfigured) {
+    	if(grokPref.hasApyKeyAndModel()) {
 	        grokService.prompt = prompt;
 	        grokService.systemPrompt = SYSTEM_PROMPT;
     	}
         
-    	if(geminiConfigured) {
+    	if(geminiPref.hasApyKeyAndModel()) {
     		geminiService.prompt = prompt;
     		geminiService.systemPrompt = SYSTEM_PROMPT;
     	}
 
-    	if(geminiConfigured) geminiService.startProcess();
-    	if(openaiConfigured) openaiService.startProcess();
-    	if(grokConfigured) grokService.startProcess();
-    }
-
-    private String getValue(List<TPropertie> props, String key) {
-        return props.stream()
-                .filter(p -> p.getKey().equals(key))
-                .findFirst()
-                .map(TPropertie::getValue)
-                .orElse(null);
+    	if(geminiPref.hasApyKeyAndModel()) geminiService.startProcess();
+    	if(openAiPref.hasApyKeyAndModel()) openaiService.startProcess();
+    	if(grokPref.hasApyKeyAndModel()) grokService.startProcess();
     }
     
-    private void updateWebViewContent(TerosWebViewBridge bridge, String content) {
+    private void updateWebViewContent(AiServiceProvider provider, TerosWebViewBridge bridge, String content) {
         if (bridge != null) {
-            Platform.runLater(() -> bridge.run(content));
+            Platform.runLater(() -> {
+            	LOGGER.info("The Provider {} returned successfully, sending content to the TerosWebViewBridge", provider.name());
+            	bridge.run(content);
+            });
         }
     }
     
@@ -410,11 +368,10 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
 		private IAiTerosService iaServ;
 		
 		@SuppressWarnings("rawtypes")
-		public void buildIaTerosService(String key, String model, String sysPrompt, 
-				AiServiceProvider provider) {
+		public void buildIaTerosService(String sysPrompt, AiServiceProvider provider) {
 			try {
 	            // Assuming AiTerosServiceFactory and IAiTerosService usage
-				iaServ = AiTerosServiceFactory.newInstanceWithLangChain4jAdapters(key, model, sysPrompt, provider);
+				iaServ = AiTerosContext.newInstanceWithLangChain4jAdapters(sysPrompt, provider);
 	            List<TFunction> lst = new ArrayList<>(); 
 	            lst.add(TFunctionHelper.getViewInfoFunction());
 	            

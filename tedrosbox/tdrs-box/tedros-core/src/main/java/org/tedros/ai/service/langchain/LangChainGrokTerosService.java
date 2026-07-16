@@ -146,6 +146,9 @@ public class LangChainGrokTerosService extends AiServiceBase implements IAiTeros
         ChatResponse response = adapter.generate(messages, tools);
         AiMessage aiMessage = response.aiMessage();
 
+        // DEBUG LOGGING
+        LOGGER.info("Grok Response - Text: {}", aiMessage.text());
+        
         // FIX: OpenAI API rejects 'content: null' in history even for Tool Calls in
         // some contexts.
         // Enforce empty string if text is null.

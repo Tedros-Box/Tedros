@@ -3,9 +3,12 @@
  */
 package org.tedros.tools.module.preferences.action;
 
+import org.tedros.ai.service.AiTerosContext;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.fx.control.action.TPresenterAction;
 import org.tedros.fx.presenter.behavior.TActionType;
+
+import javafx.application.Platform;
 
 /**
  * @author Davis Gordon
@@ -30,8 +33,10 @@ public class ReloadPropertiesAction extends TPresenterAction {
 	 */
 	@Override
 	public void runAfter() {
-		TedrosContext.loadCustomProperties();
-
+		Platform.runLater(()->{
+			TedrosContext.loadCustomProperties();
+			AiTerosContext.loadProperties();
+		});
 	}
 
 }

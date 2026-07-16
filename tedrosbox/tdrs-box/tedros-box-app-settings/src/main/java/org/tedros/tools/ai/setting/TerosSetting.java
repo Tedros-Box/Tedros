@@ -3,6 +3,7 @@
  */
 package org.tedros.tools.ai.setting;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -11,30 +12,24 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.ai.function.TFunction;
 import org.tedros.ai.function.TFunctionHelper;
-import org.tedros.ai.service.AiServiceProvider;
-import org.tedros.ai.service.AiTerosServiceFactory;
+import org.tedros.ai.service.AiTerosContext;
 import org.tedros.ai.service.IAiTerosService;
 import org.tedros.api.descriptor.ITComponentDescriptor;
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
-import org.tedros.core.control.TMessageProgressIndicator;
-import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.message.TMessageType;
 import org.tedros.core.repository.TRepository;
-import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.control.TButton;
 import org.tedros.fx.form.TSetting;
 import org.tedros.fx.modal.TMessageBox;
-import org.tedros.server.result.TResult;
-import org.tedros.server.result.TResult.TState;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.ai.model.TerosMV;
 import org.tedros.tools.module.ai.function.ShowHtmlAiResponse;
 import org.tedros.tools.module.ai.settings.AiChatUtil;
 
-import javafx.collections.ListChangeListener;
-import javafx.collections.WeakListChangeListener;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.concurrent.Worker.State;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -58,150 +53,26 @@ public class TerosSetting extends TSetting {
 	private static final String TEROS_NAME = "Teros";	
 	protected static IAiTerosService TEROS;
 	
-	private AiChatUtil util;
-    private TRepository repo;
+	private AiChatUtil util = new AiChatUtil();;
+    private TRepository repo = new TRepository();;
     private boolean scrollFlag = false;
-    
-    private TMessageProgressIndicator progressIndicator;
     
 	/**
 	 * @param descriptor
 	 */
 	public TerosSetting(ITComponentDescriptor descriptor) {
 		super(descriptor);
-		//openHtmlMessageViewer();
-		util = new AiChatUtil();
-		repo = new TRepository();
+		ChangeListener<Instant> reloadListener = (a,o,n)->{
+			checkAIServiceAvailability();	
+		};
+		repo.add("reloadListener", reloadListener);				
+		AiTerosContext.reloadProperty().addListener(new WeakChangeListener<>(reloadListener));
+	}	
 
-		// Modo Tool Relay (sys.ai.toolrelay.enabled): a conversa, o loop de tool
-		// calling, a API key, o modelo e o prompt vivem no backend; os valores
-		// configurados no FE sao ignorados e os listeners abaixo nao se aplicam.
-		if(isToolRelayEnabled()) {
-			TEROS = AiTerosServiceFactory.createToolRelay();
-			return;
-		}
-
-		String apiKey = TedrosContext.getAiApiKey();
-		String aiModel = TedrosContext.getAiModel();
-		AiServiceProvider aiProvider = TedrosContext.getAiServiceProvider();
-		String aiSystemPrompt = TedrosContext.getAiSystemPrompt();
-
-		if(StringUtils.isNotBlank(apiKey) && StringUtils.isNotBlank(aiModel)
-				&& StringUtils.isNotBlank(aiSystemPrompt) && aiProvider!=null)
-		{
-			TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(apiKey, aiModel, aiSystemPrompt, aiProvider);
-		}
-
-		TedrosContext.aiServiceProviderProperty().addListener((a,o,n)->{
-				String key = TedrosContext.getAiApiKey();
-				String model = TedrosContext.getAiModel();	
-				String systemPrompt = TedrosContext.getAiSystemPrompt();
-				if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(model) && n!=null) {
-					TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(key, model, systemPrompt, n);
-					resetAction();
-				}
-				
-			});
-		
-		TedrosContext.aiApiKeyProperty().addListener((a,o,n)->{
-				AiServiceProvider provider = TedrosContext.getAiServiceProvider();
-				String model = TedrosContext.getAiModel();		
-				String systemPrompt = TedrosContext.getAiSystemPrompt();		
-				if(provider!=null && StringUtils.isNotBlank(model) && StringUtils.isNotBlank(n)) {
-					TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(n, model, systemPrompt, provider);
-					resetAction();
-				}
-			});
-		
-		TedrosContext.aiModelProperty().addListener((a,o,n)->{
-			if(TEROS!=null)
-				TEROS.setAiModel(n);
-			});
-		
-		TedrosContext.aiSystemPromptProperty().addListener((a,o,n)->{
-			String key = TedrosContext.getAiApiKey();
-			String model = TedrosContext.getAiModel();	
-			AiServiceProvider provider = TedrosContext.getAiServiceProvider();
-			if(StringUtils.isNotBlank(key) && StringUtils.isNotBlank(model) && StringUtils.isNotBlank(n) && provider!=null) {
-				TEROS = AiTerosServiceFactory.createWithLangChain4jAdapters(key, model, n, provider);
-				resetAction();
-			}
-		});
-	}
-
-	private boolean isToolRelayEnabled() {
-		try (TEjbServiceLocator loc = TEjbServiceLocator.getInstance()) {
-			TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
-			TResult<String> res = serv.getValue(TedrosContext.getLoggedUser().getAccessToken(),
-					"sys.ai.toolrelay.enabled");
-			return TState.SUCCESS.equals(res.getState()) && Boolean.parseBoolean(res.getValue());
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
-
-	@SuppressWarnings("rawtypes")
 	@Override
 	public void run() {
-		if(TedrosContext.getArtificialIntelligenceEnabled()) {
-			
-			this.progressIndicator = new TMessageProgressIndicator();
-			
-			super.getForm().gettPresenter().getView().settProgressIndicator(progressIndicator);
-			
-			if(TEROS!=null) {
-				
-				TFunction[] arr = new TFunction[] {
-						TFunctionHelper.listAllViewPathFunction(),
-						TFunctionHelper.listAllAppsFunction(),
-						TFunctionHelper.getViewInfoFunction(),
-						TFunctionHelper.callUpViewFunction(),
-						TFunctionHelper.getModelBeingEditedFunction(),
-						TFunctionHelper.getViewModelFunction(),
-						TFunctionHelper.getPreferencesFunction(),
-						TFunctionHelper.getCreateFileFunction()};
-				
-				arr = ArrayUtils.addAll(arr, TFunctionHelper.getAppsFunction());
-				
-				TEROS.createFunctionExecutor(arr);
-				
-				ListChangeListener<String> reasoningMsgListener =  c->{
-					while(c.next()) {
-						if(c.wasAdded()) {
-							for(String msg : c.getAddedSubList()) {
-								//show reasoning messages
-								this.progressIndicator.addMessage(util.buildMsgPane(TEROS_NAME, msg, new Date(), 420, true));
-							}
-						}
-					}
-				};
-				repo.add("reasoningMsgListener", reasoningMsgListener);
-				TEROS.reasoningsMessageProperty().addListener(new WeakListChangeListener<>(reasoningMsgListener));
-				
-			}else {
-				
-				List<String> messages = new ArrayList<>();
-				
-				if(StringUtils.isBlank(TedrosContext.getAiApiKey()))
-					messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_KEY_REQUIRED));
-				
-				if(StringUtils.isBlank(TedrosContext.getAiModel()))
-					messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_MODEL_REQUIRED));
-				
-				if(StringUtils.isBlank(TedrosContext.getAiSystemPrompt()))
-					messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_PROMPT_REQUIRED));
-				
-				super.getForm().gettPresenter().getView()
-				.tShowModal(new TMessageBox(messages, TMessageType.WARNING), false);
-				return;	
-			}
-		}else {
-			super.getForm().gettPresenter().getView()
-			.tShowModal(new TMessageBox(TLanguage.getInstance()
-					.getString(ToolsKey.MESSAGE_AI_DISABLED), TMessageType.WARNING), false);
-			return;	
-		}
+		
+		super.getForm().gettPresenter().getView().gettProgressIndicator().setMediumLogo();
 		
 		listenSendButton();
 		listenClearButton();
@@ -229,6 +100,60 @@ public class TerosSetting extends TSetting {
 			}
 		});
 		
+		checkAIServiceAvailability();
+		
+	}
+	
+	private void checkAIServiceAvailability() {
+		
+		super.getForm().gettPresenter().getView().tHideModal();
+		
+		if(AiTerosContext.getArtificialIntelligenceEnabled()) {
+				
+			List<String> messages = new ArrayList<>();
+			
+			if(StringUtils.isBlank(AiTerosContext.getAiApiKey()))
+				messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_KEY_REQUIRED));
+			
+			if(StringUtils.isBlank(AiTerosContext.getAiModel()))
+				messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_MODEL_REQUIRED));
+			
+			if(StringUtils.isBlank(AiTerosContext.getAiSystemPrompt()))
+				messages.add(TLanguage.getInstance().getString(ToolsKey.MESSAGE_AI_PROMPT_REQUIRED));
+			
+			if(!messages.isEmpty())
+				super.getForm().gettPresenter().getView()
+				.tShowModal(new TMessageBox(messages, TMessageType.WARNING), false);
+			else
+				createAiService();
+			
+		}else {
+			TEROS = null;
+			super.getForm().gettPresenter().getView()
+			.tShowModal(new TMessageBox(TLanguage.getInstance()
+					.getString(ToolsKey.MESSAGE_AI_DISABLED), TMessageType.WARNING), false);
+		}
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private void createAiService() {
+		
+		if(!AiTerosContext.getArtificialIntelligenceEnabled()) {
+			return;
+		}			
+		
+		TEROS = AiTerosContext.newInstanceAiTerosService();		
+		TFunction[] arr = new TFunction[] {
+				TFunctionHelper.listAllViewPathFunction(),
+				TFunctionHelper.listAllAppsFunction(),
+				TFunctionHelper.getViewInfoFunction(),
+				TFunctionHelper.callUpViewFunction(),
+				TFunctionHelper.getModelBeingEditedFunction(),
+				TFunctionHelper.getViewModelFunction(),
+				TFunctionHelper.getPreferencesFunction(),
+				TFunctionHelper.getCreateFileFunction()};		
+		arr = ArrayUtils.addAll(arr, TFunctionHelper.getAppsFunction());
+		TEROS.createFunctionExecutor(arr);
 	}
 
 	/**
