@@ -52,6 +52,22 @@ public class GitLabGateway {
         this.gson = new Gson();
     }
     
+    /**
+     * Cria uma nova instancia independente com a url/token informados.
+     * Uso preferido em cenarios multiusuario (ex.: backend com token por
+     * usuario), onde o singleton de {@link #getInstance(String, String)}
+     * nao serve.
+     */
+    public static GitLabGateway create(String baseUrl, String privateToken) {
+        return new GitLabGateway(baseUrl, privateToken);
+    }
+
+    /**
+     * Singleton JVM: a primeira chamada fixa baseUrl/privateToken ate o
+     * restart da aplicacao — chamadas seguintes ignoram os argumentos.
+     * Mantido por compatibilidade (FE {@code app-itsupport-tools-fx});
+     * uso multiusuario deve preferir {@link #create(String, String)}.
+     */
     public static synchronized GitLabGateway getInstance(String baseUrl, String privateToken) {
 		if (instance == null) {
 			instance = new GitLabGateway(baseUrl, privateToken);

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.tedros.core.setting.model;
+package org.tedros.common.domain;
 
 /**
  * @author Davis Gordon
@@ -9,5 +9,5 @@ package org.tedros.core.setting.model;
  */
 public enum TType {
 
-	INTERNAL, SYSTEM;
+	SYSTEM, USER;
 }

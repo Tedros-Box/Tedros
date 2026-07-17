@@ -71,7 +71,7 @@ public class GetRedmineIssueAiFunction implements TServerAiFunction {
 		RedmineIssueIdToFind v = (RedmineIssueIdToFind) arg;
 		try {
 			LOGGER.info("Fetching Redmine issue #{}", v.getIssueId());
-			RedmineApiGateway gateway = gateways.redmineGateway();
+			RedmineApiGateway gateway = gateways.redmineGateway(ctx);
 
 			TIssueEvidenceInfo issue = gateway.getTIssueEvidenceInfo(v.getIssueId());
 			if (issue == null)

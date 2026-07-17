@@ -107,6 +107,8 @@ public interface ToolsKey {
 	static final String VIEW_THEMES_DESC = "#{view.themes.desc}";
 	static final String VIEW_USER = "#{view.user}";
 	static final String VIEW_USER_DESC = "#{view.user.desc}";
+	static final String VIEW_USER_PROPERTIES = "#{view.user.properties}";
+	static final String VIEW_USER_PROPERTIES_DESC = "#{view.user.properties.desc}";
 	static final String VIEW_USER_SETTINGS = "#{view.user.settings}";
 	static final String VIEW_USER_SETTINGS_DESC = "#{view.user.settings.desc}";
 }

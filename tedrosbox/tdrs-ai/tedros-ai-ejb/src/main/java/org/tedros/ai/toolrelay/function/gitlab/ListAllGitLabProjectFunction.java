@@ -58,7 +58,7 @@ public class ListAllGitLabProjectFunction implements TServerAiFunction {
 	public Object execute(Object arg, TAiToolContext ctx) {
 		try {
 			LOGGER.info("Listing all GitLab projects");
-			List<GitLabProject> lst = gateways.gitlabGateway().getAllProjects();
+			List<GitLabProject> lst = gateways.gitlabGateway(ctx).getAllProjects();
 			return Map.of(
 					STATUS, SUCCESS,
 					ACTION, "gitlab_projects_listed",

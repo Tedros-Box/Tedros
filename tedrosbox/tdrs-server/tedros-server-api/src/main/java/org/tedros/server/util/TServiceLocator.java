@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.tedros.server.service;
+package org.tedros.server.util;
 
 import java.text.MessageFormat;
 import java.util.Properties;
@@ -17,12 +17,36 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class TServiceLocator implements AutoCloseable {
 	
-	private static TServiceLocator locator;
+	private static TServiceLocator instance;
 	
 	private InitialContext ctx;
 	
 	public static String URL = "http://{0}:8081/tomee/ejb";
 	public static String IP = "127.0.0.1";
+	
+	private TServiceLocator(){
+		
+	}
+	
+	static {
+		try {
+			instance = new TServiceLocator();
+		}catch (Exception e) {
+			  throw new RuntimeException("Exception while creating singleton instance");
+		}
+	}
+	
+	public static TServiceLocator getInstance(){
+		return instance;
+	}
+	
+	public static TServiceLocator getInstance(String url, String ip){
+		if(StringUtils.isNotBlank(url))
+			URL = url;
+		if(StringUtils.isNotBlank(ip))
+			IP = ip;
+		return instance;
+	}
 	
 	private Properties getProp(){
 		
@@ -34,36 +58,10 @@ public class TServiceLocator implements AutoCloseable {
 		return P;
 	}
 	
-	private TServiceLocator(){
-		
-	}
-	
-	public static TServiceLocator getInstance(){
-		return new TServiceLocator();
-	}
-	
-	public static TServiceLocator getInstance(String url, String ip){
-		if(locator ==null)
-			locator = new TServiceLocator();
-		if(StringUtils.isNotBlank(url))
-			URL = url;
-		if(StringUtils.isNotBlank(ip))
-			IP = ip;
-		return locator;
-	}
-	
 	@SuppressWarnings("unchecked")
 	public <E> E lookup(String jndi) throws NamingException{
 		ctx = new InitialContext(getProp());
 		return (E) ctx.lookup(jndi);
-	}
-	
-	public void close(){
-		try {
-			ctx.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 	
 	public <E> E lookupWithRetry(String jndi) {
@@ -83,5 +81,13 @@ public class TServiceLocator implements AutoCloseable {
 	    }
 	    throw new IllegalStateException("Timeout wainting "+jndi+" to be available.");
     }
+	
+	public void close(){
+		try {
+			ctx.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 }

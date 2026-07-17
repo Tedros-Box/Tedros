@@ -60,7 +60,7 @@ public class GetGitLabRepositoryCommitDiffFunction implements TServerAiFunction 
 		try {
 			LOGGER.info("Finding for a repository commit diff for projectId {} and Commit sha {}",
 					v.getProjectId(), v.getCommitSha());
-			List<CommitDiffModel> lst = gateways.gitlabGateway()
+			List<CommitDiffModel> lst = gateways.gitlabGateway(ctx)
 					.getRepositoryCommitDiff(v.getProjectId(), v.getCommitSha());
 			return Map.of(
 					STATUS, SUCCESS,

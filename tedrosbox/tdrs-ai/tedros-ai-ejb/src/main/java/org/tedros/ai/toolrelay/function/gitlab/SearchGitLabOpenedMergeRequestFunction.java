@@ -59,7 +59,7 @@ public class SearchGitLabOpenedMergeRequestFunction implements TServerAiFunction
 		TGitLabProjectId v = (TGitLabProjectId) arg;
 		try {
 			LOGGER.info("Searching GitLab merge request for project id: {}", v.getProjectId());
-			List<GitLabMergeRequest> lst = gateways.gitlabGateway()
+			List<GitLabMergeRequest> lst = gateways.gitlabGateway(ctx)
 					.getOpenedMergeRequests(v.getProjectId());
 			return Map.of(
 					STATUS, SUCCESS,

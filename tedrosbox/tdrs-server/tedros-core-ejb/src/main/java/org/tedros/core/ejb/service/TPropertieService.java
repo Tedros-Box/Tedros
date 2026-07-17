@@ -25,12 +25,6 @@ public class TPropertieService extends TEjbService<TPropertie>	{
 		return bo;
 	}
 	
-	@TransactionAttribute(TransactionAttributeType.REQUIRED)
-	public void buildProperties() throws Exception {
-		bo.buildProperties();
-	}
-	
-
 	public String getValue(String key) {
 		return bo.getValue(key);
 	}
@@ -43,9 +37,4 @@ public class TPropertieService extends TEjbService<TPropertie>	{
 		return bo.exists(key);
 	}
 	
-	@TransactionAttribute(value = TransactionAttributeType.REQUIRED)
-	public boolean create(TPropertie propertie) throws Exception {
-		return bo.create(propertie);
-	}
-
 }

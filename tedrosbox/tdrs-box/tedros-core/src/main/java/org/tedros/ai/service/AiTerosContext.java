@@ -8,12 +8,13 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
+import org.tedros.ai.domain.AiRelayPropertie;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.controller.TPropertieController;
-import org.tedros.core.domain.TSystemPropertie;
 import org.tedros.core.service.remote.TEjbServiceLocator;
 import org.tedros.core.setting.model.TPropertie;
 import org.tedros.server.query.TCompareOp;
+import org.tedros.server.query.TJoinType;
 import org.tedros.server.query.TSelect;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
@@ -70,21 +71,22 @@ public class AiTerosContext {
 		LOGGER.info("Starting load ai properties.");
 		
 		TSelect<TPropertie> select = new TSelect<>(TPropertie.class);
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.AI_ENABLED.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.AI_SERVICE_PROVIDER.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TOOL_RELAY_ENABLED);
+		select.addJoin(TJoinType.INNER, TSelect.ALIAS, "domain", "t1");
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_ENABLED.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_SERVICE_PROVIDER.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, TOOL_RELAY_ENABLED);
 		
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.OPENAI_KEY.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.OPENAI_MODEL.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.OPENAI_PROMPT.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_OPENAI_KEY.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_OPENAI_MODEL.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_OPENAI_PROMPT.getValue());
 		
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.GEMINI_KEY.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.GEMINI_MODEL.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.GEMINI_PROMPT.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_GEMINI_KEY.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_GEMINI_MODEL.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_GEMINI_PROMPT.getValue());
 		
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.GROK_KEY.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.GROK_MODEL.getValue());
-		select.addOrCondition("key", TCompareOp.EQUAL, TSystemPropertie.GROK_PROMPT.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_GROK_KEY.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_GROK_MODEL.getValue());
+		select.addOrCondition("t1", "key", TCompareOp.EQUAL, AiRelayPropertie.AI_GROK_PROMPT.getValue());
 		
 		try (TEjbServiceLocator loc = TEjbServiceLocator.getInstance()) {
 			TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
@@ -111,23 +113,23 @@ public class AiTerosContext {
 				});
 				
 				properties.stream()
-				.filter(p -> p.getKey().equals(TSystemPropertie.AI_ENABLED.getValue()))
+				.filter(p -> p.getKey().equals(AiRelayPropertie.AI_ENABLED.getValue()))
 				.findFirst()
 				.ifPresentOrElse(p -> {
 					if(StringUtils.isNotBlank(p.getValue())) {
 						setArtificialIntelligenceEnabled(BooleanUtils.toBoolean(p.getValue()));
-						LOGGER.info(PROPERTIE_LOADED, TSystemPropertie.AI_ENABLED.getValue());
+						LOGGER.info(PROPERTIE_LOADED, AiRelayPropertie.AI_ENABLED.getValue());
 					}else{
 						setArtificialIntelligenceEnabled(false);
-						LOGGER.info("- Propertie {} set to default value false", TSystemPropertie.AI_ENABLED.getValue());
+						LOGGER.info("- Propertie {} set to default value false", AiRelayPropertie.AI_ENABLED.getValue());
 					}
 				}, ()->{
 					setArtificialIntelligenceEnabled(false);
-					LOGGER.info("- Propertie {} set to default value false", TSystemPropertie.AI_ENABLED.getValue());
+					LOGGER.info("- Propertie {} set to default value false", AiRelayPropertie.AI_ENABLED.getValue());
 				});
 				
 				Optional<TPropertie> aiServProvOpt = properties.stream()
-						.filter(p -> p.getKey().equals(TSystemPropertie.AI_SERVICE_PROVIDER.getValue()))
+						.filter(p -> p.getKey().equals(AiRelayPropertie.AI_SERVICE_PROVIDER.getValue()))
 						.findFirst();
 						
 				if(aiServProvOpt.isPresent()) {
@@ -139,10 +141,10 @@ public class AiTerosContext {
 					setAiServiceProvider(provider);
 					LOGGER.info("- Using {} as AI Service Provider.", provider.name());
 					
-					TSystemPropertie aiModelPropertie = switch (provider) {
-							case GROK -> TSystemPropertie.GROK_MODEL;
-							case OPENAI -> TSystemPropertie.OPENAI_MODEL;
-							case GEMINI -> TSystemPropertie.GEMINI_MODEL;
+					AiRelayPropertie aiModelPropertie = switch (provider) {
+							case GROK -> AiRelayPropertie.AI_GROK_MODEL;
+							case OPENAI -> AiRelayPropertie.AI_OPENAI_MODEL;
+							case GEMINI -> AiRelayPropertie.AI_GEMINI_MODEL;
 						};
 					
 					properties.stream()
@@ -157,10 +159,10 @@ public class AiTerosContext {
 						}
 					}, () -> LOGGER.info(PROPERTIE_NOT_DEFINED, aiModelPropertie.getValue()));
 					
-					TSystemPropertie aiPromptPropertie = switch (provider) {
-							case GROK -> TSystemPropertie.GROK_PROMPT;
-							case OPENAI -> TSystemPropertie.OPENAI_PROMPT;
-							case GEMINI -> TSystemPropertie.GEMINI_PROMPT;
+					AiRelayPropertie aiPromptPropertie = switch (provider) {
+							case GROK -> AiRelayPropertie.AI_GROK_PROMPT;
+							case OPENAI -> AiRelayPropertie.AI_OPENAI_PROMPT;
+							case GEMINI -> AiRelayPropertie.AI_GEMINI_PROMPT;
 						};
 					
 					properties.stream()
@@ -175,10 +177,10 @@ public class AiTerosContext {
 						}
 					}, () -> LOGGER.info(PROPERTIE_NOT_DEFINED, aiPromptPropertie.getValue()));
 					
-					TSystemPropertie aiApiKeyPropertie = switch (provider) {
-							case GROK -> TSystemPropertie.GROK_KEY;
-							case OPENAI -> TSystemPropertie.OPENAI_KEY;
-							case GEMINI -> TSystemPropertie.GEMINI_KEY;
+					AiRelayPropertie aiApiKeyPropertie = switch (provider) {
+							case GROK -> AiRelayPropertie.AI_GROK_KEY;
+							case OPENAI -> AiRelayPropertie.AI_OPENAI_KEY;
+							case GEMINI -> AiRelayPropertie.AI_GEMINI_KEY;
 						}; 
 					
 					properties.stream()
@@ -206,25 +208,25 @@ public class AiTerosContext {
 	
 	public static AiProviderPreference getAiProviderPreference(AiServiceProvider provider) {
 		
-		TSystemPropertie keyProp; 
-		TSystemPropertie modelProp;
-		TSystemPropertie promptProp;
+		AiRelayPropertie keyProp; 
+		AiRelayPropertie modelProp;
+		AiRelayPropertie promptProp;
 		
 		switch (provider) {
 		case GEMINI: 			
-			keyProp = TSystemPropertie.GEMINI_KEY;
-			modelProp = TSystemPropertie.GEMINI_MODEL;
-			promptProp = TSystemPropertie.GEMINI_PROMPT;
+			keyProp = AiRelayPropertie.AI_GEMINI_KEY;
+			modelProp = AiRelayPropertie.AI_GEMINI_MODEL;
+			promptProp = AiRelayPropertie.AI_GEMINI_PROMPT;
 			break;
 		case OPENAI:
-			keyProp = TSystemPropertie.OPENAI_KEY;
-			modelProp = TSystemPropertie.OPENAI_MODEL;
-			promptProp = TSystemPropertie.OPENAI_PROMPT;
+			keyProp = AiRelayPropertie.AI_OPENAI_KEY;
+			modelProp = AiRelayPropertie.AI_OPENAI_MODEL;
+			promptProp = AiRelayPropertie.AI_OPENAI_PROMPT;
 			break;
 		case GROK:
-			keyProp = TSystemPropertie.GROK_KEY;
-			modelProp = TSystemPropertie.GROK_MODEL;
-			promptProp = TSystemPropertie.GROK_PROMPT;
+			keyProp = AiRelayPropertie.AI_GROK_KEY;
+			modelProp = AiRelayPropertie.AI_GROK_MODEL;
+			promptProp = AiRelayPropertie.AI_GROK_PROMPT;
 			break;
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + provider);

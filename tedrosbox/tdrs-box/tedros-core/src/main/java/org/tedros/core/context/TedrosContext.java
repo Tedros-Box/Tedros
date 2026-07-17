@@ -19,7 +19,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
-import org.tedros.ai.service.AiTerosContext;
+import org.tedros.ai.domain.AiRelayPropertie;
 import org.tedros.api.presenter.view.ITView;
 import org.tedros.core.ITModule;
 import org.tedros.core.ITViewBuilder;
@@ -41,6 +41,7 @@ import org.tedros.core.setting.model.TPropertie;
 import org.tedros.core.style.TStyleResourceValue;
 import org.tedros.core.ux.ITWindow;
 import org.tedros.server.query.TCompareOp;
+import org.tedros.server.query.TJoinType;
 import org.tedros.server.query.TSelect;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
@@ -240,21 +241,22 @@ public final class TedrosContext {
 		LOGGER.info("Starting load custom system properties.");
 		
 		TSelect<TPropertie> select = new TSelect<>(TPropertie.class);
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.AI_ENABLED.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.AI_SERVICE_PROVIDER.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, AiTerosContext.TOOL_RELAY_ENABLED);
+		select.addJoin(TJoinType.INNER, TSelect.ALIAS, "domain", "t1");
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_ENABLED.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_SERVICE_PROVIDER.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_TOOL_RELAY_ENABLED.getValue());
 		
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.OPENAI_KEY.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.OPENAI_MODEL.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.OPENAI_PROMPT.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_OPENAI_KEY.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_OPENAI_MODEL.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_OPENAI_PROMPT.getValue());
 		
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.GEMINI_KEY.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.GEMINI_MODEL.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.GEMINI_PROMPT.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_GEMINI_KEY.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_GEMINI_MODEL.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_GEMINI_PROMPT.getValue());
 		
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.GROK_KEY.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.GROK_MODEL.getValue());
-		select.addAndCondition("key", TCompareOp.NOT_EQ, TSystemPropertie.GROK_PROMPT.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_GROK_KEY.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_GROK_MODEL.getValue());
+		select.addAndCondition("t1", "key", TCompareOp.NOT_EQ, AiRelayPropertie.AI_GROK_PROMPT.getValue());
 		
 		try (TEjbServiceLocator loc = TEjbServiceLocator.getInstance()) {
 			TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);

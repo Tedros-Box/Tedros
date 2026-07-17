@@ -2,9 +2,10 @@ package org.tedros.ai.toolrelay;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.tedros.core.support.TPropertieSupport;
-import org.tedros.server.service.TServiceLocator;
+import org.tedros.ai.domain.AiRelayPropertie;
+import org.tedros.core.support.TDomainPropertieSupport;
 import org.tedros.server.util.TLoggerUtil;
+import org.tedros.server.util.TServiceLocator;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -69,36 +70,33 @@ public class TAiRelayConfig {
 		}
 	}
 
-	private TAiRelayConfigSnapshot load() throws Exception {
-		TServiceLocator serv = TServiceLocator.getInstance();
-		try {
-			TPropertieSupport support = serv.lookupWithRetry(TPropertieSupport.JNDI_NAME);
+	private TAiRelayConfigSnapshot load() throws Exception {		
+		try(TServiceLocator serv = TServiceLocator.getInstance()) {
+			TDomainPropertieSupport support = serv.lookupWithRetry(TDomainPropertieSupport.JNDI_NAME);
 
-			boolean aiEnabled = Boolean.parseBoolean(trim(support.getValue("sys.ai.enabled")));
+			boolean aiEnabled = Boolean.parseBoolean(trim(support.getSystemPropertyValue(AiRelayPropertie.AI_ENABLED.getValue())));
 			if (!aiEnabled)
 				return new TAiRelayConfigSnapshot(false, null, null, null, null,
 						DEFAULT_CONVERSATION_TTL_MIN, DEFAULT_PENDING_TURN_TTL_MIN,
 						DEFAULT_MAX_CONVERSATIONS, false);
 
-			TAiProvider provider = parseProvider(trim(support.getValue("sys.ai.provider")));
+			TAiProvider provider = parseProvider(trim(support.getSystemPropertyValue(AiRelayPropertie.AI_SERVICE_PROVIDER.getValue())));
 			String prefix = "sys." + provider.name().toLowerCase() + ".";
-			String apiKey = trim(support.getValue(prefix + "key"));
-			String model = trim(support.getValue(prefix + "model"));
-			String prompt = trim(support.getValue(prefix + "prompt"));
+			String apiKey = trim(support.getSystemPropertyValue(prefix + "key"));
+			String model = trim(support.getSystemPropertyValue(prefix + "model"));
+			String prompt = trim(support.getSystemPropertyValue(prefix + "prompt"));
 
-			int convTtl = parseInt(trim(support.getValue("sys.ai.toolrelay.conversation.ttl.min")),
+			int convTtl = parseInt(trim(support.getSystemPropertyValue(AiRelayPropertie.AI_CONVERSATION_TTL_MIN.getValue())),
 					DEFAULT_CONVERSATION_TTL_MIN);
-			int pendingTtl = parseInt(trim(support.getValue("sys.ai.toolrelay.pendingturn.ttl.min")),
+			int pendingTtl = parseInt(trim(support.getSystemPropertyValue(AiRelayPropertie.AI_PENDING_TURN_TTL_MIN.getValue())),
 					DEFAULT_PENDING_TURN_TTL_MIN);
-			int maxConv = parseInt(trim(support.getValue("sys.ai.toolrelay.max.conversations")),
+			int maxConv = parseInt(trim(support.getSystemPropertyValue(AiRelayPropertie.AI_MAX_CONVERSATIONS.getValue())),
 					DEFAULT_MAX_CONVERSATIONS);
-			boolean debug = Boolean.parseBoolean(trim(support.getValue("sys.ai.toolrelay.debug")));
+			boolean debug = Boolean.parseBoolean(trim(support.getSystemPropertyValue(AiRelayPropertie.AI_DEBUG.getValue())));
 
 			return new TAiRelayConfigSnapshot(true, provider, apiKey, model, prompt,
 					convTtl, pendingTtl, maxConv, debug);
-		} finally {
-			serv.close();
-		}
+		} 
 	}
 
 	private TAiProvider parseProvider(String value) {

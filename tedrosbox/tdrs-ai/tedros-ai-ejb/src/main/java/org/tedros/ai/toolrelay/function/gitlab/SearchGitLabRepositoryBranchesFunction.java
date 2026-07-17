@@ -59,7 +59,7 @@ public class SearchGitLabRepositoryBranchesFunction implements TServerAiFunction
 		TGitLabProjectId v = (TGitLabProjectId) arg;
 		try {
 			LOGGER.info("Searches for repository branches for projectId {}", v.getProjectId());
-			List<BranchModel> lst = gateways.gitlabGateway().getRepositoryBranches(v.getProjectId());
+			List<BranchModel> lst = gateways.gitlabGateway(ctx).getRepositoryBranches(v.getProjectId());
 			return Map.of(
 					STATUS, SUCCESS,
 					ACTION, "gitlab_repository_branches_retrieved",

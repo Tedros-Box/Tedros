@@ -60,7 +60,7 @@ public class RedmineListIssueTimeEntryAiFunction implements TServerAiFunction {
 		RedmineIssueIdToFind v = (RedmineIssueIdToFind) arg;
 		try {
 			LOGGER.info("Fetching time entries for Redmine issue ID: {}", v.getIssueId());
-			RedmineApiGateway gateway = gateways.redmineGateway();
+			RedmineApiGateway gateway = gateways.redmineGateway(ctx);
 
 			List<TTimeEntry> entries = gateway.getTimeEntriesForIssue(v.getIssueId());
 

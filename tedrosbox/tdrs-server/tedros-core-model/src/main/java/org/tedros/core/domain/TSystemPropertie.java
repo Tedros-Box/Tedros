@@ -3,54 +3,58 @@
  */
 package org.tedros.core.domain;
 
+import org.tedros.common.domain.TType;
+
 /**
  * @author Davis Gordon
  *
  */
 public enum TSystemPropertie {
 	
-	DEFAULT_COUNTRY_ISO2("sys.country.iso2","Defines a default country iso2 code to format currency and date"),
-	TOTAL_PAGE_HISTORY ("sys.page.history","Defines the number of views opened in the history of pages"),
-	OWNER ("sys.owner","Defines the name of the system owner"),
-	TOKEN ("sys.token","Set Tedros license key"),
-	ORGANIZATION ("sys.org","Defines the company trademark to display in reports"),
-	REPORT_LOGOTYPE("sys.report.logo","Sets the trademark logo to be displayed in reports"),
+	DEFAULT_COUNTRY_ISO2("sys.country.iso2","Defines a default country iso2 code to format currency "
+			+ "and date. Default value: pt-BR", "pt-BR", TType.SYSTEM),
+	TOTAL_PAGE_HISTORY ("sys.page.history","Defines the number of views opened in the history of pages."
+			+ "Default value: 4", "4", TType.SYSTEM),
+	OWNER ("sys.owner","Defines the name of the system owner", TType.SYSTEM),
+	TOKEN ("sys.token","Set Tedros license key", TType.SYSTEM),
+	ORGANIZATION ("sys.org","Defines the company trademark to display in reports. Default Tedros", "Tedros", TType.SYSTEM),
+	REPORT_LOGOTYPE("sys.report.logo","Sets the trademark logo to be displayed in reports", TType.SYSTEM),
 	
-	SMTP_USER ("sys.smtp.email","Define SMTP user email"),
-	SMTP_PASS ("sys.smtp.pass","Set SMTP user password"),
-	SMTP_HOST ("sys.smtp.host","Define SMTP host server"),
-	SMTP_PORT ("sys.smtp.port","Defines SMTP server port"),
-	SMTP_SOCKET_PORT ("sys.smtp.socket.port","Defines SMTP server socket port"),
+	SMTP_USER ("sys.smtp.email","Define SMTP user email", TType.SYSTEM),
+	SMTP_PASS ("sys.smtp.pass","Set SMTP user password", TType.SYSTEM),
+	SMTP_HOST ("sys.smtp.host","Define SMTP host server", TType.SYSTEM),
+	SMTP_PORT ("sys.smtp.port","Defines SMTP server port", TType.SYSTEM),
+	SMTP_SOCKET_PORT ("sys.smtp.socket.port","Defines SMTP server socket port", TType.SYSTEM),
 	
-	NOTIFY_INTERVAL_TIMER ("sys.notify.interval","Defines the interval time in minutes for sending e-mails queued by the Notify module"),
+	NOTIFY_INTERVAL_TIMER ("sys.notify.interval","Defines the interval time in minutes for sending e-mails "
+			+ "queued by the Notify module. Default value: 5", "5", TType.SYSTEM),
 	
-	OPENAI_KEY("sys.openai.key","Define the OpenAi Api key"),
-	OPENAI_MODEL("sys.openai.model","Define the OpenAi Model"),
-	OPENAI_PROMPT("sys.openai.prompt","Define the model system prompt instructions"),
-	
-	GEMINI_KEY("sys.gemini.key","Define the Gemini Api key"),
-	GEMINI_MODEL("sys.gemini.model","Define the Gemini Model"),
-	GEMINI_PROMPT("sys.gemini.prompt","Define the model system prompt instructions"),
-	
-	GROK_KEY("sys.grok.key","Define the Grok Api key"),	
-	GROK_MODEL("sys.grok.model","Define the Grok Model"),
-	GROK_PROMPT("sys.grok.prompt","Define the model system prompt instructions"),
-	
-	AI_SERVICE_PROVIDER("sys.ai.provider","Define the Ai Service Provider: OPENAI, GROK or GEMINI"),
-	AI_ENABLED("sys.ai.enabled","Enable Teros artificial intelligence. Set true or false"),
-	
-	MONGODB_URI("sys.mongodb.uri","Define the MongoDB connection URI")
+	MONGODB_URI("sys.mongodb.uri","Define the MongoDB connection URI", TType.SYSTEM)
 	;
 	
 	private String value;
 	private String description;
+	private String defaultValue;
+	private TType type;
 
 	/**
 	 * @param value
 	 */
-	private TSystemPropertie(String value, String description) {
+	private TSystemPropertie(String value, String description, String defaultValue, TType type) {
 		this.value = value;
 		this.description = description;
+		this.defaultValue = defaultValue;
+		this.type = type;
+	}
+	
+	/**
+	 * @param value
+	 */
+	private TSystemPropertie(String value, String description, TType type) {
+		this.value = value;
+		this.description = description;
+		this.defaultValue = "";
+		this.type = type;
 	}
 
 	/**
@@ -65,6 +69,14 @@ public enum TSystemPropertie {
 	 */
 	public String getDescription() {
 		return description;
+	}
+
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+
+	public TType getType() {
+		return type;
 	}
 	
 	

@@ -59,7 +59,7 @@ public class GetGitLabRepositoryBranchFunction implements TServerAiFunction {
 		try {
 			LOGGER.info("Finding for a repository branch for projectId {} and branch name {}",
 					v.getProjectId(), v.getBranchName());
-			BranchModel result = gateways.gitlabGateway()
+			BranchModel result = gateways.gitlabGateway(ctx)
 					.getSingleRepositoryBranches(v.getProjectId(), v.getBranchName());
 			return Map.of(
 					STATUS, SUCCESS,

@@ -20,8 +20,8 @@ import org.tedros.sample.entity.ProductPrice;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
 import org.tedros.server.security.TAccessToken;
-import org.tedros.server.service.TServiceLocator;
 import org.tedros.server.util.TLoggerUtil;
+import org.tedros.server.util.TServiceLocator;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

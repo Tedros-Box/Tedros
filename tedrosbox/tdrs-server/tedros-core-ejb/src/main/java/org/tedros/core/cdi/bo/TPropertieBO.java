@@ -2,7 +2,6 @@ package org.tedros.core.cdi.bo;
 
 import org.tedros.common.model.TFileEntity;
 import org.tedros.core.cdi.eao.TPropertieEao;
-import org.tedros.core.domain.TSystemPropertie;
 import org.tedros.core.setting.model.TPropertie;
 import org.tedros.server.cdi.bo.TGenericBO;
 import org.tedros.server.util.TLoggerUtil;
@@ -27,6 +26,10 @@ public class TPropertieBO extends TGenericBO<TPropertie> {
 		return eao.getValue(key);
 	}
 	
+	public String getValueOrDefault(String key) {
+		return eao.getValueOrDefault(key);
+	}
+	
 	public TFileEntity getFile(String key){
 		return eao.getFile(key);
 	}
@@ -37,30 +40,6 @@ public class TPropertieBO extends TGenericBO<TPropertie> {
 		logger.info("Application property {} : {}", key, res ? "Already setted!" : "Not exists!");
 		
 		return res;
-	}
-	
-	public boolean create(TPropertie propertie) throws Exception {
-		
-		if(exists(propertie.getKey())) 
-			return false;
-		
-		eao.persist(propertie);
-		
-		logger.info("Property {} created!", propertie.getValue());
-		
-		return true;
-	}
-	
-	public void buildProperties() throws Exception {
-		for(TSystemPropertie p : TSystemPropertie.values()) {		
-			if(!exists(p.getValue())) {				
-				TPropertie e = new TPropertie();
-				e.setName(p.name());
-				e.setKey(p.getValue());
-				e.setDescription(p.getDescription());
-				eao.persist(e);
-			}
-		}
 	}
 
 }

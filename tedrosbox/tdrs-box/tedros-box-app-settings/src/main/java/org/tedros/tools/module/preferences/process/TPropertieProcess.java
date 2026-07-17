@@ -45,7 +45,6 @@ public class TPropertieProcess extends TEntityProcess<TPropertie> {
 				TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
 				TResult<String> r = serv.getValue(user.getAccessToken(), valueKey);
 				TPropertie p = new TPropertie();
-				p.setKey(valueKey);
 				p.setValue(r.getValue());
 				res.add(new TResult<>(r.getState(), p));
 			} catch (Exception e) {
@@ -62,7 +61,6 @@ public class TPropertieProcess extends TEntityProcess<TPropertie> {
 				TPropertieController serv = loc.lookup(TPropertieController.JNDI_NAME);
 				TResult<TFileEntity> r = serv.getFile(user.getAccessToken(), fileKey);
 				TPropertie p = new TPropertie();
-				p.setKey(valueKey);
 				p.setFile(r.getValue());
 				res.add(new TResult<>(r.getState(), p));
 			} catch (Exception e) {

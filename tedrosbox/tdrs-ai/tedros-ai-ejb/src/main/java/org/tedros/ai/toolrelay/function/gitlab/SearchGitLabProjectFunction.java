@@ -59,7 +59,7 @@ public class SearchGitLabProjectFunction implements TServerAiFunction {
 		TGitLabProjectName v = (TGitLabProjectName) arg;
 		try {
 			LOGGER.info("Searching GitLab projects by name: {}", v.getName());
-			List<GitLabProject> lst = gateways.gitlabGateway().searchProjectsByName(v.getName());
+			List<GitLabProject> lst = gateways.gitlabGateway(ctx).searchProjectsByName(v.getName());
 			return Map.of(
 					STATUS, SUCCESS,
 					ACTION, "gitlab_projects_searched",

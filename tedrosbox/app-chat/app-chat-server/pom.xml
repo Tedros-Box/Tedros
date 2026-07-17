@@ -17,6 +17,14 @@
 	</properties>
   
   	<dependencies>
+  	
+  		<dependency>
+			<groupId>org.tedros</groupId>
+			<artifactId>tedros-server-api</artifactId>
+			<version>17-0.0.1</version>
+			<scope>compile</scope>
+		</dependency>
+  	
 	  	<dependency>
 	  		<groupId>org.tedros</groupId>
 	  		<artifactId>app-chat-ejb-client</artifactId>

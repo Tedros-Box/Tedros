@@ -5,9 +5,9 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 
-import org.tedros.core.support.TPropertieSupport;
-import org.tedros.server.service.TServiceLocator;
+import org.tedros.core.support.TDomainPropertieSupport;
 import org.tedros.server.util.TLoggerUtil;
+import org.tedros.server.util.TServiceLocator;
 
 import jakarta.ejb.EJB;
 import jakarta.ejb.Schedule;
@@ -81,16 +81,13 @@ public class TAiUsageRetentionTimer {
 	}
 
 	private int resolveRetentionMonths() {
-		TServiceLocator serv = TServiceLocator.getInstance();
-		try {
-			TPropertieSupport support = serv.lookupWithRetry(TPropertieSupport.JNDI_NAME);
-			return parseMonths(support.getValue(PROP_RETENTION_MONTHS), DEFAULT_RETENTION_MONTHS);
+		try(TServiceLocator serv = TServiceLocator.getInstance()) {
+			TDomainPropertieSupport support = serv.lookupWithRetry(TDomainPropertieSupport.JNDI_NAME);
+			return parseMonths(support.getSystemPropertyValue(PROP_RETENTION_MONTHS), DEFAULT_RETENTION_MONTHS);
 		} catch (Exception e) {
 			LOGGER.warn("Could not read {} — using default {} months: {}",
 					PROP_RETENTION_MONTHS, DEFAULT_RETENTION_MONTHS, e.getMessage());
 			return DEFAULT_RETENTION_MONTHS;
-		} finally {
-			serv.close();
-		}
+		} 
 	}
 }
