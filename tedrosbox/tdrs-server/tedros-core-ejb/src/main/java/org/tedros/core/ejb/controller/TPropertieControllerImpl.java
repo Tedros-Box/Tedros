@@ -94,31 +94,17 @@ public class TPropertieControllerImpl extends TSecureEjbController<TPropertie> i
 	public TResult<TReportPropertie> getReportProperties() {
 		try {
 			
-			String organization = null;
+			String organization = serv.getValue(TSystemPropertie.ORGANIZATION.getValue());
+			TFileEntity file = serv.getFile(TSystemPropertie.REPORT_LOGOTYPE.getValue());
+			
 			byte[] logotype = null;
 			
-			TPropertie e = new TPropertie();
-			e.setKey(TSystemPropertie.ORGANIZATION.getValue());
-			e = serv.find(e);
-			
-			organization = e!=null 
-					? e.getValue() 
-							: null;
-			
-			e = new TPropertie();
-			e.setKey(TSystemPropertie.REPORT_LOGOTYPE.getValue());
-			e = serv.find(e);
-			
-			if(e!=null && e.getFile()!=null) {
-				TFileEntity file = e.getFile();
+			if(file!=null) {
 				fileService.loadBytes(file);
 				logotype = file.getByteEntity().getBytes();
 			}	
 			
-			
 			return new TResult<>(TState.SUCCESS, new TReportPropertie(organization, logotype));
-			
-			
 		}catch (Exception e) {
 			return super.processException(null, null, e);
 		}

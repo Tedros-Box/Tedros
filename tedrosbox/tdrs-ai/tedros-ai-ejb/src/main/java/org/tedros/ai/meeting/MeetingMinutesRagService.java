@@ -13,11 +13,11 @@ import org.tedros.ai.cdi.bo.GenericEntityBO;
 import org.tedros.ai.toolrelay.TAiProvider;
 import org.tedros.ai.toolrelay.TAiRelayConfig;
 import org.tedros.ai.toolrelay.TAiRelayConfigSnapshot;
-import org.tedros.core.support.TPropertieSupport;
+import org.tedros.core.support.TDomainPropertieSupport;
 import org.tedros.it.tools.entity.MeetingMinutes;
 import org.tedros.server.cdi.bo.ITGenericBO;
 import org.tedros.server.ejb.service.TEjbService;
-import org.tedros.server.service.TServiceLocator;
+import org.tedros.server.util.TServiceLocator;
 import org.tedros.util.TLoggerUtil;
 
 import dev.langchain4j.data.document.Document;
@@ -263,15 +263,10 @@ public class MeetingMinutesRagService extends TEjbService<MeetingMinutes> {
 
 	/** Hook for unit tests (avoids JNDI). */
 	protected String lookupSystemProperty(String name) {
-		try {
-			TServiceLocator serv = TServiceLocator.getInstance();
-			try {
-				TPropertieSupport support = serv.lookupWithRetry(TPropertieSupport.JNDI_NAME);
-				String v = support.getValue(name);
-				return v != null ? v.trim() : null;
-			} finally {
-				serv.close();
-			}
+		try(TServiceLocator serv = TServiceLocator.getInstance()) {
+			TDomainPropertieSupport support = serv.lookupWithRetry(TDomainPropertieSupport.JNDI_NAME);
+			String v = support.getSystemPropertyValue(name);
+			return v != null ? v.trim() : null;
 		} catch (Exception e) {
 			LOGGER.debug("Could not read property {}: {}", name, e.getMessage());
 			return null;

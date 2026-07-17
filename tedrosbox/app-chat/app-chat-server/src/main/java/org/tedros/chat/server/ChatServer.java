@@ -19,7 +19,7 @@ import org.tedros.core.security.model.TProfile;
 import org.tedros.core.security.model.TUser;
 import org.tedros.server.result.TResult;
 import org.tedros.server.result.TResult.TState;
-import org.tedros.server.service.TServiceLocator;
+import org.tedros.server.util.TServiceLocator;
 import org.tedros.util.TEncriptUtil;
 
 public class ChatServer {

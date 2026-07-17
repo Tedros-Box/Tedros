@@ -3,7 +3,6 @@
  */
 package org.tedros.core.cdi.producer;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.tedros.core.cdi.bo.TPropertieBO;
 import org.tedros.core.domain.DomainPropertie;
 import org.tedros.core.domain.TSystemPropertie;
@@ -23,11 +22,11 @@ public class ResourceProducer {
 	@Inject
 	private TPropertieBO propBO;
 
-	@Produces
+	/*@Produces
 	@RequestScoped
 	@Named(DomainPropertie.OPENAI_KEY)
 	public Item<String> getOpenaiKey(){
-		return new Item<>(propBO.getValue(TSystemPropertie.OPENAI_KEY.getValue()));
+		return new Item<>(propBO.getValue(TSystemPropertie.IA_OPENAI_KEY.getValue()));
 	}
 	
 	@Produces
@@ -36,7 +35,7 @@ public class ResourceProducer {
 	public Item<Boolean> getAiEnabled(){
 		String v = propBO.getValue(TSystemPropertie.AI_ENABLED.getValue());
 		return new Item<>(BooleanUtils.toBoolean(v));
-	}
+	}*/
 	
 	@Produces
 	@RequestScoped

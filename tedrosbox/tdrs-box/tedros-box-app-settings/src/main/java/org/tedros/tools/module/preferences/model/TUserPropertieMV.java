@@ -6,10 +6,10 @@ package org.tedros.tools.module.preferences.model;
 import org.tedros.common.model.TFileEntity;
 import org.tedros.core.annotation.security.TAuthorizationType;
 import org.tedros.core.annotation.security.TSecurity;
-import org.tedros.core.controller.TPropertieController;
+import org.tedros.core.controller.TUserPropertieController;
 import org.tedros.core.domain.DomainApp;
 import org.tedros.core.setting.model.TDomainPropertie;
-import org.tedros.core.setting.model.TPropertie;
+import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.annotation.control.TFileField;
 import org.tedros.fx.annotation.control.TGenericType;
@@ -38,7 +38,6 @@ import org.tedros.fx.presenter.entity.behavior.TMasterCrudViewBehavior;
 import org.tedros.fx.property.TSimpleFileProperty;
 import org.tedros.server.query.TCompareOp;
 import org.tedros.tools.ToolsKey;
-import org.tedros.tools.module.preferences.action.ReloadPropertiesAction;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -49,26 +48,26 @@ import javafx.beans.property.SimpleStringProperty;
  */
 @TFormReaderHtml
 @TForm(header="",  editCssId="")
-@TEjbService(serviceName = TPropertieController.JNDI_NAME, model=TPropertie.class)
+@TEjbService(serviceName = TUserPropertieController.JNDI_NAME, model=TUserPropertie.class,
+filterByLoggedUser=true)
 @TListViewPresenter(
-		page=@TPage(serviceName = TPropertieController.JNDI_NAME,
-			query = @TQuery(entity=TPropertie.class, condition= {
+		page=@TPage(serviceName = TUserPropertieController.JNDI_NAME, filterByLoggedUser=true,
+			query = @TQuery(entity=TUserPropertie.class, condition= {
 					@TCondition(field = "domain.name", operator=TCompareOp.LIKE, label=TUsualKey.NAME)},
 				orderBy= {@TOrder(label = TUsualKey.NAME, field = "domain.name")}
 			),showSearch=true, showOrderBy=true),
-		presenter=@TPresenter(decorator = @TDecorator(viewTitle=ToolsKey.VIEW_SYSTEM_PROPERTIES,
+		presenter=@TPresenter(decorator = @TDecorator(viewTitle=ToolsKey.VIEW_USER_PROPERTIES,
 			buildModesRadioButton=false, buildNewButton = false, buildDeleteButton = false),
 		behavior=@TBehavior(runNewActionAfterSave=false, saveAllModels=false, 
-		saveOnlyChangedModels=true, type=TMasterCrudViewBehavior.class, 
-		action=ReloadPropertiesAction.class)))
-@TSecurity(	id=DomainApp.PROPERTIE_FORM_ID, 
+		saveOnlyChangedModels=true, type=TMasterCrudViewBehavior.class)))
+@TSecurity(	id=DomainApp.USER_PROPERTIE_FORM_ID, 
 			appName=ToolsKey.APP_TOOLS, 
 			moduleName=ToolsKey.MODULE_PREFERENCES, 
-			viewName=ToolsKey.VIEW_SYSTEM_PROPERTIES,
+			viewName=ToolsKey.VIEW_USER_PROPERTIES,
 			allowedAccesses={	TAuthorizationType.VIEW_ACCESS, TAuthorizationType.EDIT, 
 					TAuthorizationType.READ, TAuthorizationType.SAVE})
-public class TPropertieMV extends TEntityModelView<TPropertie> {
-	
+public class TUserPropertieMV extends TEntityModelView<TUserPropertie> {
+
 	@TFieldSet(fields = { "domain" }, 
 			legend = "Propriedade")
 		@TShowField(layout=TLayoutType.VBOX,
@@ -91,7 +90,7 @@ public class TPropertieMV extends TEntityModelView<TPropertie> {
 	private TSimpleFileProperty<TFileEntity> file;
 	
 	
-	public TPropertieMV(TPropertie entity) {
+	public TUserPropertieMV(TUserPropertie entity) {
 		super(entity);
 		super.formatToString("%s", domain);
 	}

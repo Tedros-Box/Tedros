@@ -12,9 +12,11 @@ import org.tedros.core.annotation.security.TAuthorizationType;
 import org.tedros.core.annotation.security.TSecurity;
 import org.tedros.core.domain.DomainApp;
 import org.tedros.core.setting.model.TPropertie;
+import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.module.preferences.model.TMimeTypeMV;
 import org.tedros.tools.module.preferences.model.TPropertieMV;
+import org.tedros.tools.module.preferences.model.TUserPropertieMV;
 
 /**
  * @author Davis Gordon
@@ -24,6 +26,8 @@ import org.tedros.tools.module.preferences.model.TPropertieMV;
 items = {
 	@TItem(title=ToolsKey.VIEW_MAIN_PROPERTIES, description=ToolsKey.VIEW__MAIN_PROPERTIES_DESC,
 	model = TPropertie.class, modelView=TPropertieMV.class),
+	@TItem(title=ToolsKey.VIEW_USER_PROPERTIES, description=ToolsKey.VIEW_USER_PROPERTIES_DESC,
+	model = TUserPropertie.class, modelView=TUserPropertieMV.class),
 	@TItem(title=ToolsKey.VIEW_MIMETYPE, description=ToolsKey.VIEW_MIMETYPE_DESC,
 	model = TMimeType.class, modelView=TMimeTypeMV.class)
 })

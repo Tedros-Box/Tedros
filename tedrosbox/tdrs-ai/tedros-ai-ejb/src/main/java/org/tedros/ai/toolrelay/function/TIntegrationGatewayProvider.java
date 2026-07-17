@@ -2,12 +2,12 @@ package org.tedros.ai.toolrelay.function;
 
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.tedros.core.support.TPropertieSupport;
+import org.tedros.core.support.TDomainPropertieSupport;
 import org.tedros.integration.gitlab.gateway.GitLabGateway;
 import org.tedros.integration.redmine.gateway.RedmineApiGateway;
 import org.tedros.it.tools.domain.ItSupportPropertie;
-import org.tedros.server.service.TServiceLocator;
 import org.tedros.server.util.TLoggerUtil;
+import org.tedros.server.util.TServiceLocator;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -138,17 +138,15 @@ public class TIntegrationGatewayProvider {
 
 	/** Protegido para permitir override nos testes de unidade. */
 	protected Snapshot load() throws Exception {
-		TServiceLocator serv = TServiceLocator.getInstance();
-		try {
-			TPropertieSupport support = serv.lookupWithRetry(TPropertieSupport.JNDI_NAME);
+		
+		try(TServiceLocator serv = TServiceLocator.getInstance()) {
+			TDomainPropertieSupport support = serv.lookupWithRetry(TDomainPropertieSupport.JNDI_NAME);
 			return new Snapshot(
-					trim(support.getValue(ItSupportPropertie.REDMINE_URL.getValue())),
-					trim(support.getValue(ItSupportPropertie.REDMINE_KEY.getValue())),
-					trim(support.getValue(ItSupportPropertie.GITLAB_URL.getValue())),
-					trim(support.getValue(ItSupportPropertie.GITLAB_KEY.getValue())));
-		} finally {
-			serv.close();
-		}
+					trim(support.getSystemPropertyValue(ItSupportPropertie.REDMINE_URL.getValue())),
+					trim(support.getSystemPropertyValue(ItSupportPropertie.REDMINE_KEY.getValue())),
+					trim(support.getSystemPropertyValue(ItSupportPropertie.GITLAB_URL.getValue())),
+					trim(support.getSystemPropertyValue(ItSupportPropertie.GITLAB_KEY.getValue())));
+		} 
 	}
 
 	private static String trim(String v) {

@@ -23,7 +23,7 @@ import org.tedros.server.query.TJoinType;
 import org.tedros.server.query.TSelect;
 import org.tedros.server.result.TResult;
 import org.tedros.server.security.TAccessToken;
-import org.tedros.server.service.TServiceLocator;
+import org.tedros.server.util.TServiceLocator;
 
 import jakarta.enterprise.context.ApplicationScoped;
 

@@ -16,8 +16,8 @@ import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.model.Empty;
 import org.tedros.server.result.TResult;
 import org.tedros.server.security.TAccessToken;
-import org.tedros.server.service.TServiceLocator;
 import org.tedros.server.util.TLoggerUtil;
+import org.tedros.server.util.TServiceLocator;
 import org.tedros.services.ejb.controller.IServiceController;
 import org.tedros.services.model.Service;
 
