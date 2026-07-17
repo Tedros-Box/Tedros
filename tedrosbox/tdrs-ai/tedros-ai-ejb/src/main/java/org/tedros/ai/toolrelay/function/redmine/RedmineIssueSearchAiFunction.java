@@ -187,7 +187,7 @@ public class RedmineIssueSearchAiFunction implements TServerAiFunction {
 
 			Map<String, FilterCondition> filters = RedmineFilterField.fromObject(v);
 
-			RedmineApiGateway gateway = gateways.redmineGateway();
+			RedmineApiGateway gateway = gateways.redmineGateway(ctx);
 			List<TIssueEvidenceInfo> issues = gateway.getIssuesByFilters(filters);
 
 			LOGGER.info("Result found {} issues", issues != null ? issues.size() : 0);

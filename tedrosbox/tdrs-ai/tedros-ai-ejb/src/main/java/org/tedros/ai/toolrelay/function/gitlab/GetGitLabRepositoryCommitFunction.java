@@ -59,7 +59,7 @@ public class GetGitLabRepositoryCommitFunction implements TServerAiFunction {
 		try {
 			LOGGER.info("Finding for a repository commit for projectId {} and Commit sha {}",
 					v.getProjectId(), v.getCommitSha());
-			CommitModel commit = gateways.gitlabGateway()
+			CommitModel commit = gateways.gitlabGateway(ctx)
 					.getSingleRepositoryCommit(v.getProjectId(), v.getCommitSha());
 			return Map.of(
 					STATUS, SUCCESS,

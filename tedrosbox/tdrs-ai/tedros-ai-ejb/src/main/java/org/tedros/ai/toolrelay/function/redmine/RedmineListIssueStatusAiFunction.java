@@ -59,7 +59,7 @@ public class RedmineListIssueStatusAiFunction implements TServerAiFunction {
 	public Object execute(Object arg, TAiToolContext ctx) {
 		try {
 			LOGGER.info("Listing all Redmine issue statuses");
-			RedmineApiGateway gateway = gateways.redmineGateway();
+			RedmineApiGateway gateway = gateways.redmineGateway(ctx);
 
 			List<TIssueStatus> statuses = gateway.listIssueStatuses();
 

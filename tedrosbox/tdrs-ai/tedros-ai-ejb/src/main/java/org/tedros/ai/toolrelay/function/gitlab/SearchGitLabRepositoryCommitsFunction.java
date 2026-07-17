@@ -59,7 +59,7 @@ public class SearchGitLabRepositoryCommitsFunction implements TServerAiFunction 
 		TGitLabProjectId v = (TGitLabProjectId) arg;
 		try {
 			LOGGER.info("Searches for repository commits for projectId {}", v.getProjectId());
-			List<CommitModel> lst = gateways.gitlabGateway().getRepositoryCommits(v.getProjectId());
+			List<CommitModel> lst = gateways.gitlabGateway(ctx).getRepositoryCommits(v.getProjectId());
 			return Map.of(
 					STATUS, SUCCESS,
 					ACTION, "gitlab_repository_commits_retrieved",

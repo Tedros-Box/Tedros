@@ -67,7 +67,7 @@ public class RedmineFilterIssueByUserAiFunction implements TServerAiFunction {
 			Map<String, FilterCondition> filters = new HashMap<>();
 			filters.put("assigned_to_id", FilterCondition.equalsTo(v.getAssigned_to_id()));
 
-			RedmineApiGateway gateway = gateways.redmineGateway();
+			RedmineApiGateway gateway = gateways.redmineGateway(ctx);
 			List<TIssueEvidenceInfo> issues = gateway.getIssuesByFilters(filters);
 
 			LOGGER.info("Result found: {} issues assigned to ID: {}", issues.size(),

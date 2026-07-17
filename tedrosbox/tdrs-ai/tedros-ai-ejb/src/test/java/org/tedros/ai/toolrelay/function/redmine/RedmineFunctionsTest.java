@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TIntegrationGatewayProvider;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
@@ -22,6 +23,7 @@ import org.tedros.integration.redmine.api.model.TIssueEvidenceInfo;
 import org.tedros.integration.redmine.api.model.TIssueStatus;
 import org.tedros.integration.redmine.api.model.TRedmineUser;
 import org.tedros.integration.redmine.api.model.TTimeEntry;
+import org.tedros.core.security.model.TUser;
 import org.tedros.integration.redmine.gateway.RedmineApiGateway;
 
 /**
@@ -91,11 +93,18 @@ public class RedmineFunctionsTest {
 		}
 
 		@Override
-		public RedmineApiGateway redmineGateway() {
+		public RedmineApiGateway redmineGateway(TAiToolContext ctx) {
 			if (!configured)
 				throw new IllegalStateException(REDMINE_NOT_CONFIGURED);
 			return gateway;
 		}
+	}
+
+	/** Contexto de teste com usuario autenticado (id preenchido). */
+	private static TAiToolContext ctx() {
+		TUser user = new TUser();
+		user.setId(1L);
+		return new TAiToolContext(user, null);
 	}
 
 	private final FakeRedmineGateway gateway = new FakeRedmineGateway();
@@ -155,7 +164,7 @@ public class RedmineFunctionsTest {
 
 		RedmineIssueIdToFind arg = new RedmineIssueIdToFind();
 		arg.setIssueId(42);
-		Map<String, Object> result = asMap(fn.execute(arg, null));
+		Map<String, Object> result = asMap(fn.execute(arg, ctx()));
 
 		assertEquals(TServerFunctionConstants.SUCCESS, result.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_issue_retrieved", result.get(TServerFunctionConstants.ACTION));
@@ -170,7 +179,7 @@ public class RedmineFunctionsTest {
 
 		RedmineIssueIdToFind arg = new RedmineIssueIdToFind();
 		arg.setIssueId(42);
-		Map<String, Object> result = asMap(fn.execute(arg, null));
+		Map<String, Object> result = asMap(fn.execute(arg, ctx()));
 
 		// {"data":{"message":"No data found. ","object":null}} — como no FE
 		Map<String, Object> data = asMap(result.get("data"));
@@ -185,7 +194,7 @@ public class RedmineFunctionsTest {
 
 		RedmineIssueIdToFind arg = new RedmineIssueIdToFind();
 		arg.setIssueId(1);
-		Map<String, Object> result = asMap(fn.execute(arg, null));
+		Map<String, Object> result = asMap(fn.execute(arg, ctx()));
 
 		assertEquals(TServerFunctionConstants.ERROR, result.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_issue_retrieved", result.get(TServerFunctionConstants.ACTION));
@@ -196,7 +205,7 @@ public class RedmineFunctionsTest {
 	public void missingConfigBecomesFriendlyErrorResult() {
 		var fn = withoutConfig(new RedmineListIssueStatusAiFunction());
 
-		Map<String, Object> result = asMap(fn.execute(new Object(), null));
+		Map<String, Object> result = asMap(fn.execute(new Object(), ctx()));
 
 		assertEquals(TServerFunctionConstants.ERROR, result.get(TServerFunctionConstants.STATUS));
 		assertEquals(TIntegrationGatewayProvider.REDMINE_NOT_CONFIGURED,
@@ -207,7 +216,7 @@ public class RedmineFunctionsTest {
 	public void filterIssuesSuccess() {
 		var fn = withGateway(new RedmineIssueSearchAiFunction());
 
-		Map<String, Object> result = asMap(fn.execute(new RedmineIssueFilter(), null));
+		Map<String, Object> result = asMap(fn.execute(new RedmineIssueFilter(), ctx()));
 
 		assertEquals(TServerFunctionConstants.SUCCESS, result.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_issues_filtered", result.get(TServerFunctionConstants.ACTION));
@@ -220,7 +229,7 @@ public class RedmineFunctionsTest {
 
 		RedmineAssignedToFilter arg = new RedmineAssignedToFilter();
 		arg.setAssigned_to_id("509");
-		Map<String, Object> result = asMap(fn.execute(arg, null));
+		Map<String, Object> result = asMap(fn.execute(arg, ctx()));
 
 		assertEquals(TServerFunctionConstants.SUCCESS, result.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_issues_filtered_by_assigned_to_id",
@@ -231,7 +240,7 @@ public class RedmineFunctionsTest {
 	public void listStatusesSuccess() {
 		var fn = withGateway(new RedmineListIssueStatusAiFunction());
 
-		Map<String, Object> result = asMap(fn.execute(new Object(), null));
+		Map<String, Object> result = asMap(fn.execute(new Object(), ctx()));
 
 		assertEquals(TServerFunctionConstants.SUCCESS, result.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_issue_statuses_listed", result.get(TServerFunctionConstants.ACTION));
@@ -244,7 +253,7 @@ public class RedmineFunctionsTest {
 
 		RedmineIssueIdToFind arg = new RedmineIssueIdToFind();
 		arg.setIssueId(7);
-		Map<String, Object> result = asMap(fn.execute(arg, null));
+		Map<String, Object> result = asMap(fn.execute(arg, ctx()));
 
 		assertEquals(TServerFunctionConstants.SUCCESS, result.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_issue_time_entries_retrieved",
@@ -258,12 +267,12 @@ public class RedmineFunctionsTest {
 
 		RedmineUserFilter arg = new RedmineUserFilter();
 		arg.setUserName("Davis");
-		Map<String, Object> ok = asMap(fn.execute(arg, null));
+		Map<String, Object> ok = asMap(fn.execute(arg, ctx()));
 		assertEquals(TServerFunctionConstants.SUCCESS, ok.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_users_retrieved", ok.get(TServerFunctionConstants.ACTION));
 
 		gateway.toThrow = new RuntimeException("api down");
-		Map<String, Object> err = asMap(fn.execute(arg, null));
+		Map<String, Object> err = asMap(fn.execute(arg, ctx()));
 		assertEquals(TServerFunctionConstants.ERROR, err.get(TServerFunctionConstants.STATUS));
 		assertEquals("redmine_users_error", err.get(TServerFunctionConstants.ACTION));
 		assertEquals("api down", err.get(TServerFunctionConstants.ERROR_MESSAGE));

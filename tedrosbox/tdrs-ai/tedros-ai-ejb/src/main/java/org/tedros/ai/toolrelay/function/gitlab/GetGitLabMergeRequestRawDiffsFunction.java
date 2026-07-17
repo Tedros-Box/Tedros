@@ -58,7 +58,7 @@ public class GetGitLabMergeRequestRawDiffsFunction implements TServerAiFunction 
 		try {
 			LOGGER.info("Searching GitLab merge request raws diffs for project id: {} and merge request iid: {}",
 					v.getProjectId(), v.getMergeRequestIid());
-			String result = gateways.gitlabGateway()
+			String result = gateways.gitlabGateway(ctx)
 					.getMergeRequestRawDiffs(v.getProjectId(), v.getMergeRequestIid());
 			return Map.of(
 					STATUS, SUCCESS,

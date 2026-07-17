@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.tedros.ai.toolrelay.function.TAiToolContext;
 import org.tedros.ai.toolrelay.function.TIntegrationGatewayProvider;
 import org.tedros.ai.toolrelay.function.TServerAiFunction;
 import org.tedros.ai.toolrelay.function.TServerFunctionCatalog;
@@ -23,6 +24,7 @@ import org.tedros.integration.gitlab.ai.model.TGitLabProjectId;
 import org.tedros.integration.gitlab.ai.model.TGitLabProjectName;
 import org.tedros.integration.gitlab.api.model.BranchModel;
 import org.tedros.integration.gitlab.api.model.CommitModel;
+import org.tedros.core.security.model.TUser;
 import org.tedros.integration.gitlab.gateway.GitLabGateway;
 
 /**
@@ -47,11 +49,18 @@ public class GitLabFunctionsTest {
 		}
 
 		@Override
-		public GitLabGateway gitlabGateway() {
+		public GitLabGateway gitlabGateway(TAiToolContext ctx) {
 			if (!configured)
 				throw new IllegalStateException(GITLAB_NOT_CONFIGURED);
 			return gateway;
 		}
+	}
+
+	/** Contexto de teste com usuario autenticado (id preenchido). */
+	private static TAiToolContext ctx() {
+		TUser user = new TUser();
+		user.setId(1L);
+		return new TAiToolContext(user, null);
 	}
 
 	private <T extends TServerAiFunction> T withGateway(T fn) {
@@ -129,10 +138,10 @@ public class GitLabFunctionsTest {
 	public void listProjectsSuccessAndError() {
 		when(gateway.getAllProjects()).thenReturn(List.of());
 		var fn = withGateway(new ListAllGitLabProjectFunction());
-		assertSuccess(asMap(fn.execute(new Object(), null)), "gitlab_projects_listed", "projects");
+		assertSuccess(asMap(fn.execute(new Object(), ctx())), "gitlab_projects_listed", "projects");
 
 		when(gateway.getAllProjects()).thenThrow(new RuntimeException("api down"));
-		assertError(asMap(fn.execute(new Object(), null)), "gitlab_projects_list_error", "api down");
+		assertError(asMap(fn.execute(new Object(), ctx())), "gitlab_projects_list_error", "api down");
 	}
 
 	@Test
@@ -141,7 +150,7 @@ public class GitLabFunctionsTest {
 		var fn = withGateway(new SearchGitLabProjectFunction());
 		TGitLabProjectName arg = new TGitLabProjectName();
 		arg.setName("tedros");
-		assertSuccess(asMap(fn.execute(arg, null)), "gitlab_projects_searched", "projects");
+		assertSuccess(asMap(fn.execute(arg, ctx())), "gitlab_projects_searched", "projects");
 	}
 
 	@Test
@@ -152,14 +161,14 @@ public class GitLabFunctionsTest {
 		TGitLabBranch arg = new TGitLabBranch();
 		arg.setProjectId(1L);
 		arg.setBranchName("main");
-		assertSuccess(asMap(fn.execute(arg, null)), "gitlab_repository_branch_retrieved", "branch");
+		assertSuccess(asMap(fn.execute(arg, ctx())), "gitlab_repository_branch_retrieved", "branch");
 	}
 
 	@Test
 	public void listBranchesSuccess() {
 		when(gateway.getRepositoryBranches(anyLong())).thenReturn(List.of());
 		var fn = withGateway(new SearchGitLabRepositoryBranchesFunction());
-		assertSuccess(asMap(fn.execute(projectId(1L), null)),
+		assertSuccess(asMap(fn.execute(projectId(1L), ctx())),
 				"gitlab_repository_branches_retrieved", "branches");
 	}
 
@@ -172,14 +181,14 @@ public class GitLabFunctionsTest {
 		TGitLabCommit arg = new TGitLabCommit();
 		arg.setProjectId(1L);
 		arg.setCommitSha("abc123");
-		assertSuccess(asMap(fn.execute(arg, null)), "gitlab_repository_commit_retrieved", "commit");
+		assertSuccess(asMap(fn.execute(arg, ctx())), "gitlab_repository_commit_retrieved", "commit");
 	}
 
 	@Test
 	public void listCommitsSuccess() {
 		when(gateway.getRepositoryCommits(anyLong())).thenReturn(List.of());
 		var fn = withGateway(new SearchGitLabRepositoryCommitsFunction());
-		assertSuccess(asMap(fn.execute(projectId(1L), null)),
+		assertSuccess(asMap(fn.execute(projectId(1L), ctx())),
 				"gitlab_repository_commits_retrieved", "commits");
 	}
 
@@ -190,7 +199,7 @@ public class GitLabFunctionsTest {
 		TGitLabCommit arg = new TGitLabCommit();
 		arg.setProjectId(1L);
 		arg.setCommitSha("abc123");
-		assertSuccess(asMap(fn.execute(arg, null)),
+		assertSuccess(asMap(fn.execute(arg, ctx())),
 				"gitlab_repository_commit_diff_retrieved", "commit_diff");
 	}
 
@@ -201,27 +210,27 @@ public class GitLabFunctionsTest {
 		TGitLabMergeRequest arg = new TGitLabMergeRequest();
 		arg.setProjectId(1L);
 		arg.setMergeRequestIid(9L);
-		Map<String, Object> ok = asMap(fn.execute(arg, null));
+		Map<String, Object> ok = asMap(fn.execute(arg, ctx()));
 		assertSuccess(ok, "gitlab_merge_request_raw_diffs_retrieved", "raw_diffs");
 		assertEquals("diff --git a b", ok.get("raw_diffs"));
 
 		when(gateway.getMergeRequestRawDiffs(anyLong(), anyLong()))
 				.thenThrow(new java.io.IOException("timeout"));
-		assertError(asMap(fn.execute(arg, null)), "gitlab_merge_request_raw_diffs_error", "timeout");
+		assertError(asMap(fn.execute(arg, ctx())), "gitlab_merge_request_raw_diffs_error", "timeout");
 	}
 
 	@Test
 	public void openedMergeRequestsSuccess() {
 		when(gateway.getOpenedMergeRequests(anyLong())).thenReturn(List.of());
 		var fn = withGateway(new SearchGitLabOpenedMergeRequestFunction());
-		assertSuccess(asMap(fn.execute(projectId(1L), null)),
+		assertSuccess(asMap(fn.execute(projectId(1L), ctx())),
 				"gitlab_opened_merge_requests_retrieved", "opened_merge_requests");
 	}
 
 	@Test
 	public void missingConfigBecomesFriendlyErrorResult() {
 		var fn = withoutConfig(new ListAllGitLabProjectFunction());
-		Map<String, Object> result = asMap(fn.execute(new Object(), null));
+		Map<String, Object> result = asMap(fn.execute(new Object(), ctx()));
 		assertEquals(TServerFunctionConstants.ERROR, result.get(TServerFunctionConstants.STATUS));
 		assertEquals(TIntegrationGatewayProvider.GITLAB_NOT_CONFIGURED,
 				result.get(TServerFunctionConstants.ERROR_MESSAGE));

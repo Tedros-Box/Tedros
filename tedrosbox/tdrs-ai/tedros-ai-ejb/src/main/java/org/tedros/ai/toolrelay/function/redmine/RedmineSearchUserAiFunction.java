@@ -60,7 +60,7 @@ public class RedmineSearchUserAiFunction implements TServerAiFunction {
 		RedmineUserFilter v = (RedmineUserFilter) arg;
 		try {
 			LOGGER.info("Redmine searching user by name: {}", v.getUserName());
-			RedmineApiGateway gateway = gateways.redmineGateway();
+			RedmineApiGateway gateway = gateways.redmineGateway(ctx);
 
 			List<TRedmineUser> users = gateway.findUser(v.getUserName());
 
