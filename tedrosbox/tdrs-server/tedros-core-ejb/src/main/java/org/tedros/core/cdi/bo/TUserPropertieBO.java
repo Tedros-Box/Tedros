@@ -1,8 +1,8 @@
 package org.tedros.core.cdi.bo;
 
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TUserPropertie;
 import org.tedros.core.cdi.eao.TUserPropertieEao;
-import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.server.cdi.bo.TGenericBO;
 
 import jakarta.enterprise.context.RequestScoped;

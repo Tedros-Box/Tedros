@@ -1,11 +1,11 @@
 package org.tedros.core.ejb.service;
 
 import org.tedros.common.domain.TType;
+import org.tedros.common.model.TDomainPropertie;
 import org.tedros.common.model.TFileEntity;
 import org.tedros.core.cdi.bo.TDomainPropertieBO;
 import org.tedros.core.cdi.bo.TPropertieBO;
 import org.tedros.core.cdi.bo.TUserPropertieBO;
-import org.tedros.core.setting.model.TDomainPropertie;
 import org.tedros.server.ejb.service.TEjbService;
 
 import jakarta.ejb.LocalBean;

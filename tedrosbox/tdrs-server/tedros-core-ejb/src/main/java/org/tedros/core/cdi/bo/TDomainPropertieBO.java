@@ -4,14 +4,14 @@ import java.util.List;
 import java.util.Optional;
 
 import org.tedros.common.domain.TType;
+import org.tedros.common.model.TDomainPropertie;
+import org.tedros.common.model.TPropertie;
+import org.tedros.common.model.TUserPropertie;
 import org.tedros.core.cdi.eao.TDomainPropertieEao;
 import org.tedros.core.cdi.eao.TPropertieEao;
 import org.tedros.core.cdi.eao.TUserEao;
 import org.tedros.core.cdi.eao.TUserPropertieEao;
 import org.tedros.core.security.model.TUser;
-import org.tedros.core.setting.model.TDomainPropertie;
-import org.tedros.core.setting.model.TPropertie;
-import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.server.cdi.bo.TGenericBO;
 import org.tedros.server.util.TLoggerUtil;
 

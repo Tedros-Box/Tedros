@@ -1,4 +1,4 @@
-package org.tedros.core.setting.model;
+package org.tedros.common.model;
 
 import java.io.Serializable;
 import java.util.Arrays;

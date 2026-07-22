@@ -7,8 +7,8 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TPropertie;
 import org.tedros.core.cdi.bo.TPropertieBO;
-import org.tedros.core.setting.model.TPropertie;
 import org.tedros.server.cdi.bo.ITGenericBO;
 import org.tedros.server.ejb.service.TEjbService;
 

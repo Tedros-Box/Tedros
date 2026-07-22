@@ -1,8 +1,8 @@
 package org.tedros.core.ejb.service;
 
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TUserPropertie;
 import org.tedros.core.cdi.bo.TUserPropertieBO;
-import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.server.ejb.service.TEjbService;
 
 import jakarta.ejb.LocalBean;

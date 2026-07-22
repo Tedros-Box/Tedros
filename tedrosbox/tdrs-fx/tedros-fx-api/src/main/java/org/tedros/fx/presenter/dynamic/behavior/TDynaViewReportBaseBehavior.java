@@ -8,6 +8,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 import org.tedros.api.presenter.view.TViewMode;
+import org.tedros.common.model.TReportPropertie;
 import org.tedros.core.ITModule;
 import org.tedros.core.TLanguage;
 import org.tedros.core.annotation.security.TAuthorizationType;
@@ -18,7 +19,6 @@ import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.message.TMessage;
 import org.tedros.core.message.TMessageType;
 import org.tedros.core.service.remote.TEjbServiceLocator;
-import org.tedros.core.setting.model.TReportPropertie;
 import org.tedros.fx.annotation.presenter.TBehavior;
 import org.tedros.fx.exception.TException;
 import org.tedros.fx.exception.TValidatorException;

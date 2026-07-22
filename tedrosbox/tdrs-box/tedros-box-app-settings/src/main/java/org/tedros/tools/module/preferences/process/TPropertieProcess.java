@@ -6,11 +6,11 @@ package org.tedros.tools.module.preferences.process;
 import java.util.List;
 
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TPropertie;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.security.model.TUser;
 import org.tedros.core.service.remote.TEjbServiceLocator;
-import org.tedros.core.setting.model.TPropertie;
 import org.tedros.fx.exception.TProcessException;
 import org.tedros.fx.process.TEntityProcess;
 import org.tedros.server.result.TResult;

@@ -2,14 +2,14 @@ package org.tedros.core.ejb.controller;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TPropertie;
+import org.tedros.common.model.TReportPropertie;
 import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.domain.DomainApp;
 import org.tedros.core.domain.TSystemPropertie;
 import org.tedros.core.ejb.service.TFileEntityService;
 import org.tedros.core.ejb.service.TPropertieService;
 import org.tedros.core.ejb.timer.TNotifyTimer;
-import org.tedros.core.setting.model.TPropertie;
-import org.tedros.core.setting.model.TReportPropertie;
 import org.tedros.server.ejb.controller.ITSecurityController;
 import org.tedros.server.ejb.controller.TSecureEjbController;
 import org.tedros.server.result.TResult;

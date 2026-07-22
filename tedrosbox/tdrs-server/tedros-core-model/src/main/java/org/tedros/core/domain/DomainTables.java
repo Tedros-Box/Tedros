@@ -17,9 +17,6 @@ public interface DomainTables {
 	final static String module_autorization = "module_autorization";
 	final static String profile_autorization = "profile_autorization";
 	final static String authorization = "autorization";
-	final static String domain_propertie = "domain_propertie";
-	final static String propertie = "propertie";
-	final static String user_propertie = "user_propertie";
 	final static String profile = "profile";
 	final static String notify = "notify";
 	final static String notifyLog = "notify_log";

@@ -7,18 +7,21 @@
 		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
 		<jta-data-source>tedrosDataSource</jta-data-source>
 		
+		<class>org.tedros.common.model.TByteEntity</class>	
+		<class>org.tedros.common.model.TFileEntity</class>
+		<class>org.tedros.common.model.TPropertie</class>
+		<class>org.tedros.common.model.TDomainPropertie</class>
+		<class>org.tedros.common.model.TUserPropertie</class>
+		<class>org.tedros.common.model.TMimeType</class>
+		
 		<class>org.tedros.core.security.model.TUser</class>
 		<class>org.tedros.core.security.model.TProfile</class>
 		<class>org.tedros.core.security.model.TAuthorization</class>
-		<class>org.tedros.core.setting.model.TPropertie</class>
-		<class>org.tedros.core.setting.model.TDomainPropertie</class>
-		<class>org.tedros.core.setting.model.TUserPropertie</class>
 		<class>org.tedros.core.security.model.TAuditLog</class>
-		<class>org.tedros.common.model.TByteEntity</class>	
-		<class>org.tedros.common.model.TFileEntity</class>
+		
 		<class>org.tedros.core.notify.model.TNotify</class>
 		<class>org.tedros.core.notify.model.TNotifyLog</class>
-		<class>org.tedros.common.model.TMimeType</class>
+		
 		<class>org.tedros.core.ai.model.TAiCompletion</class>
 		<class>org.tedros.core.ai.model.TAiCreateImage</class>
 		<class>org.tedros.core.ai.model.TAiImage</class>

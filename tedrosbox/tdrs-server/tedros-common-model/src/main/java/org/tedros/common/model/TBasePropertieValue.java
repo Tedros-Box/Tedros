@@ -1,6 +1,5 @@
-package org.tedros.core.setting.model;
+package org.tedros.common.model;
 
-import org.tedros.common.model.TFileEntity;
 import org.tedros.server.entity.TVersionEntity;
 
 import jakarta.persistence.CascadeType;

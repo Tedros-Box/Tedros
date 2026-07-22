@@ -1,8 +1,8 @@
 package org.tedros.core.cdi.bo;
 
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TPropertie;
 import org.tedros.core.cdi.eao.TPropertieEao;
-import org.tedros.core.setting.model.TPropertie;
 import org.tedros.server.cdi.bo.TGenericBO;
 import org.tedros.server.util.TLoggerUtil;
 

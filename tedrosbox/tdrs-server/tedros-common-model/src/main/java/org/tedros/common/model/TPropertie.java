@@ -1,7 +1,7 @@
-package org.tedros.core.setting.model;
+package org.tedros.common.model;
 
-import org.tedros.core.domain.DomainSchema;
-import org.tedros.core.domain.DomainTables;
+import org.tedros.common.domain.DomainSchema;
+import org.tedros.common.domain.DomainTables;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = DomainTables.propertie, schema = DomainSchema.tedros_core,
+@Table(name = DomainTables.propertie, schema = DomainSchema.tedros_common,
 uniqueConstraints = @UniqueConstraint(columnNames = { "domain_propertie_id" }))
 public class TPropertie extends TBasePropertieValue {
 	
