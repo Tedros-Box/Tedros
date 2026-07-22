@@ -5,14 +5,14 @@ package org.tedros.tools.module.preferences;
 
 
 import org.tedros.common.model.TMimeType;
+import org.tedros.common.model.TPropertie;
+import org.tedros.common.model.TUserPropertie;
 import org.tedros.core.TModule;
 import org.tedros.core.annotation.TItem;
 import org.tedros.core.annotation.TView;
 import org.tedros.core.annotation.security.TAuthorizationType;
 import org.tedros.core.annotation.security.TSecurity;
 import org.tedros.core.domain.DomainApp;
-import org.tedros.core.setting.model.TPropertie;
-import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.module.preferences.model.TMimeTypeMV;
 import org.tedros.tools.module.preferences.model.TPropertieMV;

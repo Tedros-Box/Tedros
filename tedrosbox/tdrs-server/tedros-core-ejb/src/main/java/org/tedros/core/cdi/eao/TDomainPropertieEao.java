@@ -5,7 +5,7 @@ package org.tedros.core.cdi.eao;
 
 import java.util.Optional;
 
-import org.tedros.core.setting.model.TDomainPropertie;
+import org.tedros.common.model.TDomainPropertie;
 import org.tedros.server.cdi.eao.TGenericEAO;
 
 import jakarta.enterprise.context.RequestScoped;

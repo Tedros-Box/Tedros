@@ -3,13 +3,13 @@
  */
 package org.tedros.tools.module.preferences.model;
 
+import org.tedros.common.model.TDomainPropertie;
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TPropertie;
 import org.tedros.core.annotation.security.TAuthorizationType;
 import org.tedros.core.annotation.security.TSecurity;
 import org.tedros.core.controller.TPropertieController;
 import org.tedros.core.domain.DomainApp;
-import org.tedros.core.setting.model.TDomainPropertie;
-import org.tedros.core.setting.model.TPropertie;
 import org.tedros.fx.TUsualKey;
 import org.tedros.fx.annotation.control.TFileField;
 import org.tedros.fx.annotation.control.TGenericType;

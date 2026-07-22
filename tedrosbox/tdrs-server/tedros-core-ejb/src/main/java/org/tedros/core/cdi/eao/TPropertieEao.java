@@ -8,7 +8,7 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.Query;
 
 import org.tedros.common.model.TFileEntity;
-import org.tedros.core.setting.model.TPropertie;
+import org.tedros.common.model.TPropertie;
 import org.tedros.server.cdi.eao.TGenericEAO;
 
 /**

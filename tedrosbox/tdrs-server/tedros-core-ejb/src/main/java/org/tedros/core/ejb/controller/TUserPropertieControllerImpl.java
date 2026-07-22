@@ -1,10 +1,10 @@
 package org.tedros.core.ejb.controller;
 
 import org.tedros.common.model.TFileEntity;
+import org.tedros.common.model.TUserPropertie;
 import org.tedros.core.controller.TUserPropertieController;
 import org.tedros.core.domain.DomainApp;
 import org.tedros.core.ejb.service.TUserPropertieService;
-import org.tedros.core.setting.model.TUserPropertie;
 import org.tedros.server.ejb.controller.ITSecurityController;
 import org.tedros.server.ejb.controller.TSecureEjbController;
 import org.tedros.server.result.TResult;
