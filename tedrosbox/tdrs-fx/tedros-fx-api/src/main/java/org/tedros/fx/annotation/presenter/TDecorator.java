@@ -55,6 +55,11 @@ public @interface TDecorator {
 	public String saveButtonText() default TDefaultValue.TVIEW_saveButtonText;
 	
 	/**
+	 * Set the save all button text
+	 * */
+	public String saveAllButtonText() default TDefaultValue.TVIEW_saveAllButtonText;
+	
+	/**
 	 * Set the search button text
 	 * */
 	public String searchButtonText() default TDefaultValue.TVIEW_searchButtonText;
@@ -202,6 +207,15 @@ public @interface TDecorator {
 	 * </pre>
 	 * */
 	public boolean buildSaveButton() default true;
+	
+	/**
+	 * <pre>
+	 * Build the Save All button
+	 * 
+	 * Default value: true
+	 * </pre>
+	 * */
+	public boolean buildSaveAllButton() default true;
 
 	/**
 	 * <pre>

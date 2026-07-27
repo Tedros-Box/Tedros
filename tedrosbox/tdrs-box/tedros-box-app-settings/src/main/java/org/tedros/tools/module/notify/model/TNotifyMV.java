@@ -102,7 +102,7 @@ import javafx.scene.layout.Priority;
 		), showSearch=true, showOrderBy=true),
 	presenter=@TPresenter(
 		decorator = @TDecorator(viewTitle=ToolsKey.VIEW_NOTIFY, buildModesRadioButton=false),
-		behavior=@TBehavior(type=TNotifyBehaviour.class, saveOnlyChangedModels=false, saveAllModels=false)))
+		behavior=@TBehavior(type=TNotifyBehaviour.class, saveOnlyChangedModels=true)))
 @TSecurity(id=DomainApp.NOTIFY_FORM_ID, appName=ToolsKey.APP_TOOLS, 
 moduleName=ToolsKey.MODULE_NOTIFY, viewName=ToolsKey.VIEW_NOTIFY,
 allowedAccesses={	TAuthorizationType.VIEW_ACCESS, TAuthorizationType.EDIT,  

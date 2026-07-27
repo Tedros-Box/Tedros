@@ -52,7 +52,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.WeakListChangeListener;
 import javafx.concurrent.Worker.State;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -103,7 +105,6 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 
 
 	protected boolean filterByLoggedUser;
-	protected boolean saveAllModels;
 	protected boolean saveOnlyChangedModel;
 	protected boolean runNewActionAfterSave;
 
@@ -136,7 +137,6 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 			
 			final TBehavior tBehavior = presenter.getPresenterAnnotation().behavior();
 			
-			saveAllModels = tBehavior.saveAllModels();
 			saveOnlyChangedModel = tBehavior.saveOnlyChangedModels();
 			runNewActionAfterSave = tBehavior.runNewActionAfterSave();
 			importFileModelViewClass = tBehavior.importModelViewClass();
@@ -290,10 +290,95 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 		if(isUserAuthorized(TAuthorizationType.SAVE)){
 			final Button saveButton = this.decorator.gettSaveButton();
 			if(saveButton!=null) {
-				EventHandler<ActionEvent> eh = e -> saveAction();
+				EventHandler<ActionEvent> eh = e -> {
+					final ObservableList<M> modelsViewsList = (getModelView()!=null) 
+										? FXCollections.observableList(Arrays.asList(getModelView())) 
+											: null;
+					saveAction(modelsViewsList);
+				};
 				super.getListenerRepository().add("saveButtonClickEH", eh);
 				saveButton.setOnAction(new WeakEventHandler<>(eh));
 			}
+		}
+	}
+	
+	/**
+	 * Config the save button
+	 * */
+	public void configSaveAllButton() {
+		if(isUserAuthorized(TAuthorizationType.SAVE)){
+			final Button saveAllButton = this.decorator.gettSaveAllButton();
+			if(saveAllButton!=null) {
+				EventHandler<ActionEvent> eh = e -> {
+					saveAction(getModels());
+				};
+				super.getListenerRepository().add("saveAllButtonClickEH", eh);
+				saveAllButton.setOnAction(new WeakEventHandler<>(eh));
+				
+				ChangeListener<TActionState> chl00 = (a,o,n) -> {
+					switch(n.getType()) {
+					case ADD:
+					case CANCEL:
+					case CLEAN:
+					case CLOSE:
+					case DELETE:
+					case NEW:
+					case SAVE:
+						checkSaveAllButtonDisableStatus();
+						break;
+					default:
+						break;
+					
+					}
+				};
+				super.getListenerRepository().add("checkSaveAllButtonDisableStatusChl", chl00);
+				actionStateProperty().addListener(new WeakChangeListener<>(chl00));				
+				
+				ListChangeListener<M> chl01 = (l) -> {
+					if(l.next())
+						l.getAddedSubList().forEach(m->{
+							addModelChangedListener(m);
+						});
+					l.getRemoved().forEach(m->{
+						checkSaveAllButtonDisableStatus();
+					});
+				};
+				
+				super.getListenerRepository().add("listviewSaveAllChl", chl01);
+				
+				getModels().addListener(new WeakListChangeListener<>(chl01));
+				getModels().stream().forEach(m->addModelChangedListener(m));
+				checkSaveAllButtonDisableStatus();
+			}
+				
+			
+		}
+	}
+	
+	@Override
+	public void runAfterLoadModelViewList() {
+		checkSaveAllButtonDisableStatus();
+	}
+
+	private void addModelChangedListener(M m){
+		ChangeListener<Number> chl99 = m.getListenerRepository().get("hashcodeItemChangedChl");
+		if(chl99==null) {
+			chl99 = (a,o,n) -> {		
+				checkSaveAllButtonDisableStatus();
+			};
+			m.getListenerRepository().add("hashcodeItemChangedChl", chl99);
+			m.lastHashCodeProperty().addListener(new WeakChangeListener<>(chl99));
+		}
+	}
+
+	private void checkSaveAllButtonDisableStatus() {
+		if(decorator!=null && decorator.gettSaveAllButton()!=null) {
+			if(getModels()!=null && getModels().stream().parallel().filter(m->m.isChanged() || (m.getModel() instanceof ITEntity entity && entity.isNew()))
+				.count()>0) {
+				 decorator.gettSaveAllButton().setDisable(false);
+			 }else {
+				 decorator.gettSaveAllButton().setDisable(true);
+			 }
 		}
 	}
 	
@@ -567,18 +652,17 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	/**
 	 * Perform this action when save button onAction is triggered.
 	 * */
-	public void saveAction() {
+	public void saveAction(final ObservableList<M> modelsViewsList) {
 		setActionState(new TActionState<>(TActionType.SAVE, TProcessResult.RUNNING));
 		if(this.actionHelper.runBefore(TActionType.SAVE)){
 			try{
 				boolean flag = true;
-				ITModel model = this.getModelView().getModel();
-				boolean runNewAction = model instanceof ITEntity iTEntity 
+				boolean runNewAction = this.getModelView()!=null && this.getModelView().getModel() instanceof ITEntity iTEntity 
 						? iTEntity.isNew() && this.runNewActionAfterSave 
 								: this.runNewActionAfterSave;				
 				
-				Consumer<Boolean> finishCallback = succefull ->{
-					if(succefull) {
+				Consumer<Boolean> finishCallback = successful ->{
+					if(successful) {
 						if(runNewAction) {
 							getView().tModalVisibleProperty().addListener(new ChangeListener<Boolean>() {
 								@Override
@@ -599,10 +683,11 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 						actionHelper.runAfter(TActionType.SAVE);
 						setActionState(new TActionState<>(TActionType.SAVE, TProcessResult.FINISHED));
 					}
+					checkSaveAllButtonDisableStatus();
 				};
 				
 				if(getEntityProcessClass()!=null || (StringUtils.isNotBlank(this.serviceName) && this.modelClass!=null)){
-					runSaveEntityProcess(finishCallback);
+					runSaveEntityProcess(modelsViewsList, finishCallback);
 					flag = false;
 				}else if(getModelProcessClass()!=null){
 					runModelProcess(TActionType.SAVE, finishCallback);
@@ -624,15 +709,15 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private void runSaveEntityProcess(Consumer<Boolean> callback)
+	private void runSaveEntityProcess(final ObservableList<M> modelsViewsList, Consumer<Boolean> callback)
 			throws Exception, TValidatorException, Throwable {
 		//get the list
-		final ObservableList<M> modelsViewsList = (saveAllModels && getModels()!=null) 
+		/*final ObservableList<M> modelsViewsList = (saveAllModels && getModels()!=null) 
 				? getModels() 
 						: (getModelView()!=null) 
 							? FXCollections.observableList(Arrays.asList(getModelView())) 
 								: null;
-						
+		*/
 		if(modelsViewsList == null)
 			throw new Exception("None entity found to save!");
 						

@@ -63,4 +63,9 @@ extends TDynaViewReportBaseBehavior<M, E> {
 	public String canInvalidate() {
 		return null;
 	}
+	
+	@Override
+	public void runAfterLoadModelViewList() {		
+		
+	}
 }

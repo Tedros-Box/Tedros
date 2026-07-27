@@ -398,7 +398,7 @@ public class LoginBehavior extends TDynaViewCrudBaseBehavior<LoginMV, Login> {
 		nameField = (TTextField) nameFieldBox.gettControl();
 		nameField.setDisable(true);
 		
-		EventHandler<ActionEvent> ev1 = e -> super.saveAction();
+		EventHandler<ActionEvent> ev1 = e -> super.saveAction(getModels());
 		
 		super.getListenerRepository().add("valUserPassEvh", ev1);
 		
@@ -421,7 +421,7 @@ public class LoginBehavior extends TDynaViewCrudBaseBehavior<LoginMV, Login> {
 		profileComboBox.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
 		    if (event.getCode() == KeyCode.ENTER) {
 		        // Aqui vai a sua lógica de salvamento
-		        super.saveAction(); // Ou chame o método que você quer
+		        super.saveAction(getModels()); // Ou chame o método que você quer
 		        event.consume(); // Consome o evento para evitar comportamentos padrão indesejados
 		    }
 		});

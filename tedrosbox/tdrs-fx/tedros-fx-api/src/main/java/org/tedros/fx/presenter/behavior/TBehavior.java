@@ -147,7 +147,7 @@ implements ITBehavior<M, P>{
 		buildFormStatusProperty.addListener(loadChl);
 		
 	}
-
+		
 	private void buildFormTask() {
 		this.buildFormStatusProperty.setValue(TBuildFormStatus.BUILDING);
 		
@@ -312,6 +312,7 @@ implements ITBehavior<M, P>{
 	@Override
 	public void loadModelView(M modelView) {
 		setModelView(modelView);
+		Platform.runLater(()->runAfterLoadModelViewList());
 	}
 	
 	/* (non-Javadoc)
@@ -344,6 +345,7 @@ implements ITBehavior<M, P>{
 	@Override
 	public void setModelViewList(ObservableList<M> models) {
 		this.models = models;
+		Platform.runLater(()->runAfterLoadModelViewList());
 	}
 	
 	/* (non-Javadoc)
@@ -357,7 +359,10 @@ implements ITBehavior<M, P>{
 			this.models.clear();
 			this.models.addAll(models);
 		}
+		Platform.runLater(()->runAfterLoadModelViewList());		
 	}
+	
+	public abstract void runAfterLoadModelViewList();
 
 	/* (non-Javadoc)
 	 * @see org.tedros.api.presenter.behavior.ITBehavior#getModels()

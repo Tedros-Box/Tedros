@@ -29,7 +29,7 @@ import org.tedros.fx.presenter.page.TSearch;
 import org.tedros.fx.process.TEntityProcess;
 import org.tedros.fx.process.TPaginationProcess;
 import org.tedros.fx.process.TProcess;
-import org.tedros.fx.util.TEntityListViewCallback;
+import org.tedros.fx.util.TEntityCheckboxListViewCallback;
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.query.TCompareOp;
 import org.tedros.server.query.TSelect;
@@ -42,10 +42,16 @@ import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Worker.State;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 /**
  * The behavior of the master detail view. 
@@ -93,6 +99,7 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 		configColapseButton();
 		configNewButton();
 		configSaveButton();
+		configSaveAllButton();
 		configDeleteButton();
 		configImportButton();
 		configPrintButton();
@@ -342,7 +349,8 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 	 * @param totalRows
 	 */
 	private void processPagination(Long totalRows) {
-		this.decorator.gettPaginator().tReload(totalRows);
+		if(this.decorator.gettPaginator()!=null)
+			this.decorator.gettPaginator().tReload(totalRows);
 	}
 	
 	/**
@@ -462,14 +470,37 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 		try {
 			Callback<ListView<M>, ListCell<M>> callBack = ((tBehavior!=null) 
 							? tBehavior.listViewCallBack().getDeclaredConstructor().newInstance() 
-									: new TEntityListViewCallback<M>());
+									: new TEntityCheckboxListViewCallback<M>());
 			
 			final ListView<M> listView = this.decorator.gettListView();
 			listView.setCellFactory(callBack);
+			
+			if(callBack instanceof TEntityCheckboxListViewCallback withCheckBox) {				
+				VBox layout = this.decorator.gettListViewLayout();
+				
+				Label title = (Label) layout.getChildren().remove(0);
+				CheckBox checkBox = new CheckBox();
+				checkBox.setOnAction(e -> {
+                    if (checkBox.isSelected()) {
+                    	withCheckBox.getSelectedItems().clear();
+                    	withCheckBox.getSelectedItems().addAll(listView.getItems());
+                    } else {
+                    	withCheckBox.getSelectedItems().clear();
+                    }
+                    listView.refresh();
+                });
+				
+				HBox hbox = new HBox();
+				HBox.setMargin(checkBox, new Insets(5));
+				hbox.setAlignment(Pos.CENTER_LEFT);				
+				layout.getChildren().add(0, new HBox(checkBox, title));
+			}
+			
+			
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
 		}
-	}	
+	}
 	
 	/**
 	 * Config the ListView and pagination listener

@@ -58,9 +58,8 @@ import javafx.beans.property.SimpleStringProperty;
 			),showSearch=true, showOrderBy=true),
 		presenter=@TPresenter(decorator = @TDecorator(viewTitle=ToolsKey.VIEW_SYSTEM_PROPERTIES,
 			buildModesRadioButton=false, buildNewButton = false, buildDeleteButton = false),
-		behavior=@TBehavior(runNewActionAfterSave=false, saveAllModels=false, 
-		saveOnlyChangedModels=true, type=TMasterCrudViewBehavior.class, 
-		action=ReloadPropertiesAction.class)))
+		behavior=@TBehavior(type=TMasterCrudViewBehavior.class, 
+			action=ReloadPropertiesAction.class)))
 @TSecurity(	id=DomainApp.PROPERTIE_FORM_ID, 
 			appName=ToolsKey.APP_TOOLS, 
 			moduleName=ToolsKey.MODULE_PREFERENCES, 

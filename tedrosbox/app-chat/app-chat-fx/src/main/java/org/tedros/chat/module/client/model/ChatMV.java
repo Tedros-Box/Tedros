@@ -74,7 +74,7 @@ import javafx.scene.layout.Priority;
 			viewTitle=CHATKey.VIEW_CLIENT_MESSAGES, cancelButtonText=TFxKey.BUTTON_BACK,
 			buildSaveButton=false, buildModesRadioButton=false, buildCollapseButton=false),
 		behavior=@TBehavior(type=ChatBehaviour.class, listViewCallBack=ChatListViewCallback.class, 
-			runNewActionAfterSave=false, saveAllModels=false)))
+			runNewActionAfterSave=false)))
 @TSecurity(	id=DomainApp.CHAT_FORM_ID, appName=CHATKey.APP_CHAT, 
 	moduleName=CHATKey.MODULE_MESSAGES, viewName=CHATKey.VIEW_CLIENT_MESSAGES,
 	allowedAccesses= {TAuthorizationType.VIEW_ACCESS, TAuthorizationType.SAVE, 

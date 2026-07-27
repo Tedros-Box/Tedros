@@ -9,6 +9,7 @@ public interface TDefaultValue {
 
 	final static String TVIEW_newButtonText = TFxKey.BUTTON_NEW;
 	final static String TVIEW_saveButtonText = TFxKey.BUTTON_SAVE;
+	final static String TVIEW_saveAllButtonText = TFxKey.BUTTON_SAVE_ALL;
 	final static String TVIEW_editButtonText = TFxKey.BUTTON_EDIT;
 	final static String TVIEW_cancelButtonText = TFxKey.BUTTON_CANCEL;
 	final static String TVIEW_deleteButtonText = TFxKey.BUTTON_DELETE;

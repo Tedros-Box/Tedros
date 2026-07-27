@@ -11,7 +11,7 @@ import org.tedros.fx.model.TEntityModelView;
 import org.tedros.fx.model.TImportModelView;
 import org.tedros.fx.model.TModelView;
 import org.tedros.fx.presenter.entity.behavior.TMasterCrudViewBehavior;
-import org.tedros.fx.util.TEntityListViewCallback;
+import org.tedros.fx.util.TEntityCheckboxListViewCallback;
 import org.tedros.server.entity.ITEntity;
 
 import javafx.scene.control.ListView;
@@ -30,17 +30,7 @@ public @interface TBehavior {
 	 *</pre>  
 	 * */
 	@SuppressWarnings("rawtypes")
-	public Class<? extends Callback> listViewCallBack() default TEntityListViewCallback.class;
-
-	/**
-	 * <pre>
-	 * Process the save action for all changed entity's if false only the current 
-	 * entity in edition is processed.
-	 * 
-	 * Default: true
-	 * </pre>
-	 * */
-	public boolean saveAllModels() default true;
+	public Class<? extends Callback> listViewCallBack() default TEntityCheckboxListViewCallback.class;
 	
 	/**
 	 * <pre>

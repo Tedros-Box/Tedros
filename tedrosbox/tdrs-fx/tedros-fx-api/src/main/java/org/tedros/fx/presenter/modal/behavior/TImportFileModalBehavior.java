@@ -179,4 +179,9 @@ extends TDynaViewActionBaseBehavior<M, E> {
 			LOGGER.error(e1.getMessage(), e1);
 		}
 	}
+
+	@Override
+	public void runAfterLoadModelViewList() {
+		
+	}
 }

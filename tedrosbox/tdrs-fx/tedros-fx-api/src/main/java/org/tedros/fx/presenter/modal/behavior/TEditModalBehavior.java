@@ -139,7 +139,7 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 			try{
 				
 				//recupera a lista de models views
-				final ObservableList<M> modelsViewsList = (ObservableList<M>) ((saveAllModels && getModels()!=null) 
+				final ObservableList<M> modelsViewsList = (ObservableList<M>) ((getModels()!=null) 
 						? getModels() 
 								: getModelView()!=null 
 								? FXCollections.observableList(Arrays.asList(getModelView())) 
