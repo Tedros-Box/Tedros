@@ -28,6 +28,7 @@ import org.tedros.fx.annotation.query.TOrder;
 import org.tedros.fx.annotation.query.TQuery;
 import org.tedros.fx.annotation.reader.TFormReaderHtml;
 import org.tedros.fx.model.TEntityModelView;
+import org.tedros.fx.util.TEntityListViewCallback;
 import org.tedros.server.query.TCompareOp;
 import org.tedros.tools.ToolsKey;
 import org.tedros.tools.module.user.action.TAuthorizationLoadAction;
@@ -54,7 +55,7 @@ import javafx.scene.layout.Priority;
 	presenter=@TPresenter(
 		decorator = @TDecorator(viewTitle=ToolsKey.VIEW_AUTHORIZATION, newButtonText=TUsualKey.LOAD,
 			buildDeleteButton=false, buildSaveButton=false, buildCollapseButton=false),
-		behavior=@TBehavior(type=TAuthorizationBehavior.class, action=TAuthorizationLoadAction.class)
+		behavior=@TBehavior(type=TAuthorizationBehavior.class, action=TAuthorizationLoadAction.class, listViewCallBack = TEntityListViewCallback.class)
 	))
 @TSecurity(	id=DomainApp.AUTHORIZATION_FORM_ID, appName=ToolsKey.APP_TOOLS, moduleName=ToolsKey.MODULE_USER, 
 	viewName=ToolsKey.VIEW_AUTHORIZATION, allowedAccesses={TAuthorizationType.VIEW_ACCESS, TAuthorizationType.EDIT, TAuthorizationType.NEW})

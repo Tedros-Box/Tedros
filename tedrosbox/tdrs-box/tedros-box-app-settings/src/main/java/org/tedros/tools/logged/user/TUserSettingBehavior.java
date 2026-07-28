@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 import org.tedros.core.TLanguage;
 import org.tedros.core.context.TedrosContext;
@@ -62,7 +63,7 @@ public class TUserSettingBehavior extends TSaveViewBehavior<TUserSettingModelVie
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 	}
 
 	private void loadTedros() throws IOException {

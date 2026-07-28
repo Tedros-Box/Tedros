@@ -74,47 +74,67 @@ public abstract class TEntityProcess<E extends ITEntity> extends TProcess<List<T
 	
 	/**
 	 * <pre>Add an entity to save </pre>
-	 * @param entidade - The entity to save
+	 * @param entity - The entity to save
 	 * */
-	public void save(E entidade){
-		values.add(entidade);
+	public void save(E entity){
+		values.add(entity);
 		operation = SAVE;
 	}
+	
+	/**
+	 * <pre>Add an entity list to save </pre>
+	 * @param entities - The entity to save
+	 * */
+	public void save(List<E> entities){
+		values.addAll(entities);
+		operation = SAVE;
+	}
+	
 	/**
 	 * <pre>Add an entity to delete</pre>
-	 * @param entidade 
+	 * @param entity 
 	 * */
-	public void delete(E entidade){
-		values.add(entidade);
+	public void delete(E entity){
+		values.add(entity);
 		operation = DELETE;
 	}
+	
+	/**
+	 * <pre>Add an entity list to delete</pre>
+	 * @param entities 
+	 * */
+	public void delete(List<E> entities){
+		values.addAll(entities);
+		operation = DELETE;
+	}
+	
 	/**
 	 * <pre>Add an entity to find by id</pre>
-	 * @param entidade 
+	 * @param entity 
 	 * */
-	public void findById(E entidade){
-		values.add(entidade);
+	public void findById(E entity){
+		values.add(entity);
 		operation = FINDBYID;
 	}
 	/**
 	 * <pre>Add an entity to find</pre>
-	 * @param entidade 
+	 * @param entity 
 	 * */
-	public void find(E entidade){
-		values.add(entidade);
+	public void find(E entity){
+		values.add(entity);
 		operation = FIND;
 	}
 	/**
 	 * <pre>Add an entity to search</pre>
-	 * @param entidade 
+	 * @param entity 
 	 * */
-	public void search(E entidade){
-		values.add(entidade);
+	public void search(E entity){
+		values.add(entity);
 		operation = SEARCH;
 	}
 	/**
 	 * <pre>Add a custom select statements to search</pre>
-	 * @param entidade 
+	 * @param entity 
 	 * */
 	public void search(TSelect<E> select){
 		this.select = select;
@@ -187,17 +207,33 @@ public abstract class TEntityProcess<E extends ITEntity> extends TProcess<List<T
 							case SAVE :
 								for (E entity : values) {
 									if(entity.isNew())
-										entity.setCreatedByUserId(TedrosContext.getLoggedUser().getId());									
-									resultList.add(service!=null 
-										? service.save(entity) 
-											: secure.save(user.getAccessToken(), entity));
+										entity.setCreatedByUserId(TedrosContext.getLoggedUser().getId());
 								}
+								
+								if(values.size()>1) {
+									TResult<List<TResult<E>>> result = service!=null 
+											? service.save(values) 
+													: secure.save(user.getAccessToken(), values);									
+									result.getValue().forEach(res->resultList.add(res));								
+								}else {
+									resultList.add(service!=null 
+											? service.save(values.get(0)) 
+												: secure.save(user.getAccessToken(), values.get(0)));
+								}
+								
 								break;
 							case DELETE :
-								for (E entity : values)
+								if(values.size()>1) {
+									TResult<List<TResult<E>>> result = service!=null 
+											? service.remove(values) 
+													: secure.remove(user.getAccessToken(), values);									
+									result.getValue().forEach(res->resultList.add(res));								
+								}else {
 									resultList.add(service!=null 
-											? service.remove(entity)
-													: secure.remove(user.getAccessToken(), entity));
+											? service.remove(values.get(0)) 
+												: secure.remove(user.getAccessToken(), values.get(0)));
+								}
+								
 								break;
 							case FINDBYID :
 								for (E entity : values)

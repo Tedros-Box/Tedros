@@ -81,7 +81,7 @@ public class ChatBehaviour extends TMasterCrudViewBehavior<ChatMV, Chat> {
 						super.addMessage(new TMessage(TLanguage.getInstance()
 								.getString(CHATKey.MSG_OWNER_REMOVED_CHAT), "Ok", 
 							ev-> {
-							super.remove();
+							super.remove(result->{});
 							super.getView().tHideModal();
 						}));
 						break;

@@ -149,9 +149,11 @@ implements ITBehavior<M, P>{
 	}
 		
 	private void buildFormTask() {
+		
 		this.buildFormStatusProperty.setValue(TBuildFormStatus.BUILDING);
 		
 		Platform.runLater(()-> {
+			if(getModelView()!=null) {
             	try {
             		@SuppressWarnings("unchecked")
 					ITModelForm<M> form = (ITModelForm<M>) (tMode.equals(TViewMode.READER) 
@@ -161,6 +163,9 @@ implements ITBehavior<M, P>{
 				}catch (Exception e) {
 					LOGGER.error(e.getMessage(), e);
 				}
+			}else {
+				this.buildFormStatusProperty.setValue(TBuildFormStatus.CANCELED);
+			}
           });
 	}
 	

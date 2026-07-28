@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.tedros.TedrosBox;
@@ -523,7 +524,7 @@ public class LoginBehavior extends TDynaViewCrudBaseBehavior<LoginMV, Login> {
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 	}
 
 	private void loadTedros(final TUser user) throws IOException {

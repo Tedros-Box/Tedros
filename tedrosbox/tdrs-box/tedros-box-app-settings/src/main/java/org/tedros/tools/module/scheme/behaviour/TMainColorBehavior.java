@@ -3,6 +3,7 @@ package org.tedros.tools.module.scheme.behaviour;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 import org.tedros.api.form.ITModelForm;
 import org.tedros.core.ITModule;
@@ -122,7 +123,7 @@ public class TMainColorBehavior extends TDynaViewCrudBaseBehavior<TMainColorMV, 
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 		
 	}
 

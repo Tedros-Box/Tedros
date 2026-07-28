@@ -13,7 +13,8 @@ public enum TBuildFormStatus {
 	STARTING ("#{tedros.fxapi.status.starting}"),
 	BUILDING("#{tedros.fxapi.status.building}"),
 	LOADING("#{tedros.fxapi.status.loading}"),
-	FINISHED("#{tedros.fxapi.status.finished}");
+	FINISHED("#{tedros.fxapi.status.finished}"),
+	CANCELED("#{tedros.fxapi.status.canceled}");
 	
 	private String value;
 	

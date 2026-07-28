@@ -1,5 +1,7 @@
 package org.tedros.tools.module.scheme.behaviour;
 
+import java.util.function.Consumer;
+
 import org.tedros.api.form.ITModelForm;
 import org.tedros.fx.form.TDefaultForm;
 import org.tedros.fx.form.TProgressIndicatorForm;
@@ -52,7 +54,7 @@ public class TPanelBehavior extends TDynaViewCrudBaseBehavior<TPanelMV, TPanel> 
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 		// TODO Auto-generated method stub
 
 	}
