@@ -102,4 +102,9 @@ extends TDetailFieldBaseBehavior<M, E> {
 	public void loadModelView(M modelView) {
 		super.setModelView(modelView);
 	}
+
+	@Override
+	public void runAfterLoadModelViewList() {
+		
+	}
 }

@@ -11,7 +11,7 @@ import org.tedros.server.result.TResult.TState;
  */
 public enum TProcessResult {
 
-	RUNNING, SUCCESS, ERROR, WARNING, OUT_OF_DATE, NO_RESULT, FINISHED;
+	RUNNING, SUCCESS, ERROR, WARNING, OUT_OF_DATE, NO_RESULT, INCONCLUSIVE, FINISHED;
 	
 	public static TProcessResult get(TState result) {
 		switch(result) {

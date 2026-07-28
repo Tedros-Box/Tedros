@@ -40,6 +40,7 @@ extends TDynaViewSimpleBaseDecorator<M> {
 	private Button tColapseButton;
 	private Button tNewButton;
 	private Button tSaveButton;
+	private Button tSaveAllButton;
 	private Button tDeleteButton;
 	private Button tEditButton;
 	private Button tCancelButton;
@@ -314,6 +315,36 @@ extends TDynaViewSimpleBaseDecorator<M> {
 		if(isUserNotAuthorized(TAuthorizationType.SAVE))
 			tSaveButton.setDisable(true);
 	}
+	/**
+	 * <p>
+	 * Build a button for the save all action.<br><br>
+	 * 
+	 * If the parameter was null this will use the text set up
+	 * in @{@link TPresenter}{decorator= @{@link TDecorator}{saveAllButtonText=''}} 
+	 * but if the given {@link TModelView} was not annotated with {@link TPresenter} 
+	 * or with a custom view annotation which contains a {@link TPresenter} 
+	 * a default string (TAnnotationDefaultValue.TVIEW_saveAllButtonText) will be used.<br><br> 
+	 * 
+	 * This will initialize with "t-button" id.
+	 * </p>
+	 * */
+	public void buildSaveAllButton(String text) {
+		if(text==null){
+			final TPresenter tPresenter = getPresenter().getPresenterAnnotation();
+			tSaveAllButton = new TButton();
+			tSaveAllButton.setText(iEngine.getString(tPresenter==null 
+					? TDefaultValue.TVIEW_saveAllButtonText 
+							: tPresenter.decorator().saveAllButtonText()));
+			tSaveAllButton.setId("t-button");
+		}else {
+			tSaveAllButton = new TButton();
+			tSaveAllButton.setText(iEngine.getString(text));
+			tSaveAllButton.setId("t-button");
+		}
+		
+		if(isUserNotAuthorized(TAuthorizationType.SAVE))
+			tSaveAllButton.setDisable(true);
+	}
 
 	/**
 	 * <p>
@@ -415,6 +446,13 @@ extends TDynaViewSimpleBaseDecorator<M> {
 	 * */
 	public Button gettSaveButton() {
 		return tSaveButton;
+	}
+	
+	/**
+	 * 	Get the save button.
+	 * */
+	public Button gettSaveAllButton() {
+		return tSaveAllButton;
 	}
 
 	/**

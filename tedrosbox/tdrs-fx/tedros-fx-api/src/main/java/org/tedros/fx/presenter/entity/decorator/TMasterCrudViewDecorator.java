@@ -100,6 +100,11 @@ extends TDynaViewCrudBaseDecorator<M> implements ITListViewDecorator<M> {
 			nodes = ArrayUtils.add(nodes, gettSaveButton());
 		}
 		
+		if(tDeco.buildSaveAllButton()) {
+			buildSaveAllButton(null);
+			nodes = ArrayUtils.add(nodes, gettSaveAllButton());
+		}
+		
 		if(tDeco.buildPrintButton()) {
 			buildPrintButton(null);
 			nodes = ArrayUtils.add(nodes, gettPrintButton());

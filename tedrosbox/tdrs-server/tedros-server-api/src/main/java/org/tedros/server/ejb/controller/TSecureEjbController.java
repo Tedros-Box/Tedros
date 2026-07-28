@@ -1,5 +1,6 @@
 package org.tedros.server.ejb.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -228,7 +229,28 @@ public abstract class TSecureEjbController<E extends ITEntity> implements ITSecu
             return processException(token, entity, e);
         }
     }
-
+    
+    @Override
+    @TMethodSecurity({@TMethodPolicie(policie = {TActionPolicie.SAVE, TActionPolicie.NEW})})
+    public TResult<List<TResult<E>>> save(TAccessToken token, List<E> entities) {
+        
+    	List<TResult<E>> results = new ArrayList<>(); 
+    	for(E entity : entities) {
+    		TResult<E> result;
+	    	try {
+	            E e = getService().save(entity);
+	            processEntity(token, e);
+	             result = new TResult<>(TState.SUCCESS, e);
+	        } catch (Exception e) {
+	            result = processException(token, entity, e);
+	        }
+	    	
+	    	results.add(result);
+    	}
+    	
+    	return new TResult<>(TState.SUCCESS, results);
+    }
+    
     @Override
     @TMethodSecurity({@TMethodPolicie(policie = {TActionPolicie.DELETE}, id = "")})
     public TResult<E> remove(TAccessToken token, E entity) {
@@ -238,6 +260,26 @@ public abstract class TSecureEjbController<E extends ITEntity> implements ITSecu
         } catch (Exception e) {
             return processException(token, entity, e);
         }
+    }
+
+    @Override
+    @TMethodSecurity({@TMethodPolicie(policie = {TActionPolicie.DELETE}, id = "")})
+    public TResult<List<TResult<E>>> remove(TAccessToken token, List<E> entities) {
+    	
+    	List<TResult<E>> results = new ArrayList<>(); 
+    	for(E entity : entities) {
+    		TResult<E> result;
+	        try {
+	            getService().remove(entity);
+	            result = new TResult<>(TState.SUCCESS);
+	        } catch (Exception e) {
+	        	result = processException(token, entity, e);
+	        }
+	        
+	        results.add(result);
+    	}
+    	
+    	return new TResult<>(TState.SUCCESS, results);
     }
 
     @Override

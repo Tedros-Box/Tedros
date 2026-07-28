@@ -3,6 +3,7 @@ package org.tedros.server.entity;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.tedros.server.model.ITModel;
 
@@ -31,5 +32,9 @@ public interface ITEntity extends ITModel, Serializable{
 	void addOrderBy(String fieldName);
 	
 	void setOrderBy(List<String> orders);
+	
+	void setClientId(UUID uuid);
+	
+	UUID getClientId();
 	
 }

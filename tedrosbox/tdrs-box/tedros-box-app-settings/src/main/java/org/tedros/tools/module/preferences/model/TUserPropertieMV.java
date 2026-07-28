@@ -58,8 +58,7 @@ filterByLoggedUser=true)
 			),showSearch=true, showOrderBy=true),
 		presenter=@TPresenter(decorator = @TDecorator(viewTitle=ToolsKey.VIEW_USER_PROPERTIES,
 			buildModesRadioButton=false, buildNewButton = false, buildDeleteButton = false),
-		behavior=@TBehavior(runNewActionAfterSave=false, saveAllModels=false, 
-		saveOnlyChangedModels=true, type=TMasterCrudViewBehavior.class)))
+		behavior=@TBehavior(type=TMasterCrudViewBehavior.class)))
 @TSecurity(	id=DomainApp.USER_PROPERTIE_FORM_ID, 
 			appName=ToolsKey.APP_TOOLS, 
 			moduleName=ToolsKey.MODULE_PREFERENCES, 

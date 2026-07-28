@@ -1,5 +1,7 @@
 package org.tedros.fx.presenter.entity.behavior;
 
+import java.util.function.Consumer;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.tedros.api.form.ITModelForm;
 import org.tedros.api.presenter.view.TViewMode;
@@ -10,22 +12,32 @@ import org.tedros.fx.form.TReaderFormBuilder;
 import org.tedros.fx.modal.TMessageBox;
 import org.tedros.fx.model.TEntityModelView;
 import org.tedros.fx.model.TModelView;
+import org.tedros.fx.presenter.behavior.TActionState;
 import org.tedros.fx.presenter.behavior.TActionType;
 import org.tedros.fx.presenter.dynamic.TDynaPresenter;
 import org.tedros.fx.presenter.dynamic.behavior.TDynaViewCrudBaseBehavior;
 import org.tedros.fx.presenter.dynamic.behavior.TDynaViewSimpleBaseBehavior;
 import org.tedros.fx.presenter.dynamic.decorator.TDynaViewCrudBaseDecorator;
 import org.tedros.fx.presenter.entity.decorator.TDetailCrudViewDecorator;
-import org.tedros.fx.util.TEntityListViewCallback;
+import org.tedros.fx.util.TEntityCheckboxListViewCallback;
 import org.tedros.server.entity.ITEntity;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.WeakListChangeListener;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 /**
  * The behavior of the detail view. 
@@ -63,7 +75,7 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 			
 			configModesRadio();
 			
-			configListView();
+			configListViewChangeListener();
 			configListViewCallBack();
 			loadListView();
 			
@@ -95,8 +107,8 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 	}
 		
 	@Override
-	public void startRemoveProcess(boolean removeFromDataBase) {
-		super.startRemoveProcess(false);
+	public void startRemoveProcess(boolean removeFromDataBase, ObservableList<M> selectedEntitiesToRemove) {
+		super.startRemoveProcess(false, selectedEntitiesToRemove);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -115,18 +127,89 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 		try {
 			Callback<ListView<M>, ListCell<M>> callBack = (Callback<ListView<M>, ListCell<M>>) ((tBehavior!=null) 
 					? tBehavior.listViewCallBack().getDeclaredConstructor().newInstance() 
-							: new TEntityListViewCallback<M>());
-			final ListView<M> listView = this.decorator.gettListView();
+							: new TEntityCheckboxListViewCallback<M>());
+			
+			final ListView<M> listView = this.decorator.gettListView();			
 			listView.setCellFactory(callBack);
+			
+			if(callBack instanceof TEntityCheckboxListViewCallback withCheckBox) {
+				VBox layout = this.decorator.gettListViewLayout();
+				
+				Label title = (Label) layout.getChildren().remove(0);
+				CheckBox checkBox = new CheckBox();
+				checkBox.setOnAction(e -> {
+                    if (checkBox.isSelected()) {
+                    	withCheckBox.getSelectedItems().clear();
+                    	withCheckBox.getSelectedItems().addAll(listView.getItems());
+                    } else {
+                    	withCheckBox.getSelectedItems().clear();
+                    }
+                    listView.refresh();
+                });
+				
+				HBox hbox = new HBox();
+				HBox.setMargin(checkBox, new Insets(5));
+				hbox.setAlignment(Pos.CENTER_LEFT);				
+				layout.getChildren().add(0, new HBox(checkBox, title));
+				
+				ListChangeListener<M> selectedToRemoveChl = l -> {
+					if(l.next()) {
+						Button removeBtn = ((TDynaViewCrudBaseDecorator<M>)this.decorator).gettDeleteButton(); 
+						if(getModelView()!=null)
+							return;
+						removeBtn.setDisable(l.getList().size()==0);
+					}
+				};
+				super.getListenerRepository().add("selectedToRemoveChl", selectedToRemoveChl);
+				withCheckBox.getSelectedItems().addListener(new WeakListChangeListener<>(selectedToRemoveChl));
+				
+				ChangeListener<TActionState> chl00 = (a,o,n) -> {
+					switch(n.getType()) {
+					case CANCEL:
+					case CLOSE:
+					case DELETE:
+						Button removeBtn = ((TDynaViewCrudBaseDecorator<M>)this.decorator).gettDeleteButton(); 
+						removeBtn.setDisable(withCheckBox.getSelectedItems().size()==0);
+						break;
+					default:
+						break;
+					
+					}
+				};
+				super.getListenerRepository().add("checkRemoveButtonDisableStatusChl", chl00);
+				actionStateProperty().addListener(new WeakChangeListener<>(chl00));	
+			}
+			
+			
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
 		}
 	}	
+	
+	@Override
+	@SuppressWarnings("unchecked")
+	public ObservableList<M> getModelViewListToDelete(){
+		
+		M selectedModelView = getModelView();
+		
+		final ListView<M> listView = this.decorator.gettListView();
+		Callback<ListView<M>, ListCell<M>> callback = listView.getCellFactory();
+		
+		if(callback instanceof TEntityCheckboxListViewCallback withCheckBox) {
+			ObservableList<M> entitiesToDelete = withCheckBox.getSelectedItems();
+			if(selectedModelView != null && !entitiesToDelete.contains(selectedModelView)) {
+				entitiesToDelete.add(selectedModelView);
+			}
+			return entitiesToDelete;
+		}
+		
+		return super.getModelViewListToDelete();
+	}
 		
 	/**
 	 * Config the ListView listener.
 	 */
-	protected void configListView() {
+	protected void configListViewChangeListener() {
 		
 		ChangeListener<M> chl = (a, o, n) -> {
 			this.processListViewSelectedItem(n);
@@ -139,17 +222,33 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 		.selectedItemProperty()
 		.addListener(new WeakChangeListener<>(chl));
 	}
+	
+	/**
+	 * Remove the selected model from the ListView
+	 */
+	@Override
+	public void remove(Consumer<Boolean> callback) {
+		super.remove(result->{
+			if(result) {
+				final ListView<M> listView = this.decorator.gettListView();
+				listView.getSelectionModel().clearSelection();
+				callback.accept(true);
+			}else {
+				callback.accept(false);
+			}
+		});
+	}
 
 	/**
 	 * Remove the selected item from the ListView
-	 */
+	 *
 	public void remove() {
 		final ListView<M> listView = this.decorator.gettListView();
 		int index = getModels().indexOf(getModelView());
 		listView.getSelectionModel().clearSelection();
 		super.remove(index);
 	}
-	
+	*/
 	@Override
 	public void colapseAction() {
 		if(!this.decorator.isListContentVisible())

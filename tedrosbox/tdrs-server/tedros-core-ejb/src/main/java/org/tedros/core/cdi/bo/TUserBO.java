@@ -1,12 +1,12 @@
 package org.tedros.core.cdi.bo;
 
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
-
 import org.tedros.core.cdi.eao.TUserEao;
 import org.tedros.core.security.model.TProfile;
 import org.tedros.core.security.model.TUser;
 import org.tedros.server.cdi.bo.TGenericBO;
+
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 @RequestScoped
 public class TUserBO extends TGenericBO<TUser> {
@@ -18,7 +18,7 @@ public class TUserBO extends TGenericBO<TUser> {
 	public TUserEao getEao() {
 		return eao;
 	}
-
+		
 	public TUser getUserByLoginPassword(String login, String password) {
 		return eao.getUserByLoginPassword(login, password);
 	}

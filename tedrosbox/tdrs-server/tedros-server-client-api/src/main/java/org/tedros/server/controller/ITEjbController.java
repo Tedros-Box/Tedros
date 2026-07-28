@@ -39,9 +39,19 @@ public interface ITEjbController<E extends ITEntity> extends ITBaseController {
 	TResult<E> save(E entidade);
 	
 	/**
+	 * Save an entity list
+	 * */
+	TResult<List<TResult<E>>> save(List<E> entities);
+
+	/**
 	 * Remove an entity
 	 * */
 	TResult<E> remove(E entidade);
+	
+	/**
+	 * Remove an entity list
+	 * */
+	TResult<List<TResult<E>>> remove(List<E> entities);
 	
 	/**
 	 * Returns a list of all persisted entities
@@ -57,5 +67,6 @@ public interface ITEjbController<E extends ITEntity> extends ITBaseController {
 	 * Returns a paginated search
 	 * */
 	TResult<Map<String, Object>> findAll(E entity, int firstResult, int maxResult, boolean orderByAsc, boolean containsAnyKeyWords)throws Exception;
+	
 
 }

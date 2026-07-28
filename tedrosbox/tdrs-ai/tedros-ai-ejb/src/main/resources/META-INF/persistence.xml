@@ -14,10 +14,12 @@
 		<class>org.tedros.core.setting.model.TDomainPropertie</class>
 		<class>org.tedros.core.setting.model.TUserPropertie</class>
 		<class>org.tedros.core.security.model.TAuditLog</class>
-		<class>org.tedros.common.model.TByteEntity</class>	
-		<class>org.tedros.common.model.TFileEntity</class>
 		<class>org.tedros.core.notify.model.TNotify</class>
 		<class>org.tedros.core.notify.model.TNotifyLog</class>
+		
+		<class>org.tedros.common.converter.NullSafeUuidConverter</class>
+		<class>org.tedros.common.model.TByteEntity</class>	
+		<class>org.tedros.common.model.TFileEntity</class>
 		<class>org.tedros.common.model.TMimeType</class>
 		<class>org.tedros.common.model.TBarcode</class>
 		

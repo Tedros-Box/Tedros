@@ -1,8 +1,11 @@
 package org.tedros.fx.presenter.dynamic.behavior;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +13,7 @@ import org.tedros.api.form.ITModelForm;
 import org.tedros.api.presenter.ITPresenter;
 import org.tedros.api.presenter.view.TViewMode;
 import org.tedros.core.ITModule;
+import org.tedros.core.TLanguage;
 import org.tedros.core.TModule;
 import org.tedros.core.annotation.security.TAuthorizationType;
 import org.tedros.core.context.TEntry;
@@ -19,6 +23,7 @@ import org.tedros.core.context.TedrosContext;
 import org.tedros.core.message.TMessage;
 import org.tedros.core.message.TMessageType;
 import org.tedros.fx.TFxKey;
+import org.tedros.fx.TUsualKey;
 import org.tedros.fx.annotation.presenter.TBehavior;
 import org.tedros.fx.annotation.process.TEjbService;
 import org.tedros.fx.collections.TFXCollections;
@@ -52,7 +57,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.beans.value.WeakChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.collections.WeakListChangeListener;
 import javafx.concurrent.Worker.State;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -95,7 +102,6 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	
 	private boolean remoteMode;
 	private String serviceName;
-	
 
 	private Class<? extends TEntityProcess> entityProcessClass;
 	
@@ -103,7 +109,6 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 
 
 	protected boolean filterByLoggedUser;
-	protected boolean saveAllModels;
 	protected boolean saveOnlyChangedModel;
 	protected boolean runNewActionAfterSave;
 
@@ -136,7 +141,6 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 			
 			final TBehavior tBehavior = presenter.getPresenterAnnotation().behavior();
 			
-			saveAllModels = tBehavior.saveAllModels();
 			saveOnlyChangedModel = tBehavior.saveOnlyChangedModels();
 			runNewActionAfterSave = tBehavior.runNewActionAfterSave();
 			importFileModelViewClass = tBehavior.importModelViewClass();
@@ -290,10 +294,95 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 		if(isUserAuthorized(TAuthorizationType.SAVE)){
 			final Button saveButton = this.decorator.gettSaveButton();
 			if(saveButton!=null) {
-				EventHandler<ActionEvent> eh = e -> saveAction();
+				EventHandler<ActionEvent> eh = e -> {
+					final ObservableList<M> modelsViewsList = (getModelView()!=null) 
+										? FXCollections.observableList(Arrays.asList(getModelView())) 
+											: null;
+					saveAction(modelsViewsList);
+				};
 				super.getListenerRepository().add("saveButtonClickEH", eh);
 				saveButton.setOnAction(new WeakEventHandler<>(eh));
 			}
+		}
+	}
+	
+	/**
+	 * Config the save button
+	 * */
+	public void configSaveAllButton() {
+		if(isUserAuthorized(TAuthorizationType.SAVE)){
+			final Button saveAllButton = this.decorator.gettSaveAllButton();
+			if(saveAllButton!=null) {
+				EventHandler<ActionEvent> eh = e -> {
+					saveAction(getModels());
+				};
+				super.getListenerRepository().add("saveAllButtonClickEH", eh);
+				saveAllButton.setOnAction(new WeakEventHandler<>(eh));
+				
+				ChangeListener<TActionState> chl00 = (a,o,n) -> {
+					switch(n.getType()) {
+					case ADD:
+					case CANCEL:
+					case CLEAN:
+					case CLOSE:
+					case DELETE:
+					case NEW:
+					case SAVE:
+						checkSaveAllButtonDisableStatus();
+						break;
+					default:
+						break;
+					
+					}
+				};
+				super.getListenerRepository().add("checkSaveAllButtonDisableStatusChl", chl00);
+				actionStateProperty().addListener(new WeakChangeListener<>(chl00));				
+				
+				ListChangeListener<M> chl01 = (l) -> {
+					if(l.next())
+						l.getAddedSubList().forEach(m->{
+							addModelChangedListener(m);
+						});
+					l.getRemoved().forEach(m->{
+						checkSaveAllButtonDisableStatus();
+					});
+				};
+				
+				super.getListenerRepository().add("listviewSaveAllChl", chl01);
+				
+				getModels().addListener(new WeakListChangeListener<>(chl01));
+				getModels().stream().forEach(m->addModelChangedListener(m));
+				checkSaveAllButtonDisableStatus();
+			}
+				
+			
+		}
+	}
+	
+	@Override
+	public void runAfterLoadModelViewList() {
+		checkSaveAllButtonDisableStatus();
+	}
+
+	private void addModelChangedListener(M m){
+		ChangeListener<Number> chl99 = m.getListenerRepository().get("hashcodeItemChangedChl");
+		if(chl99==null) {
+			chl99 = (a,o,n) -> {		
+				checkSaveAllButtonDisableStatus();
+			};
+			m.getListenerRepository().add("hashcodeItemChangedChl", chl99);
+			m.lastHashCodeProperty().addListener(new WeakChangeListener<>(chl99));
+		}
+	}
+
+	private void checkSaveAllButtonDisableStatus() {
+		if(decorator!=null && decorator.gettSaveAllButton()!=null) {
+			if(getModels()!=null && getModels().stream().parallel().filter(m->m.isChanged() || (m.getModel() instanceof ITEntity entity && entity.isNew()))
+				.count()>0) {
+				 decorator.gettSaveAllButton().setDisable(false);
+			 }else {
+				 decorator.gettSaveAllButton().setDisable(true);
+			 }
 		}
 	}
 	
@@ -567,18 +656,17 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	/**
 	 * Perform this action when save button onAction is triggered.
 	 * */
-	public void saveAction() {
+	public void saveAction(final ObservableList<M> modelsViewsList) {
 		setActionState(new TActionState<>(TActionType.SAVE, TProcessResult.RUNNING));
 		if(this.actionHelper.runBefore(TActionType.SAVE)){
 			try{
 				boolean flag = true;
-				ITModel model = this.getModelView().getModel();
-				boolean runNewAction = model instanceof ITEntity iTEntity 
+				boolean runNewAction = this.getModelView()!=null && this.getModelView().getModel() instanceof ITEntity iTEntity 
 						? iTEntity.isNew() && this.runNewActionAfterSave 
 								: this.runNewActionAfterSave;				
 				
-				Consumer<Boolean> finishCallback = succefull ->{
-					if(succefull) {
+				Consumer<Boolean> finishCallback = successful ->{
+					if(successful) {
 						if(runNewAction) {
 							getView().tModalVisibleProperty().addListener(new ChangeListener<Boolean>() {
 								@Override
@@ -599,10 +687,11 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 						actionHelper.runAfter(TActionType.SAVE);
 						setActionState(new TActionState<>(TActionType.SAVE, TProcessResult.FINISHED));
 					}
+					checkSaveAllButtonDisableStatus();
 				};
 				
 				if(getEntityProcessClass()!=null || (StringUtils.isNotBlank(this.serviceName) && this.modelClass!=null)){
-					runSaveEntityProcess(finishCallback);
+					runSaveEntityProcess(modelsViewsList, finishCallback);
 					flag = false;
 				}else if(getModelProcessClass()!=null){
 					runModelProcess(TActionType.SAVE, finishCallback);
@@ -624,58 +713,63 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private void runSaveEntityProcess(Consumer<Boolean> callback)
+	private void runSaveEntityProcess(final ObservableList<M> modelsViewsList, Consumer<Boolean> callback)
 			throws Exception, TValidatorException, Throwable {
-		//get the list
-		final ObservableList<M> modelsViewsList = (saveAllModels && getModels()!=null) 
-				? getModels() 
-						: (getModelView()!=null) 
-							? FXCollections.observableList(Arrays.asList(getModelView())) 
-								: null;
-						
+		
 		if(modelsViewsList == null)
 			throw new Exception("None entity found to save!");
 						
 		// validate
 		validateModels(modelsViewsList);
 		
+		List<M> modelViewsToSave = new ArrayList<>();
+		
 		// save
-		for(int x=0; x<modelsViewsList.size(); x++){
-			boolean lastEntity = x==modelsViewsList.size()-1;
-			final M model = modelsViewsList.get(x);
+		for(final M model : modelsViewsList){
 			if(saveOnlyChangedModel && !model.isChanged())
 				continue;
-			
-			final TEntityProcess process  = createEntityProcess();
-			process.save( (ITEntity) model.getModel());
-			process.stateProperty().addListener((a,o,n)-> {
-					if(n.equals(State.SUCCEEDED)){
-						List<TResult<E>> resultados = (List<TResult<E>>) process.getValue();
-						if(resultados.isEmpty()) {
-							actionHelper.runAfter(TActionType.SAVE);
-							setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.NO_RESULT));
-							return;
-						}
-						TResult result = resultados.get(0);
+			if(model.getModel() instanceof ITEntity entity) {
+				entity.setClientId(UUID.randomUUID());
+			}
+			modelViewsToSave.add(model);
+		}
+		
+		if(modelViewsToSave.size()==0)
+			return;
+		
+		final TEntityProcess process  = createEntityProcess();
+		process.save(modelViewsToSave.stream().map(f->f.getModel()).toList());
+		process.stateProperty().addListener((a,o,n)-> {
+				if(n.equals(State.SUCCEEDED)){
+					
+					try {
+					
+					List<TResult<E>> resultados = (List<TResult<E>>) process.getValue();
+					if(resultados.isEmpty()) {
+						actionHelper.runAfter(TActionType.SAVE);
+						setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.NO_RESULT));
+						return;
+					}
+					
+					int successCount = 0;
+					
+					for(TResult result: resultados) {
 						if(result.getState().equals(TState.SUCCESS)){
-							E entity = (E) result.getValue();
-							if(entity!=null){
-								try {
-									model.reload(entity);
-									String msg = result.isPriorityMessage() 
-											? result.getMessage()
-													: iEngine.getFormatedString(TFxKey.MESSAGE_SAVE, model.toString());
-									
-									addMessage(new TMessage(TMessageType.INFO, msg));
-									setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.SUCCESS));
-									if(lastEntity) 
-										callback.accept(true);
-								} catch (Exception e) {	
-									LOGGER.error(e.getMessage(), e);
-									addMessage(new TMessage(TMessageType.ERROR, e.getMessage()));
-									if(lastEntity) 
-										callback.accept(false);
-								}
+							ITEntity entity = (ITEntity) result.getValue();
+							successCount++;
+							Optional<M> opt = modelViewsToSave.stream().filter(p->{
+								ITEntity e = (ITEntity) p.getModel();
+								return e.getClientId().equals(entity.getClientId());
+							}).findFirst();
+							
+							if(entity!=null && opt.isPresent()){
+								M model = opt.get();								
+								model.reload((E)entity);
+								String msg = result.isPriorityMessage() 
+										? result.getMessage()
+												: iEngine.getFormatedString(TFxKey.MESSAGE_SAVE, model.toString());
+								
+								addMessage(new TMessage(TMessageType.INFO, msg));
 							}
 						}else{							
 							String msg = result.getState().equals(TState.OUTDATED) 
@@ -684,22 +778,31 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 							TLoggerUtil.debug(getClass(), msg);
 							if(result.getState().equals(TState.ERROR)) {
 								addMessage(new TMessage(TMessageType.ERROR, msg));
-								setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.get(result.getState()), result.getMessage()));	
-								if(lastEntity) 
-									callback.accept(false);
+								setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.get(result.getState()), result.getMessage()));
 							}else{
 								addMessage(new TMessage(TMessageType.WARNING, msg));
 								setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.get(result.getState()), result.getMessage()));	
-								if(lastEntity) 
-									callback.accept(true);
+								successCount++;
 							}
 						}
-					}else {
-						setActionState(new TActionState(TActionType.SAVE, (State) n));
 					}
-				});
-			runProcess(process);
-		}
+					
+					setActionState(new TActionState(TActionType.SAVE, (State) n, TProcessResult.SUCCESS));
+					callback.accept(successCount==resultados.size());
+					
+					}catch (Exception e) {
+						LOGGER.error(e.getMessage(), e);
+						addMessage(new TMessage(TMessageType.ERROR, e.getMessage()));
+						callback.accept(false);
+					}
+					
+					
+				}else {
+					setActionState(new TActionState(TActionType.SAVE, (State) n));
+				}
+			});
+		runProcess(process);
+		
 	}
 	
 	/**
@@ -904,10 +1007,16 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 							if(arg2.equals(1)){
 								if(model.getModel() instanceof ITEntity && ((ITEntity)model.getModel()).isNew()) {
 									getView().tHideModal();	
-									remove();
+									remove(result->{
+										if(result) {
+											actionHelper.runAfter(TActionType.CANCEL);
+											setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.SUCCESS));
+										}else {
+											setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.ERROR));
+										}
+									});
 									
-									actionHelper.runAfter(TActionType.CANCEL);
-									setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.SUCCESS));
+									
 								}else{
 									try{
 										final TEntityProcess process = createEntityProcess();
@@ -961,14 +1070,20 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 				}else{
 					if(model.getModel() instanceof ITEntity && ((ITEntity)model.getModel()).isNew()) {
 						getView().tHideModal();	
-						remove();
+						remove(result->{
+							if(result) {
+								actionHelper.runAfter(TActionType.CANCEL);
+								setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.SUCCESS));
+							}else {
+								setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.ERROR));
+							}
+						});
 					}else{
 						setModelView(null);
-						getView().tHideModal();	
+						getView().tHideModal();
+						this.actionHelper.runAfter(TActionType.CANCEL);
+						setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.SUCCESS));
 					}
-					
-					this.actionHelper.runAfter(TActionType.CANCEL);
-					setActionState(new TActionState<>(TActionType.CANCEL, TProcessResult.SUCCESS));
 				}
 				
 			}catch(Exception e){
@@ -980,22 +1095,51 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 		}
 	}
 	
+	public ObservableList<M> getModelViewListToDelete(){
+		M selectedModelView = getModelView();
+		return selectedModelView!=null 
+				? FXCollections.observableList(Arrays.asList(selectedModelView))
+						: FXCollections.emptyObservableList();
+	}
+	
 	/**
 	 * Perform this action when delete button onAction is triggered.
 	 * */
 	public void deleteAction() {
 		setActionState(new TActionState(TActionType.DELETE,  TProcessResult.RUNNING));
 		if(this.actionHelper.runBefore(TActionType.DELETE)){
-			if(getModelView()==null)
+			ObservableList<M> entitiesToDelete = getModelViewListToDelete();
+			if(entitiesToDelete.isEmpty())
 				return;
+						
+			StringBuilder sb = new StringBuilder();
+			if(entitiesToDelete.size()==1) {
+				sb.append(entitiesToDelete.get(0).toString());
+			}else {
+				for(int x=0; x<entitiesToDelete.size(); x++){
+					M m = entitiesToDelete.get(x);
+					
+					if(x == entitiesToDelete.size()-1) {
+						sb.append(" ")
+						.append(TLanguage.getInstance().getString(TUsualKey.AND))
+						.append(" ");
+						sb.append(m.toString());
+					}else {
+						sb.append(m.toString());
+						if(x < entitiesToDelete.size()-2) {
+							sb.append(", ");
+						}
+					}
+				}
+			}
 			
-			String message = iEngine.getFormatedString(TFxKey.MESSAGE_DELETE, getModelView().toString());
+			String message = iEngine.getFormatedString(TFxKey.MESSAGE_DELETE, sb.toString());
 			
 			final TConfirmMessageBox confirm = new TConfirmMessageBox(message);
 			confirm.tConfirmProperty().addListener((a,o,n)->{
 					if(n.equals(1)){
 						getView().tHideModal();	
-						startRemoveProcess(true);
+						startRemoveProcess(true, entitiesToDelete);
 					}else {
 						getView().tHideModal();	
 						setActionState(new TActionState(TActionType.DELETE,  TProcessResult.FINISHED));
@@ -1017,48 +1161,99 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * </code>
 	 * */
 	@SuppressWarnings("unchecked")
-	public void startRemoveProcess(boolean removeFromDataBase) {
+	public void startRemoveProcess(boolean removeFromDataBase, ObservableList<M> selectedEntitiesToRemove) {
 		
-		final M selected = getModelView();
-		
-		if(selected.getModel() instanceof ITEntity){
-			ITEntity entity = (ITEntity) selected.getModel(); 
-			if(removeFromDataBase && !entity.isNew()){
+		if(selectedEntitiesToRemove.size()>0){
+			
+			if(removeFromDataBase){
+				
+				List<M> modelViewsToRemove = selectedEntitiesToRemove.stream().parallel()
+						.filter(p->p.getModel() instanceof ITEntity e && !e.isNew())
+						.toList();
+				
+				if(modelViewsToRemove.isEmpty()) {
+					setActionState(new TActionState(TActionType.DELETE, TProcessResult.NO_RESULT));
+					return;
+				}	
+				
+				modelViewsToRemove.stream().parallel()
+				.forEach(m->{
+					if(m instanceof ITEntity e) {
+						e.setClientId(UUID.randomUUID());
+					}
+				});
+				
 				try{
+					List<E> entitiesToRemove = modelViewsToRemove.stream().parallel()
+							.map(f->f.getModel())
+							.toList();
+					
 					final TEntityProcess process = createEntityProcess();
-					process.delete(entity);
+					process.delete(entitiesToRemove);
 					process.stateProperty().addListener(new ChangeListener<State>() {
 						@Override
 						public void changed(ObservableValue<? extends State> arg0, State arg1, State arg2) {
 								if(arg2.equals(State.SUCCEEDED)){
 									List<TResult<E>> resultados = (List<TResult<E>>) process.getValue();
 									if(resultados.isEmpty())
-										return;
-									TResult result = resultados.get(0);
-									if(result.getState().equals(TState.ERROR)) {
-										TLoggerUtil.debug(getClass(), result.getMessage());
-										addMessage(new TMessage(TMessageType.ERROR, result.getMessage()));
-										setActionState(new TActionState(TActionType.DELETE, arg2, TProcessResult.ERROR, result.getMessage()));
-									}else if(result.getState().equals(TState.WARNING)){
-										E entity = (E) result.getValue();
-										if(entity!=null){
-											selected.reload(entity);
-										}else{
-											remove();
-											removeAllListenerFromModelView();
-											setModelView(null);
+										return;									
+									
+									boolean success = false;
+									StringBuilder errorMessages = new StringBuilder(); 
+									StringBuilder warningMessages = new StringBuilder();
+									
+									for(TResult result : resultados) {
+										
+										if(result.getState().equals(TState.ERROR)) {
+											TLoggerUtil.debug(getClass(), result.getMessage());
+											addMessage(new TMessage(TMessageType.ERROR, result.getMessage()));
+										}else if(result.getState().equals(TState.WARNING)){
+											ITEntity entity = (ITEntity) result.getValue();
+											
+											if(entity!=null){											
+												Optional<M> opt = modelViewsToRemove.stream().filter(p->{
+													ITEntity e = (ITEntity) p.getModel();
+													return e.getClientId().equals(entity.getClientId());
+												}).findFirst();											
+											
+												if(opt.isPresent()) {
+													M modelView = opt.get();
+													modelView.reload((E)entity);
+												}
+											}											
+											addMessage(new TMessage(TMessageType.WARNING, result.getMessage()));
+										}else
+										if(result.getState().equals(TState.SUCCESS)){
+											success = true;											
 										}
-										addMessage(new TMessage(TMessageType.WARNING, result.getMessage()));
-										setActionState(new TActionState(TActionType.DELETE, arg2, TProcessResult.WARNING, result.getMessage()));
-									}else
-									if(result.getState().equals(TState.SUCCESS)){
-										remove();
-										removeAllListenerFromModelView();
-										setModelView(null);
+									}
+									
+									if(StringUtils.isNotBlank(errorMessages)) {
+										setActionState(new TActionState(TActionType.DELETE, arg2, TProcessResult.ERROR, errorMessages.toString()));
+									}
+									
+									if(StringUtils.isNotBlank(warningMessages)) {
+										setActionState(new TActionState(TActionType.DELETE, arg2, TProcessResult.WARNING, warningMessages.toString()));
+									}
+									
+									if(success) {
 										actionHelper.runAfter(TActionType.DELETE);
 										setActionState(new TActionState(TActionType.DELETE, arg2, TProcessResult.SUCCESS));
 									}
-								}	
+									
+									
+									remove(modelViewsToRemove, result->{
+										if(result) {
+											setActionState(new TActionState(TActionType.DELETE, TProcessResult.SUCCESS));
+										}else {
+											setActionState(new TActionState(TActionType.DELETE, TProcessResult.INCONCLUSIVE));
+										}
+									});
+									
+								}
+								
+									
+									
 						}
 					});
 					runProcess(process);
@@ -1068,10 +1263,13 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 					setActionState(new TActionState(TActionType.DELETE, TProcessResult.ERROR, e.getMessage()));
 				}
 			}else{
-				remove();
-				removeAllListenerFromModelView();
-				setModelView(null);
-				setActionState(new TActionState(TActionType.DELETE, TProcessResult.SUCCESS));
+				remove(selectedEntitiesToRemove, result->{
+					if(result) {
+						setActionState(new TActionState(TActionType.DELETE, TProcessResult.SUCCESS));
+					}else {
+						setActionState(new TActionState(TActionType.DELETE, TProcessResult.INCONCLUSIVE));
+					}
+				});
 			}
 		}
 	}
@@ -1102,11 +1300,45 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * Called by the startRemoveProcess() method to perform a custom behavior 
 	 * like remove a item from a {@link ListView} or {@link TableView}.  
 	 * */
-	public void remove() {
-		if(getModels()!=null) {
-			super.clearForm();
-			int index = getModels().indexOf(getModelView());
-			remove(index);
+	public void remove(List<M> selectedEntitiesToRemove, Consumer<Boolean> callback) {
+		if(selectedEntitiesToRemove!=null && getModels()!=null) {
+			try{
+				if(getModelView()!=null) {					
+					setModelView(null);
+				}
+				
+				for(M m : selectedEntitiesToRemove) {
+					int index = getModels().indexOf(m);
+					remove(index);
+					m.removeAllListener();
+				}		
+				callback.accept(true);
+			}catch (Exception e) {
+				TLoggerUtil.error(getClass(), e.getMessage(), e);
+				callback.accept(false);
+			}
+		}else {
+			callback.accept(false);
+		}
+	}
+	
+	/**
+	 * Called by the startRemoveProcess() method to perform a custom behavior 
+	 * like remove a item from a {@link ListView} or {@link TableView}.  
+	 * */
+	public void remove(Consumer<Boolean> callback) {
+		if(getModels()!=null && getModelView()!=null) {
+			try{
+				int index = getModels().indexOf(getModelView());
+				remove(index, callback);
+				removeAllListenerFromModelView();
+				setModelView(null);
+			}catch (Exception e) {
+				TLoggerUtil.error(getClass(), e.getMessage(), e);
+				callback.accept(false);
+			}
+		}else {
+			callback.accept(false);
 		}
 	}
 	
@@ -1114,7 +1346,14 @@ extends TDynaViewSimpleBaseBehavior<M, E> {
 	 * Remove the model at the specified position from the model list. 
 	 * @param index
 	 */
-	public void remove(int index) {
+	public void remove(int index, Consumer<Boolean> callback) {
+		if(getModels()!=null) {
+			getModels().remove(index);
+			callback.accept(true);
+		}
+	}
+	
+	private void remove(int index) {
 		if(getModels()!=null) {
 			getModels().remove(index);
 		}

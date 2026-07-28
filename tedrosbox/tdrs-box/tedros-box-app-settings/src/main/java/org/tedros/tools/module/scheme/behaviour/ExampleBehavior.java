@@ -1,6 +1,7 @@
 package org.tedros.tools.module.scheme.behaviour;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.tedros.api.form.ITFieldBox;
 import org.tedros.api.form.ITModelForm;
@@ -262,7 +263,7 @@ public class ExampleBehavior extends TDynaViewCrudBaseBehavior<ExampleMV, Exampl
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 		// TODO Auto-generated method stub
 		
 	}

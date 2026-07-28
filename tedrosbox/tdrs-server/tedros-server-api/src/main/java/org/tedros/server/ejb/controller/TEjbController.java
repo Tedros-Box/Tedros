@@ -1,5 +1,6 @@
 package org.tedros.server.ejb.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,26 @@ public abstract class TEjbController<E extends ITEntity> implements ITEjbControl
 			return processException(entity, e);
 		}
 	}
+	
+	@Override
+    public TResult<List<TResult<E>>> save(List<E> entities) {
+        
+    	List<TResult<E>> results = new ArrayList<>(); 
+    	for(E entity : entities) {
+    		TResult<E> result;
+	    	try {
+	            E e = getService().save(entity);
+	            processEntity(e);
+	             result = new TResult<>(TState.SUCCESS, e);
+	        } catch (Exception e) {
+	            result = processException(entity, e);
+	        }
+	    	
+	    	results.add(result);
+    	}
+    	
+    	return new TResult<>(TState.SUCCESS, results);
+    }
 
 	@Override
 	public TResult<E> remove(E entity) {
@@ -114,6 +135,25 @@ public abstract class TEjbController<E extends ITEntity> implements ITEjbControl
 			return processException(entity, e);
 		}
 	}
+	
+	@Override
+    public TResult<List<TResult<E>>> remove(List<E> entities) {
+    	
+    	List<TResult<E>> results = new ArrayList<>(); 
+    	for(E entity : entities) {
+    		TResult<E> result;
+	        try {
+	            getService().remove(entity);
+	            result = new TResult<>(TState.SUCCESS);
+	        } catch (Exception e) {
+	        	result = processException(entity, e);
+	        }
+	        
+	        results.add(result);
+    	}
+    	
+    	return new TResult<>(TState.SUCCESS, results);
+    }
 
 	@Override
 	public TResult<List<E>> listAll(Class<? extends ITEntity> entity) {

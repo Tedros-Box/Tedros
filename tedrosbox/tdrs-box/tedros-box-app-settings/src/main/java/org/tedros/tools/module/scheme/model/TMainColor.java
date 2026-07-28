@@ -2,6 +2,7 @@ package org.tedros.tools.module.scheme.model;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.tedros.server.entity.ITEntity;
 import org.tedros.server.model.TFileModel;
@@ -253,6 +254,18 @@ public class TMainColor implements ITEntity {
 	public void setCreatedByUserId(Long createdByUserId) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void setClientId(UUID uuid) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public UUID getClientId() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	

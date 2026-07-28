@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.function.Consumer;
 
 import org.apache.commons.io.FileUtils;
 import org.tedros.core.TLanguage;
@@ -98,7 +99,7 @@ public class TBackgroundBehavior extends TDynaViewCrudBaseBehavior<TBackgroundIm
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 		// TODO Auto-generated method stub
 
 	}

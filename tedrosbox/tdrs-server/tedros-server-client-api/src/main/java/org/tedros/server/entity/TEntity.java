@@ -3,6 +3,7 @@ package org.tedros.server.entity;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.eclipse.persistence.annotations.Cache;
 import org.eclipse.persistence.annotations.CacheCoordinationType;
@@ -28,7 +29,7 @@ import jakarta.persistence.Transient;
 	// if cache coordination is used, only send invalidation messages.
 )
 @MappedSuperclass
-public  class TEntity implements ITEntity {
+public class TEntity implements ITEntity {
 
 	private static final long serialVersionUID = 4360077147058078710L;
 	
@@ -37,6 +38,14 @@ public  class TEntity implements ITEntity {
     @Basic(optional = false)  
     @Column(name = "id", nullable = false)
 	private Long id;
+	
+	/**
+	 * The client id is created and used by the frontend client to identify 
+	 * the entities when they are created, this are changed every time a CRUD
+	 * action is performed.
+	 * */
+	@Column(name = "client_id", columnDefinition = "uuid")
+	private UUID clientId;
 	
 	@Column(name = "last_update", nullable = true)
 	@Temporal(TemporalType.TIMESTAMP)
@@ -78,6 +87,14 @@ public  class TEntity implements ITEntity {
 		this.id = id;
 	}
 	
+	public UUID getClientId() {
+		return clientId;
+	}
+
+	public void setClientId(UUID clientId) {
+		this.clientId = clientId;
+	}
+
 	public Date getLastUpdate() {
 		return lastUpdate;
 	}
@@ -155,6 +172,8 @@ public  class TEntity implements ITEntity {
 		} else if (!id.equals(other.id))
 			return false;
 		return true;
-	}		
+	}
+
+	
 
 }

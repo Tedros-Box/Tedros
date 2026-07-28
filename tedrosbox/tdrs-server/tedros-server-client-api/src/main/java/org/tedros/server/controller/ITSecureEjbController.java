@@ -81,6 +81,15 @@ public interface ITSecureEjbController<E extends ITEntity> extends ITBaseControl
      * @return result containing the saved entity
      */
     TResult<E> save(TAccessToken token, E entity);
+    
+    /**
+     * Saves (persists or merges) a entity list.
+     *
+     * @param token  the access token
+     * @param entities the entity list to save
+     * @return result containing the saved entities
+     */
+    TResult<List<TResult<E>>> save(TAccessToken token, List<E> entities);
 
     /**
      * Removes an entity from persistence.
@@ -90,6 +99,15 @@ public interface ITSecureEjbController<E extends ITEntity> extends ITBaseControl
      * @return result containing the removed entity or success information
      */
     TResult<E> remove(TAccessToken token, E entity);
+    
+    /**
+     * Removes a entity list from persistence.
+     *
+     * @param token  the access token
+     * @param entities the entity list to remove
+     * @return result containing the removed list entity or success information
+     */
+	TResult<List<TResult<E>>> remove(TAccessToken token, List<E> entities);
 
     /**
      * Retrieves all persisted entities of the given type.
@@ -221,5 +239,5 @@ public interface ITSecureEjbController<E extends ITEntity> extends ITBaseControl
      * @param entity the entity with filled attributes to match
      * @return result containing the list of matching entities owned by the user
      */
-    TResult<List<E>> findAll(TAccessToken token, Long userId, E entity);
+    TResult<List<E>> findAll(TAccessToken token, Long userId, E entity);	
 }

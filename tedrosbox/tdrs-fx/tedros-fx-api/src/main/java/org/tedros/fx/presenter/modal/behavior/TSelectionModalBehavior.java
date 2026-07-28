@@ -91,5 +91,10 @@ extends TDynaViewSelectionBaseBehavior<M, E> {
 		return null;
 	}
 
+	@Override
+	public void runAfterLoadModelViewList() {
+		
+	}
+
 
 }

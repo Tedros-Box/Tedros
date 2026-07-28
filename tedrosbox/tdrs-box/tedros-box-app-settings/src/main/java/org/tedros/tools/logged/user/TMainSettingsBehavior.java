@@ -1,5 +1,7 @@
 package org.tedros.tools.logged.user;
 
+import java.util.function.Consumer;
+
 import org.tedros.core.ITModule;
 import org.tedros.core.context.TedrosContext;
 import org.tedros.fx.control.action.TPresenterAction;
@@ -76,7 +78,7 @@ public class TMainSettingsBehavior extends TSaveViewBehavior<TMainSettingsModelV
 	}
 
 	@Override
-	public void remove() {
+	public void remove(Consumer<Boolean> callback) {
 	}
 
 
