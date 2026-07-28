@@ -197,7 +197,7 @@ extends TDynaViewCrudBaseBehavior<M, E> {
 		
 		if(callback instanceof TEntityCheckboxListViewCallback withCheckBox) {
 			ObservableList<M> entitiesToDelete = withCheckBox.getSelectedItems();
-			if(selectedModelView!=null && entitiesToDelete.stream().filter(p->p==selectedModelView).count()==0) {
+			if(selectedModelView != null && !entitiesToDelete.contains(selectedModelView)) {
 				entitiesToDelete.add(selectedModelView);
 			}
 			return entitiesToDelete;
