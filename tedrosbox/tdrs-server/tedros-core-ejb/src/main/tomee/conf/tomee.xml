@@ -5,31 +5,23 @@
   <!-- activate next line to be able to deploy applications in apps -->
   <!-- <Deployments dir="apps" /> -->
   
-<!-- Datasource parametrizavel via system properties (-Dtedros.db.*).
-     Defaults apontam para o H2; para testar contra PostgreSQL rode com:
-     -Dtedros.db.driver=org.postgresql.Driver
-     -Dtedros.db.url=jdbc:postgresql://localhost:5432/tedros -->
+<!-- Datasource parametrizado via system properties tedros.db.*
+     (mesmo contrato do server-application / Docker TEDROS_DB_*).
+     Default do produto: PostgreSQL. Para outro vendor, defina:
+       -Dtedros.db.driver=...
+       -Dtedros.db.url=...
+       -Dtedros.db.user=...
+       -Dtedros.db.password=...
+     Ou use os profiles Maven db-<vendor> no Cargo. -->
 <Resource id="tedrosDataSource" type="DataSource">
-  JdbcDriver org.h2.Driver
-  JdbcUrl jdbc:h2:file:~/.tedros/data/db;INIT=RUNSCRIPT FROM 'c:/usr/local/Tedros/Box/init.sql'
-  UserName tdrs
-  Password xpto
+  JdbcDriver ${tedros.db.driver}
+  JdbcUrl ${tedros.db.url}
+  UserName ${tedros.db.user}
+  Password ${tedros.db.password}
   JtaManaged true
   PoolPreparedStatements true
   DefaultAutoCommit true
 </Resource>
-
-<!-- Variante PostgreSQL (descomente e comente o resource acima):
-<Resource id="tedrosDataSource" type="DataSource">
-  JdbcDriver org.postgresql.Driver
-  JdbcUrl jdbc:postgresql://localhost:5432/tedros
-  UserName tdrs
-  Password xpto
-  JtaManaged true
-  PoolPreparedStatements true
-  DefaultAutoCommit true
-</Resource>
--->
 
   
 </tomee>

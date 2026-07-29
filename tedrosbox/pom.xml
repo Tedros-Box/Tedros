@@ -51,7 +51,6 @@
 		<junit.version>4.13</junit.version>
 		<cargo.version>1.10.14</cargo.version>
 		<cargo.containerId>tomee9x</cargo.containerId>
-		<h2.version>1.4.199</h2.version>
 		<postgresql.version>42.7.5</postgresql.version>
 		<eclipselink.version>4.0.3</eclipselink.version>
 		<jackson.jaxrs.json.provider>2.11.2</jackson.jaxrs.json.provider>
