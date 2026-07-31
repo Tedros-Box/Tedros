@@ -21,7 +21,7 @@ import jakarta.persistence.TemporalType;
  * do plano). Vive na PU {@code tedros_core_pu} e e criado por DDL-generation no
  * boot.
  * <p>
- * Portabilidade H2/Postgres: {@code toolCalls} e um VARCHAR grande com o JSON
+ * Portabilidade JDBC: {@code toolCalls} e um VARCHAR grande com o JSON
  * {@code [{name,outcome,ms}]} — evita depender de {@code jsonb} (Postgres-only).
  * No Grafana/Postgres o filtro por tool pode usar {@code jsonb_array_elements}
  * sobre {@code tool_calls::jsonb}.

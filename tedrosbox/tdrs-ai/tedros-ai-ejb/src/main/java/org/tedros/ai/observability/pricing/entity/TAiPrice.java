@@ -26,7 +26,7 @@ import jakarta.persistence.TemporalType;
  * auditoria retroativa); a resolucao pega a linha ACTIVE mais recente com
  * {@code effectiveFrom <= ts}.
  * <p>
- * Portabilidade H2/Postgres: {@code java.util.Date} + {@code @Temporal} (nao
+ * Portabilidade JDBC: {@code java.util.Date} + {@code @Temporal} (nao
  * {@code java.time.Instant}, que o EclipseLink serializaria como BLOB no DDL).
  *
  * @author Davis Gordon
