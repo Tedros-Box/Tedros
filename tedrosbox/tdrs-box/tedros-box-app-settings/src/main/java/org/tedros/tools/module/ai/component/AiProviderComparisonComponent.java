@@ -75,8 +75,8 @@ public class AiProviderComparisonComponent extends VBox implements ITComponent {
 		    You have access to system tools, but strict rules apply in this mode:
 		    
 		    1. **READ-ONLY ALLOWED**: You MAY use functions to fetch data, list views, or query system info.
-		    2. **NAVIGATION FORBIDDEN**: You MUST NOT call functions that open windows, switch views, or navigate the UI (e.g., DO NOT use `callUpViewFunction`).
-		    3. **WRITE FORBIDDEN**: DO NOT use functions that create files or insert records.
+		    2. **NAVIGATION FORBIDDEN**: You MUST NOT call functions that open windows, switch views, or navigate the UI (e.g., DO NOT use `callUpViewFunction` or `show_html_content`).
+		    3. **WRITE FORBIDDEN**: DO NOT use functions that create files or insert records.		    
 		    
 		    If the user asks to "Open Screen X":
 		    - Do NOT call the view function.

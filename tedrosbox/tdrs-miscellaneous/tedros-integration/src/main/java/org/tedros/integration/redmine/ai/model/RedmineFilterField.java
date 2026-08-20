@@ -14,64 +14,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * como parâmetros de filtragem em consultas de issues do Redmine.
  *
  * <p>Inclui campos padrão, campos de data, numéricos, relacionais e suporte a
- * campos personalizados (cf_X).</p>
+ * campos personalizados (cf_X) em níveis de Tarefa, Projeto e Usuário.</p>
  *
  * <p>Baseado nos filtros disponíveis na interface web do Redmine.</p>
  *
  * @author
  *   Davis Gordon Dun
  */
-/*
-<select id="add_filter_select"><option value="">&nbsp;</option>
-<option value="status_id" disabled="disabled">Situação</option>
-<option value="project_id">Projeto</option>
-<option value="tracker_id">Tipo</option>
-<option value="priority_id">Prioridade</option>
-<option value="author_id">Autor</option>
-<option value="assigned_to_id" disabled="disabled">Atribuído para</option>
-<option value="fixed_version_id">Versão</option>
-<option value="subject">Título</option>
-<option value="description">Descrição</option>
-<option value="notes">Notas</option>
-<option value="done_ratio">% Terminado</option>
-<option value="is_private">Privado</option>
-<option value="watcher_id">Observador</option>
-<option value="updated_by">Atualizado por</option>
-<option value="last_updated_by">Última atualização por</option>
-<option value="cf_80">OS Globalweb</option>
-<option value="cf_62">Origem</option>
-<option value="cf_2">SEI</option>
-<option value="cf_3">Ambiente</option>
-<option value="cf_5">Janela</option>
-<option value="cf_6">Número do protocolo</option>
-<option value="cf_41">Observações</option>
-<option value="cf_59">Perfil Exigido</option>
-<option value="cf_60">Serviços</option>
-<option value="cf_61">Qtd. Itens Serviço</option>
-<option value="cf_75">HPA</option>
-<option value="cf_71">Classificação</option>
-<option value="cf_30">Relatório G4F (OS)</option>
-<option value="issue_id">Tarefa</option>
-<option value="tags">Tags</option><optgroup label="Atribuído para"><option value="member_of_group">Responsável pelo grupo</option>
-<option value="assigned_to_role">Papel do responsável</option></optgroup><optgroup label="Versão"><option value="fixed_version.due_date">versão Data</option>
-<option value="fixed_version.status">versão Situação</option></optgroup><optgroup label="Data"><option value="created_on">Criado em</option>
-<option value="updated_on">Alterado em</option>
-<option value="closed_on">Concluído</option>
-<option value="start_date">Início</option>
-<option value="due_date">Data prevista</option></optgroup><optgroup label="Registro de horas"><option value="estimated_hours">Tempo estimado</option>
-<option value="spent_time">Tempo gasto</option></optgroup><optgroup label="Arquivo"><option value="attachment">Arquivo</option>
-<option value="attachment_description">File description</option></optgroup><optgroup label="Projeto"><option value="project.status">Projeto Situação</option></optgroup><optgroup label="Relações"><option value="relates">relacionado a</option>
-<option value="duplicates">duplica</option>
-<option value="duplicated">duplicado por</option>
-<option value="blocks">bloqueia</option>
-<option value="blocked">bloqueado por</option>
-<option value="precedes">precede</option>
-<option value="follows">segue</option>
-<option value="copied_to">copiada</option>
-<option value="copied_from">copiado</option>
-<option value="parent_id">Tarefa mãe</option>
-<option value="child_id">Subtarefas</option></optgroup></select> 
-*/
 public enum RedmineFilterField {
 
     // ===============================================================
@@ -80,18 +29,22 @@ public enum RedmineFilterField {
 
     /** ID do status da issue (ex: Novo, Em andamento, Resolvido, etc.) */
     STATUS_ID("status_id", FilterType.NUMBER),
+    ISSUE_STATUS_ID("issue.status_id", FilterType.NUMBER),
 
     /** ID da prioridade (ex: Alta, Normal, Baixa) */
     PRIORITY_ID("priority_id", FilterType.NUMBER),
 
     /** ID do rastreador (ex: Bug, Tarefa, Suporte, etc.) */
     TRACKER_ID("tracker_id", FilterType.NUMBER),
+    ISSUE_TRACKER_ID("issue.tracker_id", FilterType.NUMBER),
 
     /** ID da versão (milestone) associada à issue */
     FIXED_VERSION_ID("fixed_version_id", FilterType.NUMBER),
+    ISSUE_FIXED_VERSION_ID("issue.fixed_version_id", FilterType.NUMBER),
 
     /** ID da categoria da issue (se houver) */
     CATEGORY_ID("category_id", FilterType.NUMBER),
+    ISSUE_CATEGORY_ID("issue.category_id", FilterType.NUMBER),
 
     /** Progresso da issue (0–100%) */
     DONE_RATIO("done_ratio", FilterType.NUMBER),
@@ -106,6 +59,9 @@ public enum RedmineFilterField {
     /** ID do autor (quem criou a issue) */
     AUTHOR_ID("author_id", FilterType.NUMBER),
 
+    /** ID do usuário genérico */
+    USER_ID("user_id", FilterType.NUMBER),
+
     /** ID do usuário observador (watcher) */
     WATCHER_ID("watcher_id", FilterType.NUMBER),
 
@@ -118,6 +74,12 @@ public enum RedmineFilterField {
 
     /** ID do projeto ao qual a issue pertence */
     PROJECT_ID("project_id", FilterType.NUMBER),
+
+    /** ID do subprojeto */
+    SUBPROJECT_ID("subproject_id", FilterType.NUMBER),
+
+    /** Situação do projeto */
+    PROJECT_STATUS("project.status", FilterType.NUMBER),
 
     /** Nome do projeto */
     PROJECT("project", FilterType.TEXT),
@@ -153,6 +115,9 @@ public enum RedmineFilterField {
     /** Data de fechamento da issue */
     CLOSED_ON("closed_on", FilterType.DATE),
 
+    /** Data do registro de tempo / horas gastas */
+    SPENT_ON("spent_on", FilterType.DATE),
+
     // ===============================================================
     // 🔹 CAMPOS DE DESCRIÇÃO E CONTEÚDO
     // ===============================================================
@@ -166,6 +131,12 @@ public enum RedmineFilterField {
     /** Notas (comentários) da issue */
     NOTES("notes", FilterType.TEXT),
 
+    /** Comentários em lançamentos de tempo / apontamentos */
+    COMMENTS("comments", FilterType.TEXT),
+
+    /** Tags associadas à issue */
+    ISSUE_TAGS("issue_tags", FilterType.TEXT),
+
     // ===============================================================
     // 🔹 CAMPOS DE TEMPO / ESTIMATIVAS
     // ===============================================================
@@ -175,6 +146,12 @@ public enum RedmineFilterField {
 
     /** Horas gastas (registradas) */
     SPENT_HOURS("spent_hours", FilterType.NUMBER),
+
+    /** Horas apontadas */
+    HOURS("hours", FilterType.NUMBER),
+
+    /** Atividade relacionada ao apontamento de horas */
+    ACTIVITY_ID("activity_id", FilterType.NUMBER),
 
     // ===============================================================
     // 🔹 CAMPOS DE RELAÇÕES ENTRE ISSUES
@@ -203,14 +180,49 @@ public enum RedmineFilterField {
     CATEGORY("category", FilterType.TEXT),
 
     // ===============================================================
-    // 🔹 CAMPOS PERSONALIZADOS (Custom Fields)
+    // 🔹 CAMPOS PERSONALIZADOS - TAREFA (Issue Custom Fields)
+    // ===============================================================
+
+    ISSUE_CF_1("issue.cf_1", FilterType.TEXT),         // Tarefa Área
+    ISSUE_CF_4("issue.cf_4", FilterType.TEXT),         // Tarefa Nº SEI!
+    ISSUE_CF_12("issue.cf_12", FilterType.NUMBER),     // Tarefa Quantidade
+    ISSUE_CF_114("issue.cf_114", FilterType.TEXT),     // Tarefa Classificação da demanda
+    ISSUE_CF_58("issue.cf_58", FilterType.TEXT),       // Tarefa Chamado GLPI / 4Biz / Nº SEI
+    ISSUE_CF_83("issue.cf_83", FilterType.TEXT),       // Tarefa Fase
+    ISSUE_CF_109("issue.cf_109", FilterType.TEXT),     // Tarefa OS (Memora)
+    ISSUE_CF_96("issue.cf_96", FilterType.TEXT),       // Tarefa Serviço (Memora)
+    ISSUE_CF_100("issue.cf_100", FilterType.TEXT),     // Tarefa Entregável (Memora)
+    ISSUE_CF_113("issue.cf_113", FilterType.NUMBER),   // Tarefa Story Points
+
+    // ===============================================================
+    // 🔹 CAMPOS PERSONALIZADOS - PROJETO (Project Custom Fields)
+    // ===============================================================
+
+    PROJECT_CF_78("project.cf_78", FilterType.TEXT),   // Projeto Área gestora
+    PROJECT_CF_84("project.cf_84", FilterType.TEXT),   // Projeto Gestor / Dono do Produto
+    PROJECT_CF_85("project.cf_85", FilterType.TEXT),   // Projeto Tipo de produto
+    PROJECT_CF_87("project.cf_87", FilterType.TEXT),   // Projeto Status / Fase atual
+    PROJECT_CF_88("project.cf_88", FilterType.TEXT),   // Projeto Bibliotecas Internas
+    PROJECT_CF_89("project.cf_89", FilterType.TEXT),   // Projeto Integrações com API internas
+    PROJECT_CF_91("project.cf_91", FilterType.TEXT),   // Projeto Criticidade
+    PROJECT_CF_92("project.cf_92", FilterType.TEXT),   // Projeto Linguagem / Tecnologia
+    PROJECT_CF_106("project.cf_106", FilterType.TEXT), // Projeto Gerente de Projeto
+    PROJECT_CF_107("project.cf_107", FilterType.TEXT), // Projeto Áreas da
+
+    // ===============================================================
+    // 🔹 CAMPOS PERSONALIZADOS - USUÁRIO (User Custom Fields)
+    // ===============================================================
+
+    USER_CF_3("user.cf_3", FilterType.TEXT),           // Usuário Unidade Administrativa
+    USER_CF_11("user.cf_11", FilterType.TEXT),         // Usuário CPF
+
+    // ===============================================================
+    // 🔹 CAMPO PERSONALIZADO GENÉRICO (Fallback)
     // ===============================================================
 
     /**
-     * Campo genérico para campos personalizados.
-     * <p>Exemplo: <code>cf_30</code>, <code>cf_41</code>.</p>
-     * <p>O tipo será detectado dinamicamente via metadados carregados
-     * com {@code loadCustomFieldMetadata()}.</p>
+     * Campo genérico para outros campos personalizados não mapeados estaticamente.
+     * <p>Exemplo: <code>cf_30</code>, <code>issue.cf_999</code>.</p>
      */
     CUSTOM_FIELD("cf_", FilterType.TEXT);
 
@@ -220,7 +232,7 @@ public enum RedmineFilterField {
 
     private final String fieldName;
     private final FilterType type;
-    private final static ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     RedmineFilterField(String fieldName, FilterType type) {
         this.fieldName = fieldName;
@@ -241,55 +253,49 @@ public enum RedmineFilterField {
     // 🔹 MÉTODOS AUXILIARES
     // ===============================================================
 
-    /** Verifica se o nome representa um campo personalizado (cf_X). */
+    /**
+     * Verifica se o nome representa um campo personalizado (cf_X, issue.cf_X, project.cf_X, user.cf_X).
+     */
     public static boolean isCustomField(String fieldName) {
-        return fieldName != null && fieldName.startsWith("cf_");
+        if (fieldName == null) return false;
+        return fieldName.startsWith("cf_") 
+            || fieldName.startsWith("issue.cf_") 
+            || fieldName.startsWith("project.cf_") 
+            || fieldName.startsWith("user.cf_");
     }
 
     /** Tenta localizar um campo pelo nome interno. */
     public static RedmineFilterField fromFieldName(String name) {
+        if (name == null) return null;
         for (RedmineFilterField f : values()) {
-            if (f.fieldName.equalsIgnoreCase(name))
+            if (f.fieldName.equalsIgnoreCase(name)) {
                 return f;
+            }
         }
         return null;
     }
-    
+
     /**
-     * Converte um mapa genérico de filtros (ex: vindo de JSON ou query params)
-     * em um mapa tipado com {@link RedmineFilterField} e {@link FilterCondition}.
-     *
-     * <p>Exemplo de entrada:</p>
-     * <pre>{@code
-     * {
-     *   "status_id": {"op": "!=", "value": "2"},
-     *   "assigned_to_id": {"op": "=", "value": "509"},
-     *   "cf_30": {"op": "=", "value": "Entregue"}
-     * }
-     * }</pre>
-     *
-     * @param rawFilters mapa genérico contendo filtros
-     * @return mapa convertido para tipos seguros
+     * Converte um mapa genérico de filtros em um mapa tipado com {@link FilterCondition}.
      */
     public static Map<String, FilterCondition> fromRawMap(Map<String, Object> rawFilters) {
         Map<String, FilterCondition> result = new HashMap<>();
-        if (rawFilters == null || rawFilters.isEmpty())
+        if (rawFilters == null || rawFilters.isEmpty()) {
             return result;
+        }
 
         for (Map.Entry<String, Object> entry : rawFilters.entrySet()) {
             String fieldName = entry.getKey();
             Object value = entry.getValue();
 
             RedmineFilterField field = fromFieldName(fieldName);
-            FilterType type = (field != null) ? field.getType() :
-                    (isCustomField(fieldName) ? FilterType.TEXT : FilterType.TEXT);
+            FilterType type = (field != null) ? field.getType() : FilterType.TEXT;
 
             if (value instanceof Map<?, ?> mapValue) {
                 Object opObj = mapValue.get("op");
                 String op = opObj != null ? opObj.toString() : "=";
 
                 Object val = mapValue.get("value");
-
                 FilterCondition condition = null;
 
                 if (val instanceof Boolean bVal) {
@@ -311,7 +317,7 @@ public enum RedmineFilterField {
                     result.put(fieldName, condition);
                 }
 
-            } else {
+            } else if (value != null) {
                 result.put(fieldName, FilterCondition.equalsTo(String.valueOf(value)));
             }
         }
@@ -320,13 +326,9 @@ public enum RedmineFilterField {
     }
 
     public static Map<String, FilterCondition> fromJSON(String json) throws IOException {
-        // Converte o JSON para um Map<String, Object>
         Map<String, Object> raw = mapper.readValue(json, new TypeReference<>() {});
-        
-        // Converte para Map tipado com FilterCondition
         return RedmineFilterField.fromRawMap(raw);
-    } 
-     
+    }
 
     public static Map<String, FilterCondition> fromObject(Object obj) {
         Map<String, FilterCondition> map = new HashMap<>();
@@ -337,28 +339,11 @@ public enum RedmineFilterField {
             try {
                 field.setAccessible(true);
                 Object value = field.get(obj);
-                if (value != null && value instanceof FilterCondition fc) {
+                if (value instanceof FilterCondition fc) {
                     map.put(field.getName(), fc);
                 }
             } catch (Exception ignored) {}
         }
         return map;
     }
-    
-    /*public static Map<String, FilterCondition> fromRecord(Object record) {
-        Map<String, FilterCondition> map = new HashMap<>();
-        if (record == null) return map;
-
-        for (RecordComponent component : record.getClass().getRecordComponents()) {
-            try {
-                Object value = component.getAccessor().invoke(record);
-                if (value != null && value instanceof FilterCondition fc) {
-                    map.put(component.getName(), fc);
-                }
-            } catch (Exception ignored) {}
-        }
-        return map;
-    }*/
-    
 }
-

@@ -26,8 +26,8 @@ public class TServerFunctionCatalogMigrationTest {
 			"get_gitlab_repository_commit", "list_gitlab_repository_commits",
 			"get_gitlab_repository_commit_diff", "get_merge_request_raw_diffs",
 			"list_gitlab_opened_merge_request",
-			// Consultas BE itsupport (2)
-			"get_employee_activities", "search_gmuds",
+			// Consultas BE itsupport (3)
+			"get_employee_activities", "search_gmuds", "search_service_catalog",
 			// Person (6)
 			"list_all_employees", "search_employees", "search_person",
 			"list_categories_person", "list_statuses_person", "list_person_types",
@@ -54,6 +54,7 @@ public class TServerFunctionCatalogMigrationTest {
 				new org.tedros.ai.toolrelay.function.gitlab.SearchGitLabOpenedMergeRequestFunction(),
 				new org.tedros.ai.toolrelay.function.itsupport.GetEmployeeActivitiesAIFunction(),
 				new org.tedros.ai.toolrelay.function.itsupport.SearchGmudAIFunction(),
+				new org.tedros.ai.toolrelay.function.itsupport.SearchServiceCatalogAiFunction(),
 				new org.tedros.ai.toolrelay.function.person.ListEmployeesFunction(),
 				new org.tedros.ai.toolrelay.function.person.SearchEmployeeFunction(),
 				new org.tedros.ai.toolrelay.function.person.SearchPersonFunction(),
@@ -69,13 +70,13 @@ public class TServerFunctionCatalogMigrationTest {
 	@Test
 	public void all27MigratedToolsPlusDateTimeRegisterWithoutNameCollision() {
 		List<TServerAiFunction> fns = allFunctions();
-		assertEquals(28, fns.size());
+		assertEquals(29, fns.size());
 
 		TServerFunctionCatalog catalog = new TServerFunctionCatalog(fns);
-		// 28 specs = nenhuma colisao de nome sobrescreveu outra tool
-		assertEquals(28, catalog.toolSpecifications().size());
+		// 29 specs = nenhuma colisao de nome sobrescreveu outra tool
+		assertEquals(29, catalog.toolSpecifications().size());
 
-		assertEquals(27, MIGRATED_TOOL_NAMES.size());
+		assertEquals(28, MIGRATED_TOOL_NAMES.size());
 		for (String name : MIGRATED_TOOL_NAMES)
 			assertTrue("missing migrated tool " + name, catalog.contains(name));
 		assertTrue(catalog.contains("get_server_datetime"));
