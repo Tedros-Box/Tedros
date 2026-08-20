@@ -68,7 +68,7 @@ public class TIssueEvidenceInfo {
     @JsonPropertyDescription("Current status name")
     private String statusName;
 
-    @JsonPropertyDescription("Expected deliverable")
+    @JsonPropertyDescription("CF: Expected deliverable (Memora - cf_100)")
     private String deliverable;
 
     @JsonPropertyDescription("CF: HPA - Hours per Activity")
@@ -77,8 +77,35 @@ public class TIssueEvidenceInfo {
     @JsonPropertyDescription("CF: Required professional profile")
     private String requiredProfile;
 
-    @JsonPropertyDescription("CF: Service type with expected hours")
+    @JsonPropertyDescription("CF: Service type with expected hours (Memora - cf_96)")
     private String serviceType;
+
+    @JsonPropertyDescription("CF: OS - Service Order (Memora - cf_109)")
+    private String os;
+
+    @JsonPropertyDescription("CF: Chamado GLPI / 4Biz / Nº SEI (cf_58)")
+    private String glpiOrSei;
+
+    @JsonPropertyDescription("CF: Quantidade (cf_12)")
+    private String quantity;
+
+    @JsonPropertyDescription("CF: Nº SEI! (cf_4)")
+    private String seiNumber;
+
+    @JsonPropertyDescription("CF: Área (cf_1)")
+    private String area;
+
+    @JsonPropertyDescription("CF: Fase (cf_83)")
+    private String phase;
+
+    @JsonPropertyDescription("CF: Story Points (cf_113)")
+    private String storyPoints;
+
+    @JsonPropertyDescription("CF: Classificação da demanda (cf_114)")
+    private String demandClassification;
+
+    @JsonPropertyDescription("All custom fields")
+    private List<TCustomField> customFields;
 
     @JsonPropertyDescription("Chronological notes/comments list")
     private List<String> notes;
@@ -270,6 +297,78 @@ public class TIssueEvidenceInfo {
 
     public void setServiceType(String serviceType) {
         this.serviceType = serviceType;
+    }
+
+    public String getOs() {
+        return os;
+    }
+
+    public void setOs(String os) {
+        this.os = os;
+    }
+
+    public String getGlpiOrSei() {
+        return glpiOrSei;
+    }
+
+    public void setGlpiOrSei(String glpiOrSei) {
+        this.glpiOrSei = glpiOrSei;
+    }
+
+    public String getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(String quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getSeiNumber() {
+        return seiNumber;
+    }
+
+    public void setSeiNumber(String seiNumber) {
+        this.seiNumber = seiNumber;
+    }
+
+    public String getArea() {
+        return area;
+    }
+
+    public void setArea(String area) {
+        this.area = area;
+    }
+
+    public String getPhase() {
+        return phase;
+    }
+
+    public void setPhase(String phase) {
+        this.phase = phase;
+    }
+
+    public String getStoryPoints() {
+        return storyPoints;
+    }
+
+    public void setStoryPoints(String storyPoints) {
+        this.storyPoints = storyPoints;
+    }
+
+    public String getDemandClassification() {
+        return demandClassification;
+    }
+
+    public void setDemandClassification(String demandClassification) {
+        this.demandClassification = demandClassification;
+    }
+
+    public List<TCustomField> getCustomFields() {
+        return customFields;
+    }
+
+    public void setCustomFields(List<TCustomField> customFields) {
+        this.customFields = customFields;
     }
 
     public List<String> getNotes() {

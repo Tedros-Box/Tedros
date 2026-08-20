@@ -62,10 +62,13 @@ import com.taskadapter.redmineapi.bean.Version;
 import com.taskadapter.redmineapi.bean.VersionFactory;
 import com.taskadapter.redmineapi.bean.Watcher;
 import com.taskadapter.redmineapi.bean.WatcherFactory;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class RedmineMapper {
 
 	private static final TDateUtil util = TDateUtil.create(Locale.getDefault());
+	private static final Pattern HPA_PATTERN = Pattern.compile("HPA:\\s*([0-9]+(?:[.,][0-9]+)?)", Pattern.CASE_INSENSITIVE);
 
 	private RedmineMapper() {
 
@@ -76,6 +79,31 @@ public class RedmineMapper {
 			return null;
 
 		return util.format(date);
+	}
+
+	private static void parseServiceTypeDetails(String serviceText, TIssueEvidenceInfo issue) {
+		if (StringUtils.isBlank(serviceText)) {
+			return;
+		}
+
+		Matcher m = HPA_PATTERN.matcher(serviceText);
+		if (m.find()) {
+			issue.setHpa(m.group(1).trim());
+		}
+
+		String[] parts = serviceText.split("\\s+-\\s+");
+		if (parts.length >= 2) {
+			String profile = parts[parts.length - 1].trim();
+			if (StringUtils.isNotBlank(profile)) {
+				issue.setRequiredProfile(profile);
+			}
+			if (StringUtils.isBlank(issue.getDeliverable()) && parts.length >= 6) {
+				String deliverable = parts[parts.length - 2].trim();
+				if (StringUtils.isNotBlank(deliverable)) {
+					issue.setDeliverable(deliverable);
+				}
+			}
+		}
 	}
 
 	public static List<TTimeEntry> convertTimeEntryList(Collection<TimeEntry> entries) {
@@ -142,45 +170,35 @@ public class RedmineMapper {
 		issue.setStatusName(i.getStatusName());
 
 		if (i.getCustomFields() != null) {
+			issue.setCustomFields(convertCustomFieldList(i.getCustomFields()));
 
-			Optional<String> opt = i.getCustomFields().stream()
-					.filter(cf -> cf.getId().equals(79))
-					.map(cf -> cf.getValue())
-					.findFirst();
-
-			if (opt.isPresent()) {
-				String deliverable = opt.get();
-				issue.setDeliverable(deliverable);
-			}
-
-			opt = i.getCustomFields().stream()
-					.filter(cf -> cf.getId().equals(75))
-					.map(cf -> cf.getValue())
-					.findFirst();
-
-			if (opt.isPresent()) {
-				String hpa = opt.get();
-				issue.setHpa(hpa);
-			}
-
-			opt = i.getCustomFields().stream()
-					.filter(cf -> cf.getId().equals(60))
-					.map(cf -> cf.getValue())
-					.findFirst();
-
-			if (opt.isPresent()) {
-				String serviceType = opt.get();
-				issue.setServiceType(serviceType);
-			}
-
-			opt = i.getCustomFields().stream()
-					.filter(cf -> cf.getId().equals(59))
-					.map(cf -> cf.getValue())
-					.findFirst();
-
-			if (opt.isPresent()) {
-				String requiredProfile = opt.get();
-				issue.setRequiredProfile(requiredProfile);
+			for (CustomField cf : i.getCustomFields()) {
+				if (cf == null || cf.getId() == null) {
+					continue;
+				}
+				String val = cf.getValue();
+				if (val == null && cf.getValues() != null && !cf.getValues().isEmpty()) {
+					val = String.join(", ", cf.getValues());
+				}
+				switch (cf.getId()) {
+					case 1 -> issue.setArea(val);
+					case 4 -> issue.setSeiNumber(val);
+					case 12 -> issue.setQuantity(val);
+					case 58 -> issue.setGlpiOrSei(val);
+					case 83 -> issue.setPhase(val);
+					case 96 -> {
+						issue.setServiceType(val);
+						parseServiceTypeDetails(val, issue);
+					}
+					case 100 -> {
+						if (StringUtils.isNotBlank(val)) {
+							issue.setDeliverable(val.trim());
+						}
+					}
+					case 109 -> issue.setOs(val);
+					case 113 -> issue.setStoryPoints(val);
+					case 114 -> issue.setDemandClassification(val);
+				}
 			}
 		}
 
